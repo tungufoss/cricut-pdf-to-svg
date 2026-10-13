@@ -25,3 +25,7 @@ The Bowser papercraft mask was created by Sweets The Cat (also credited as Paper
 GitHub's README renderer does not display the interactive Sketchfab iframe, so the model is linked above. An embedded viewer would need a separate HTML page hosted with GitHub Pages.
 
 The creator described the template as free for personal use. This repository does not include or redistribute the PDF. Check the creator's current terms before using or sharing derived files.
+
+## Bowser papercraft example
+
+![Bowser papercraft mask preview](assets/bowser-preview.png)
