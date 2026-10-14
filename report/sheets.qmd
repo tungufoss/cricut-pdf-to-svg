@@ -3,7 +3,7 @@
 ```{r}
 #| include: false
 source("R/edges.R")
-sheets <- read_csv("_generated/sheets.csv", show_col_types = FALSE)
+sheets <- read_csv("generated/sheets.csv", show_col_types = FALSE)
 has_counts <- "matching" %in% names(sheets)
 ```
 

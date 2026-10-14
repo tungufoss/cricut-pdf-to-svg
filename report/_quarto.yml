@@ -1,5 +1,5 @@
 # Results site for the converter. Build with `make report` from the repository root
-# (sets REPORT_OUT / REPORT_PROJECT); R/prepare.R gathers the outputs into _generated/ first.
+# (sets REPORT_OUT / REPORT_PROJECT); R/prepare.R gathers the outputs into generated/ first.
 project:
   type: book
   output-dir: _book

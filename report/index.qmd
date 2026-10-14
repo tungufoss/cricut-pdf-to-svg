@@ -3,8 +3,8 @@
 ```{r}
 #| include: false
 source("R/edges.R")
-edges <- if (file.exists("_generated/edges.csv")) read_edges("_generated/edges.csv")
-sheets <- read_csv("_generated/sheets.csv", show_col_types = FALSE)
+edges <- if (file.exists("generated/edges.csv")) read_edges("generated/edges.csv")
+sheets <- read_csv("generated/sheets.csv", show_col_types = FALSE)
 ```
 
 This site shows what the converter made of the Bowser papercraft template: each PDF page next to the traced SVG (@sec-sheets), and whether the printed edge numbers pair up into glue edges of the same length (@sec-glue). How to run the converter and review its output is in @sec-usage.
@@ -26,8 +26,8 @@ The Bowser papercraft mask is by [Sweets The Cat](https://sweetsthecat.itch.io/)
 
 ```{r}
 #| results: asis
-if (file.exists("_generated/summary.md")) {
-  cat(readLines("_generated/summary.md"), sep = "\n")
+if (file.exists("generated/summary.md")) {
+  cat(readLines("generated/summary.md"), sep = "\n")
 } else if (!is.null(edges)) {
   n <- count(edges, verdict) |> deframe()
   cat(sprintf("%d sheets, %d printed edge numbers: **%d matching**, **%d need work**.\n",

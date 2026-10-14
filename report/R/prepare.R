@@ -1,11 +1,11 @@
 #!/usr/bin/env Rscript
-# Quarto pre-render step: gather the conversion results the report shows into _generated/.
+# Quarto pre-render step: gather the conversion results the report shows into generated/.
 #
-#   _generated/sheets/<project>-page-PP.svg   one sheet of the review SVG (pieces only),
+#   generated/sheets/<project>-page-PP.svg   one sheet of the review SVG (pieces only),
 #                                             edge numbers ringed green (ok) or red (needs work)
-#   _generated/sheets/<project>-page-PP-<material>.png   the rendered PDF page, from previews/
-#   _generated/sheets.csv                     one row per sheet, read by sheets.qmd
-#   _generated/edges.csv, summary.md          the pipeline's edge table and summary, as is
+#   generated/sheets/<project>-page-PP-<material>.png   the rendered PDF page, from previews/
+#   generated/sheets.csv                     one row per sheet, read by sheets.qmd
+#   generated/edges.csv, summary.md          the pipeline's edge table and summary, as is
 #
 # Inputs come from REPORT_OUT (default ../output/bowser); `make report` sets it.
 
@@ -14,7 +14,7 @@ source("R/edges.R")
 
 out <- Sys.getenv("REPORT_OUT", "../output/bowser")
 project <- Sys.getenv("REPORT_PROJECT", basename(out))
-gen <- "_generated"
+gen <- "generated"
 svg_path <- file.path(out, paste0(project, ".svg"))
 edges_path <- file.path(out, paste0(project, "-edges.csv"))
 stopifnot("run `make` first: review SVG not found" = file.exists(svg_path))
