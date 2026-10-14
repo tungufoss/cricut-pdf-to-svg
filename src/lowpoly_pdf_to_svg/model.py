@@ -14,7 +14,7 @@ Point = tuple[float, float]  # (x, y)
 
 
 class FoldKind(str, Enum):
-    # Pepakura convention used by this template: dash-dot = mountain, dashed = valley.
+    # Which line style means which fold is set per template in the project YAML (`folds:`).
     MOUNTAIN = "mountain"
     VALLEY = "valley"
 

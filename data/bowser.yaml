@@ -4,6 +4,12 @@ source:
   pdf: bowser.pdf
   page_size: letter
 
+# Fold line styles in this template (Pepakura default). Swap them if a template
+# draws mountain folds dashed.
+folds:
+  dash_dot: mountain
+  dashed: valley
+
 output:
   default_sheet: a4
 

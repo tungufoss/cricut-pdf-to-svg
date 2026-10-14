@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
+
+from .model import FoldKind
 
 # Sheet sizes in millimetres (width, height).
 SHEETS_MM = {
@@ -29,6 +31,9 @@ class Project:
     page_size: str
     sheet_size: str
     materials: tuple[Material, ...]
+    # How the template draws each fold. Pepakura's default: dash-dot = mountain, dashed = valley.
+    folds: dict[str, FoldKind] = field(default_factory=lambda: {"dash_dot": FoldKind.MOUNTAIN,
+                                                                "dashed": FoldKind.VALLEY})
 
     @classmethod
     def load(cls, path: Path) -> "Project":
@@ -46,7 +51,12 @@ class Project:
                 sheet_size=str(output["default_sheet"]).lower(),
                 materials=materials,
             )
-        except (KeyError, TypeError) as error:
+            if "folds" in raw:
+                folds = {str(style): FoldKind(str(kind).lower()) for style, kind in raw["folds"].items()}
+                if set(folds) != {"dash_dot", "dashed"}:
+                    raise ValueError(f"{path}: folds must name both dash_dot and dashed")
+                object.__setattr__(project, "folds", folds)
+        except (KeyError, TypeError, AttributeError) as error:
             raise ValueError(f"{path}: missing or malformed field {error}") from error
         if not materials:
             raise ValueError(f"{path}: no materials were found")

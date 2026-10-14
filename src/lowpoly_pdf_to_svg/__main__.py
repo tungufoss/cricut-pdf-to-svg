@@ -42,7 +42,7 @@ def main() -> int:
 
     output = args.output or Path("output") / project.name
     renderer = PageRenderer(project.pdf, args.dpi, renderer_path)
-    detector = PageDetector()
+    detector = PageDetector(folds=project.folds)
     results = []
     for number, material in pages:
         stem = f"{project.name}-page-{number:02d}-{material.id}"
