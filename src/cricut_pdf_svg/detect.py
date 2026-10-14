@@ -38,6 +38,8 @@ class DetectorSettings:
     fold_min_ink: float = 0.6       # share of a fold line that must be printed dashes
     fold_extend_mm: float = 6.0     # folds stretched further than this to reach the cut are flagged
     outline_tolerance_px: float = 1.5
+    notch_mm: float = 6.0           # longest bump (a number touching the cut) straightened away
+    notch_depth_mm: float = 2.0     # deepest such bump
     corner_mm: float = 1.2          # cut edges shorter than this between long edges are rounded corners
 
 
@@ -49,6 +51,12 @@ def _intersect(p0, p1, p2, p3):
         return None
     t = ((p2[0] - p0[0]) * d2[1] - (p2[1] - p0[1]) * d2[0]) / denom
     return p0 + d1 * t
+
+
+def _angle(u, v) -> float:
+    """Unsigned angle between two direction vectors, in radians."""
+    cos = float(u @ v) / max(np.linalg.norm(u) * np.linalg.norm(v), 1e-9)
+    return math.acos(max(-1.0, min(1.0, cos)))
 
 
 def _kernel(size: int) -> np.ndarray:
@@ -144,7 +152,7 @@ class PageDetector:
                                            cv2.CHAIN_APPROX_NONE)
             contour = max(contours, key=cv2.contourArea)
             polygon = cv2.approxPolyDP(contour, self.s.outline_tolerance_px, True)[:, 0, :].astype(np.float64)
-            polygons.append(self._sharpen(polygon).astype(np.float32).reshape(-1, 1, 2))
+            polygons.append(self._sharpen(self._straighten(polygon)).astype(np.float32).reshape(-1, 1, 2))
         outlines: list[list[Point] | None] = []
         holes: list[list[list[Point]]] = [[] for _ in regions]
         for i, polygon in enumerate(polygons):
@@ -159,6 +167,45 @@ class PageDetector:
                 holes[parent].append(points)
                 outlines.append(None)
         return outlines, holes
+
+    def _straighten(self, polygon: np.ndarray) -> np.ndarray:
+        """Remove small bumps where a printed number touches a straight cut line.
+
+        A run of vertices is dropped when the edges on either side of it are in line
+        with each other, the run is short, and it strays only a little from the
+        straight line that replaces it.
+        """
+        reach, depth, bend = self.s.notch_mm * self.px, self.s.notch_depth_mm * self.px, math.radians(8)
+        changed = True
+        while changed and len(polygon) > 4:
+            changed = False
+            n = len(polygon)
+            for i in range(n):
+                for span in range(2, 6):  # vertices i+1 .. i+span-1 form the bump
+                    j = (i + span) % n
+                    if span >= n - 1:
+                        break
+                    a, b = polygon[i], polygon[j]
+                    chord = b - a
+                    length = np.linalg.norm(chord)
+                    if length == 0 or length > reach:
+                        continue
+                    before, after = a - polygon[(i - 1) % n], polygon[(j + 1) % n] - b
+                    if min(np.linalg.norm(before), np.linalg.norm(after)) < length:
+                        continue
+                    if _angle(before, chord) > bend or _angle(chord, after) > bend:
+                        continue
+                    inner = polygon[[(i + k) % n for k in range(1, span)]]
+                    normal = np.array([-chord[1], chord[0]]) / length
+                    if np.abs((inner - a) @ normal).max() > depth:
+                        continue
+                    keep = [k for k in range(n) if (k - i) % n == 0 or (k - i) % n >= span]
+                    polygon = polygon[keep]
+                    changed = True
+                    break
+                if changed:
+                    break
+        return polygon
 
     def _sharpen(self, polygon: np.ndarray) -> np.ndarray:
         """Restore corners that tracing rounded off: a short edge between two long ones
