@@ -43,7 +43,7 @@ pages <- read_xml(svg_path) |>
 
 # Cut one sheet out of the review SVG: keep its own pieces, drop the source and review layers,
 # and crop the viewBox to the page. Edge numbers are ringed at their page position.
-write_sheet <- function(page, x, width, height, ...) {
+write_sheet <- function(page, x, y, width, height, ...) {
   doc <- read_xml(svg_path)
   xml_find_all(doc, "/svg:svg/*[not(self::svg:title) and not(@id='pieces')]", NS) |> xml_remove()
   xml_find_all(doc, sprintf("//svg:g[@data-material and not(starts-with(@id, 'piece-%02d-'))]", page), NS) |>
@@ -51,15 +51,15 @@ write_sheet <- function(page, x, width, height, ...) {
   root <- xml_root(doc)
   xml_set_attr(root, "width", sprintf("%.3fmm", width))
   xml_set_attr(root, "height", sprintf("%.3fmm", height))
-  xml_set_attr(root, "viewBox", sprintf("%.3f 0 %.3f %.3f", x, width, height))
-  xml_add_child(root, "rect", x = x, y = 0, width = width, height = height, fill = "#ffffff", .where = 0)
+  xml_set_attr(root, "viewBox", sprintf("%.3f %.3f %.3f %.3f", x, y, width, height))
+  xml_add_child(root, "rect", x = x, y = y, width = width, height = height, fill = "#ffffff", .where = 0)
 
   if (!is.null(edges)) {
     rings <- xml_add_child(root, "g", id = "edge-rings", style = "fill:none;stroke-width:0.6")
     edges |>
       filter(page == !!page) |>
       pwalk(function(x_mm, y_mm, verdict, number, status, ...) {
-        ring <- xml_add_child(rings, "circle", cx = sprintf("%.2f", x + x_mm), cy = sprintf("%.2f", y_mm),
+        ring <- xml_add_child(rings, "circle", cx = sprintf("%.2f", x + x_mm), cy = sprintf("%.2f", y + y_mm),
                               r = "4.5", stroke = RING[[verdict]])
         xml_add_child(ring, "title", paste0(number, ": ", status))
       })
