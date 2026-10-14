@@ -1,0 +1,81 @@
+---
+title: "lowpoly-pdf-to-svg"
+---
+
+```{r}
+#| include: false
+source("R/edges.R")
+edges <- if (file.exists("generated/edges.csv")) read_edges("generated/edges.csv")
+sheets <- read_csv("generated/sheets.csv", show_col_types = FALSE)
+```
+
+Turns low poly papercraft PDF templates into one Inkscape SVG, ready for review and Cricut Design Space. Every piece becomes a group with its cut outline, score lines for the folds and pen-drawn edge numbers, tagged with its cardstock colour.
+
+```bash
+make install
+make            # data/bowser.pdf -> output/bowser/bowser.svg
+```
+
+The first template is the Bowser mask. The [Results](sheets.qmd) pages show each PDF page next to the traced SVG, and whether the printed edge numbers pair up into [glue edges](glue-pairs.qmd) of the same length.
+
+## The model
+
+The Bowser papercraft mask is by [Sweets The Cat](https://sweetsthecat.itch.io/) (also credited as Papercraft Cat), made as a Halloween project and free for personal use. This repository does not include or redistribute the PDF; check the creator's current terms before sharing derived files. A community mirror is on [Paperzone VN](https://paperzonevn.com/bowser-mask.t13095/).
+
+```{=html}
+<div style="position:relative;padding-top:56.25%;margin-bottom:1rem">
+<iframe title="Papercraft Bowser Mask" src="https://sketchfab.com/models/92627b8a93c941b89dad9f6ab62a8fe9/embed"
+  style="position:absolute;inset:0;width:100%;height:100%;border:0"
+  allow="autoplay; fullscreen; xr-spatial-tracking" allowfullscreen></iframe>
+</div>
+<p><a href="https://sketchfab.com/3d-models/papercraft-bowser-mask-92627b8a93c941b89dad9f6ab62a8fe9">Papercraft Bowser Mask</a> by Sweets The Cat on Sketchfab</p>
+```
+
+## Where it stands
+
+```{r}
+#| results: asis
+if (file.exists("generated/summary.md")) {
+  # The pipeline's summary: its first paragraph here; the tables are drawn below from the CSV.
+  lines <- readLines("generated/summary.md")
+  body <- lines[!str_starts(lines, "#")]
+  first <- cumsum(body == "" & lag(body != "", default = FALSE))
+  cat(body[first == min(first[body != ""])], sep = "\n")
+} else if (!is.null(edges)) {
+  n <- count(edges, verdict) |> deframe()
+  cat(sprintf("%d sheets, %d printed edge numbers: **%d matching**, **%d need work**.\n",
+              nrow(sheets), nrow(edges), n[["matching"]], n[["needs work"]]))
+} else {
+  cat(sprintf("%d sheets converted. The edge-number check has not been run yet.\n", nrow(sheets)))
+}
+```
+
+```{r}
+#| label: fig-status
+#| fig-cap: "Printed edge numbers by check result. Only *ok* means both edges were found and their lengths agree."
+#| fig-height: 3.2
+if (!is.null(edges)) {
+  edges |>
+    count(status, verdict) |>
+    ggplot(aes(n, fct_rev(status), fill = verdict)) +
+    geom_col() +
+    geom_text(aes(label = n), hjust = -0.15, size = 3.2) +
+    scale_fill_manual(values = c(matching = "#1a9e8f", `needs work` = "#d61f69")) +
+    scale_x_continuous(expand = expansion(mult = c(0, 0.1))) +
+    labs(x = "edge numbers", y = NULL, fill = NULL) +
+    theme_minimal() +
+    theme(legend.position = "top", panel.grid.major.y = element_blank())
+}
+```
+
+```{r}
+#| label: tbl-sheets
+#| tbl-cap: "Edge numbers per sheet, worst first."
+if (!is.null(edges)) {
+  sheets |>
+    transmute(Page = sprintf("%02d", page), Cardstock = label, Matching = matching, `Needs work` = `needs work`,
+              `Share ok` = scales::percent(matching / (matching + `needs work`), accuracy = 1)) |>
+    arrange(desc(`Needs work` / (Matching + `Needs work`))) |>
+    knitr::kable(align = "llrrr")
+}
+```

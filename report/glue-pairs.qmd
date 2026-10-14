@@ -1,0 +1,43 @@
+---
+title: "Glue pairs"
+---
+
+```{r}
+#| include: false
+source("R/edges.R")
+library(DT)
+edges <- if (file.exists("generated/edges.csv")) read_edges("generated/edges.csv")
+```
+
+Every edge number is printed twice in the template: once on the edge and once on the tab that is glued to it. The converter measures the edge each number sits on and pairs the two. A pair is *matching* when it found exactly one edge and one tab of the same length (status `ok`); anything else needs a look. `A` is the first piece of the pair, `B` its partner, lengths in mm.
+
+```{r}
+if (is.null(edges)) {
+  cat("The edge-number check (output/bowser/bowser-edges.csv) has not been run yet.\n")
+} else {
+  edges |>
+    filter(!is.na(length_diff_mm), side != "none", partner_side != "none") |>
+    ggplot(aes(length_diff_mm, fill = verdict)) +
+    geom_histogram(binwidth = 1, boundary = 0) +
+    scale_fill_manual(values = c(matching = "#1a9e8f", `needs work` = "#d61f69")) +
+    labs(x = "length difference between the two edges (mm)", y = "edge numbers", fill = NULL) +
+    theme_minimal() +
+    theme(legend.position = "top")
+}
+```
+
+```{r}
+#| column: page
+if (!is.null(edges)) {
+  glue_pairs(edges) |>
+    mutate(across(c(verdict, status, side_a, side_b, ocr_a), factor)) |>
+    datatable(
+      rownames = FALSE, filter = "top", class = "compact stripe",
+      colnames = c("Number", "Verdict", "Status", "Piece A", "Side A", "Length A",
+                   "Piece B", "Side B", "Length B", "Diff", "A read"),
+      options = list(pageLength = 25)
+    ) |>
+    formatStyle("verdict", color = styleEqual(c("matching", "needs work"), c("#1a9e8f", "#d61f69")),
+                fontWeight = "bold")
+}
+```

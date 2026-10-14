@@ -28,3 +28,13 @@ install:
 
 clean:
 	rm -rf $(OUT)
+
+# Results site (Quarto website in report/, R with tidyverse, xml2 and DT).
+#   make report     render report/_site/index.html from the current output
+.PHONY: report
+report: $(OUT)/$(PROJECT).svg
+	LC_ALL=C.UTF-8 REPORT_OUT=$(abspath $(OUT)) REPORT_PROJECT=$(PROJECT) quarto render report
+#   make preview    serve it on localhost and re-render on save
+.PHONY: preview
+preview: $(OUT)/$(PROJECT).svg
+	LC_ALL=C.UTF-8 REPORT_OUT=$(abspath $(OUT)) REPORT_PROJECT=$(PROJECT) quarto preview report
