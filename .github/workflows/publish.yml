@@ -41,9 +41,16 @@ jobs:
         with:
           packages: |
             any::knitr
-            any::rmarkdown
             any::yaml
-            any::tidyverse
+            any::dplyr
+            any::forcats
+            any::ggplot2
+            any::purrr
+            any::readr
+            any::scales
+            any::stringr
+            any::tibble
+            any::tidyr
             any::xml2
             any::DT
 

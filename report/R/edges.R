@@ -1,7 +1,14 @@
 # Shared helpers for reading the pipeline's edge table (output/<project>/<project>-edges.csv).
 # One row per printed edge number; `status` is decided by the pipeline, the report only groups it.
 
-suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(forcats)
+  library(purrr)
+  library(readr)
+  library(stringr)
+  library(tibble)
+})
 
 # "ok" means the number was found on two pieces whose glue edges match.
 # Everything else is a reason to look at the piece again.
