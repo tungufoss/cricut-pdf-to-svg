@@ -38,6 +38,16 @@ class Label:
     text: str = ""
     confident: bool = False              # both readers agreed, or Tesseract was sure
     paired: bool = False                 # the same number is printed exactly twice
+    edge: tuple[Point, Point] | None = None  # the cut edge or tab fold this number marks
+    tab: bool = False                    # edge is a glue-tab fold, so this side carries the tab
+
+    @property
+    def edge_length(self) -> float:
+        """Length in px of the marked line; 0 when no line was found."""
+        if self.edge is None:
+            return 0.0
+        (ax, ay), (bx, by) = self.edge
+        return float(np.hypot(bx - ax, by - ay))
 
     @property
     def trusted(self) -> bool:
@@ -66,3 +76,5 @@ class PageLayout:
     pieces: list[Piece]
     stray_labels: list[Label] = field(default_factory=list)   # credits and instructions
     stray_lines: list[list[Point]] = field(default_factory=list)
+    footer: np.ndarray | None = field(default=None, repr=False)  # right-margin strip: credit and paper note
+    paper: str = ""                      # cardstock named in the footer, e.g. "beige"

@@ -4,7 +4,7 @@ title: "Reference"
 
 ## Command line
 
-`python -m src.cricut_pdf_svg [options]`
+`python -m src.lowpoly_pdf_to_svg [options]`
 
 | Option | Default | Description |
 |---|---|---|
@@ -50,6 +50,7 @@ materials:                 # one entry per cardstock colour
 | `output/<project>/<project>.svg` | One Inkscape SVG, every page side by side, in millimetres |
 | `output/<project>/previews/<project>-page-PP-<material>.png` | Each PDF page as rendered for tracing |
 | `output/<project>/<project>-edges.csv` | One row per printed edge number, read by the [glue pairs](glue-pairs.qmd) page |
+| `output/<project>/<project>-report.md` | Summary of the edge check, shown on the home page |
 
 ### Edge table columns
 

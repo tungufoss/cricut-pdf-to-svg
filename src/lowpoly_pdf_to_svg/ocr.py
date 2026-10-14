@@ -33,6 +33,21 @@ TRUST = 93.0       # Tesseract confidence accepted on its own
 TRAIN = 90.0       # Tesseract confidence good enough to learn a digit from
 
 
+def read_paper(footer: np.ndarray | None) -> str:
+    """Read the cardstock colour from the page's "Print on ... paper" margin note."""
+    if footer is None or shutil.which("tesseract") is None:
+        return ""
+    import re
+    import pytesseract
+
+    gray = cv2.cvtColor(footer, cv2.COLOR_RGB2GRAY)
+    image = cv2.resize(cv2.rotate(gray, cv2.ROTATE_90_CLOCKWISE), None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+    image = np.where(image < 200, 0, 255).astype(np.uint8)
+    text = pytesseract.image_to_string(image, config="--psm 6")
+    match = re.search(r"print\s+on\s+(\w+)\s+paper", text, re.IGNORECASE)
+    return match.group(1).lower() if match else ""
+
+
 def _upright(ink: np.ndarray, angle: float) -> np.ndarray | None:
     """Rotate a white-on-black number crop upright and scale it to HEIGHT px."""
     big = cv2.resize(ink, None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC)

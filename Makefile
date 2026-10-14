@@ -9,8 +9,8 @@ CONFIG  ?= data/bowser.yaml
 PROJECT ?= $(basename $(notdir $(CONFIG)))
 OUT     ?= output/$(PROJECT)
 DPI     ?= 180
-SOURCES := $(wildcard src/cricut_pdf_svg/*.py)
-CONVERT  = $(PYTHON) -m src.cricut_pdf_svg --config $(CONFIG) --output $(OUT) --dpi $(DPI)
+SOURCES := $(wildcard src/lowpoly_pdf_to_svg/*.py)
+CONVERT  = $(PYTHON) -m src.lowpoly_pdf_to_svg --config $(CONFIG) --output $(OUT) --dpi $(DPI)
 
 .PHONY: all page install clean
 

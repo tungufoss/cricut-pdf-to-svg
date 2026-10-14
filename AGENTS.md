@@ -6,7 +6,7 @@ This project converts paper craft PDFs into Cricut-ready SVGs. The current root 
 
 ## Build, Test, and Development
 
-`make` converts every page in `data/bowser.yaml` into one Inkscape review file, `output/bowser/bowser.svg`; `make page PAGE=4` converts a single page for quick checks. The Python package in `src/cricut_pdf_svg/` keeps each stage (manifest, render, detect, model, SVG writer) in its own module. Preserve source PDFs and make SVGs reproducible. Start by checking a small input.
+`make` converts every page in `data/bowser.yaml` into one Inkscape review file, `output/bowser/bowser.svg`; `make page PAGE=4` converts a single page for quick checks. The Python package in `src/lowpoly_pdf_to_svg/` keeps each stage (manifest, render, detect, model, SVG writer) in its own module. Preserve source PDFs and make SVGs reproducible. Start by checking a small input.
 
 ## Coding and Naming
 

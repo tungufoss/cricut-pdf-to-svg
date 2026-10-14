@@ -40,6 +40,11 @@ class DetectorSettings:
     outline_tolerance_px: float = 1.5
     notch_mm: float = 6.0           # longest bump (a number touching the cut) straightened away
     notch_depth_mm: float = 2.0     # deepest such bump
+    footer_mm: float = 10.0         # right page margin with the credit line and paper note
+    label_reach_mm: float = 3.0     # a number further than this from every line marks none
+    min_edge_mm: float = 0.8        # shorter cut edges are merged into one corner
+    min_corner_deg: float = 4.0     # an outline that turns less than this is still one straight edge
+    fitted_corner_mm: float = 2.0
     corner_mm: float = 1.2          # cut edges shorter than this between long edges are rounded corners
 
 
@@ -90,8 +95,10 @@ class PageDetector:
         glyph = (is_glyph[labels] | text_core).astype(np.uint8)
         dash = (ink.astype(bool) & ~is_long[labels] & ~glyph.astype(bool)).astype(np.uint8)
 
-        regions = self._piece_regions(solid, glyph, px)
-        outlines, holes = self._outlines(regions)
+        # The right margin holds the credit and "Print on ... paper"; it is read, not traced.
+        footer_x = gray.shape[1] - round(self.s.footer_mm * px)
+        regions = [r for r in self._piece_regions(solid, glyph, px) if cv2.boundingRect(r)[0] < footer_x]
+        outlines, holes = self._outlines(regions, solid)
         pieces: list[Piece] = []
         owner = np.zeros(gray.shape, np.int32)  # 1-based piece index per pixel
         for index, (region, outline) in enumerate(zip(regions, outlines)):
@@ -105,14 +112,46 @@ class PageDetector:
             pieces.append(piece)
 
         layout = PageLayout(page.number, material, pieces)
+        layout.footer = page.rgb[:, footer_x:].copy()
         for label in self._labels(gray, text_core, glyph, px):
             x, y, w, h = label.box
+            if x >= footer_x:
+                continue
             hit = owner[y + h // 2, x + w // 2] or self._nearest_piece(pieces, label.center, 2 * px)
             (pieces[hit - 1].labels if hit else layout.stray_labels).append(label)
+        for piece in pieces:
+            for label in piece.labels:
+                self._mark_edge(label, piece, px)
         covered = cv2.dilate((owner > 0).astype(np.uint8), _kernel(7))
         stray = ((solid | dash) & (covered == 0)).astype(bool)
+        stray[:, footer_x:] = False
         layout.stray_lines = self._centerlines(stray, min_length=int(px))
         return layout
+
+    def _mark_edge(self, label: Label, piece: Piece, px: float) -> None:
+        """Find the line a number labels: a cut edge (no tab) or a fold it sits on (tab side).
+        Numbers run along their line, so lines at an angle to the text are penalised."""
+        n = len(piece.outline)
+        lines = [(piece.outline[i], piece.outline[(i + 1) % n], False) for i in range(n)]
+        lines += [(fold.a, fold.b, True) for fold in piece.folds]
+        centre = np.asarray(label.center)
+        reading = np.array([math.cos(math.radians(label.angle)), math.sin(math.radians(label.angle))])
+        best, best_score = None, self.s.label_reach_mm * px
+        for a, b, tab in lines:
+            a, b = np.asarray(a, np.float64), np.asarray(b, np.float64)
+            length = np.linalg.norm(b - a)
+            if length < 1e-6:
+                continue
+            u = (b - a) / length
+            along = float((centre - a) @ u)
+            if not 0 <= along <= length:
+                continue
+            across = abs(float((centre - a) @ np.array([-u[1], u[0]])))
+            score = across + (0 if abs(float(reading @ u)) > math.cos(math.radians(25)) else 2 * px)
+            if score < best_score:
+                best, best_score = (tuple(a), tuple(b), tab), score
+        if best:
+            label.edge, label.tab = (best[0], best[1]), best[2]
 
     @staticmethod
     def _nearest_piece(pieces: list[Piece], point: Point, reach: float) -> int:
@@ -126,33 +165,59 @@ class PageDetector:
     # -- pieces -----------------------------------------------------------------
 
     def _piece_regions(self, solid: np.ndarray, glyph: np.ndarray, px: float) -> list[np.ndarray]:
+        """Flood-fill the paper around the pieces from the page border; whatever the fill
+        cannot reach is a piece, cut line included. Folds, numbers and fold dashes that
+        touch the cut line from inside then cannot carve notches into a piece."""
         closed = cv2.morphologyEx(solid, cv2.MORPH_CLOSE, _kernel(round(self.s.gap_close_mm * px)))
         height, width = closed.shape
-        count, background, stats, _ = cv2.connectedComponentsWithStats(1 - closed, connectivity=4)
-        # Numbers printed against a cut line would otherwise leave a notch in the piece.
-        fill_in = cv2.dilate(glyph, _kernel(3))
-        regions = []
-        for i in range(1, count):
-            x, y, w, h, area = stats[i]
-            touches_border = x == 0 or y == 0 or x + w == width or y + h == height
-            if touches_border or area < self.s.min_piece_mm2 * px * px:
+        count, background = cv2.connectedComponents(1 - closed, connectivity=4)
+        border = np.unique(np.concatenate([background[0], background[-1], background[:, 0], background[:, -1]]))
+        outside = np.isin(background, border[border > 0])
+        # A number printed across the cut line belongs to the piece, not the paper around it.
+        outside &= ~cv2.dilate(glyph, _kernel(3)).astype(bool)
+        # Pieces may touch at a corner, so each enclosed open area seeds its own piece and
+        # grows through everything the fill did not reach: cut line, corner wedges, numbers.
+        seeds = np.zeros(closed.shape, np.float32)
+        count = 0
+        for i in np.unique(background):
+            if i == 0 or i in border:
                 continue
-            inner = (background == i).astype(np.uint8)
-            inner |= fill_in & cv2.dilate(inner, _kernel(9))
-            inner = cv2.morphologyEx(inner, cv2.MORPH_CLOSE, _kernel(5))
-            # Grow from the inner edge of the cut line to its centre.
-            regions.append(cv2.dilate(inner, _kernel(5)))
-        return regions
+            area = background == i
+            if area.sum() >= self.s.min_piece_mm2 * px * px:
+                count += 1
+                seeds[area] = count
+        inside = ~outside
+        for _ in range(round(2 * px)):
+            grown = np.where(inside & (seeds == 0), cv2.dilate(seeds, _kernel(3)), seeds)
+            if np.array_equal(grown, seeds):
+                break
+            seeds = grown
+        return [cv2.morphologyEx((seeds == i).astype(np.uint8), cv2.MORPH_OPEN, _kernel(3))
+                for i in range(1, count + 1)]
 
-    def _outlines(self, regions: list[np.ndarray]):
+    def _outlines(self, regions: list[np.ndarray], solid: np.ndarray):
         """Outer cut polygon per region; regions enclosed by another piece become its holes."""
         polygons = []
+        on_cut = cv2.dilate(solid, _kernel(5))  # within 2 px of a printed cut line
         for region in regions:
             contours, _ = cv2.findContours(cv2.erode(region, _kernel(3)), cv2.RETR_EXTERNAL,
                                            cv2.CHAIN_APPROX_NONE)
             contour = max(contours, key=cv2.contourArea)
+            # Low-poly papercraft: the cut is corners joined by straight lines, nothing curved.
             polygon = cv2.approxPolyDP(contour, self.s.outline_tolerance_px, True)[:, 0, :].astype(np.float64)
-            polygons.append(self._sharpen(self._straighten(polygon)).astype(np.float32).reshape(-1, 1, 2))
+            polygon = self._sharpen(self._drop_flat(self._straighten(polygon)))
+            # Straight edges follow the printed cut line itself, not the filled region's border,
+            # which numbers and fold dashes touching the line can push in or out.
+            x, y, w, h = cv2.boundingRect(contour)
+            ys, xs = np.nonzero(solid[max(y - 4, 0):y + h + 4, max(x - 4, 0):x + w + 4])
+            ink = np.column_stack([xs + max(x - 4, 0), ys + max(y - 4, 0)]).astype(np.float64)
+            for _ in range(2):
+                polygon = self._fit_edges(polygon, ink, band=4.0)
+                polygon = self._follow_cut(polygon, on_cut)
+            polygon = self._merge_close(polygon, self.s.min_edge_mm * self.px)
+            # Fitted edges are reliable, so a clipped acute tip can be restored from further away.
+            polygon = self._sharpen(polygon, self.s.fitted_corner_mm)
+            polygons.append(polygon.astype(np.float32).reshape(-1, 1, 2))
         outlines: list[list[Point] | None] = []
         holes: list[list[list[Point]]] = [[] for _ in regions]
         for i, polygon in enumerate(polygons):
@@ -207,24 +272,140 @@ class PageDetector:
                     break
         return polygon
 
-    def _sharpen(self, polygon: np.ndarray) -> np.ndarray:
-        """Restore corners that tracing rounded off: a short edge between two long ones
-        is replaced by the point where the long edges meet."""
-        short = self.s.corner_mm * self.px
+    def _drop_flat(self, polygon: np.ndarray) -> np.ndarray:
+        """Remove vertices where the outline barely turns; they are tracing noise, not corners."""
+        flat = math.radians(self.s.min_corner_deg)
         changed = True
         while changed and len(polygon) > 3:
             changed = False
             n = len(polygon)
-            for i in range(n):
-                p0, p1, p2, p3 = (polygon[(i + k) % n] for k in (-1, 0, 1, 2))
-                edge = np.linalg.norm(p2 - p1)
-                if edge >= short or min(np.linalg.norm(p1 - p0), np.linalg.norm(p3 - p2)) < 2 * edge:
+            turns = [_angle(polygon[i] - polygon[i - 1], polygon[(i + 1) % n] - polygon[i]) for i in range(n)]
+            i = int(np.argmin(turns))
+            if turns[i] < flat:
+                polygon = np.delete(polygon, i, axis=0)
+                changed = True
+        return polygon
+
+    @staticmethod
+    def _support(a: np.ndarray, b: np.ndarray, on_cut: np.ndarray) -> float:
+        """Share of the segment a-b that runs along printed cut line."""
+        steps = max(int(np.linalg.norm(b - a)), 2)
+        t = np.linspace(0, 1, steps + 1)[1:-1]
+        points = np.round(a + (b - a) * t[:, None]).astype(int)
+        h, w = on_cut.shape
+        inside = (points[:, 0] >= 0) & (points[:, 0] < w) & (points[:, 1] >= 0) & (points[:, 1] < h)
+        hits = np.zeros(len(points), bool)
+        hits[inside] = on_cut[points[inside, 1], points[inside, 0]] > 0
+        return float(hits.mean()) if len(hits) else 1.0
+
+    def _follow_cut(self, polygon: np.ndarray, on_cut: np.ndarray, good: float = 0.9) -> np.ndarray:
+        """Remove notches: where edges leave the printed cut line, replace up to three
+        vertices by a straight chord or by the corner of the edges on either side,
+        whichever runs along the cut line."""
+        changed = True
+        while changed and len(polygon) > 3:
+            changed = False
+            n = len(polygon)
+            support = [self._support(polygon[i], polygon[(i + 1) % n], on_cut) for i in range(n)]
+            for i in sorted(range(n), key=lambda i: support[i]):
+                if support[i] >= good:
+                    break
+                best = None
+                for k in range(1, min(4, n - 3) + 1):
+                    for start in range(i - k + 1, i + 2):  # runs of k vertices touching edge i
+                        run = [(start + m) % n for m in range(k)]
+                        before, after = polygon[(start - 1) % n], polygon[(start + k) % n]
+                        old = min(support[(start - 1 + m) % n] for m in range(k + 1))
+                        options = [[]]
+                        corner = _intersect(polygon[(start - 2) % n], before, after, polygon[(start + k + 1) % n])
+                        if corner is not None and min(np.linalg.norm(corner - polygon[r]) for r in run) < 3 * self.px:
+                            options.append([corner])
+                        for middle in options:
+                            chain = [before, *middle, after]
+                            new = min(self._support(p, q, on_cut) for p, q in zip(chain, chain[1:]))
+                            if new >= good and new > old + 0.05 and (best is None or new > best[0]):
+                                best = (new, run, middle)
+                if best:
+                    _, run, middle = best
+                    keep = [m for m in range(n) if m not in run]
+                    head = [polygon[m] for m in keep if m < run[0]]
+                    tail = [polygon[m] for m in keep if m > run[0]]
+                    if run[-1] < run[0]:  # run wraps past the first vertex
+                        head = [polygon[m] for m in keep if run[-1] < m < run[0]]
+                        tail = []
+                    polygon = np.array(head + list(middle) + tail, np.float64)
+                    changed = True
+                    break
+        return polygon
+
+    @staticmethod
+    def _fit_edges(polygon: np.ndarray, contour: np.ndarray, band: float = 2.5) -> np.ndarray:
+        """Fit each edge as a straight line through the traced contour near it, then put
+        every corner where its two fitted edges meet."""
+        n = len(polygon)
+        lines = []
+        for i in range(n):
+            a, b = polygon[i], polygon[(i + 1) % n]
+            length = np.linalg.norm(b - a)
+            u = (b - a) / max(length, 1e-9)
+            offsets = contour - a
+            along, across = offsets @ u, offsets @ np.array([-u[1], u[0]])
+            near = contour[(np.abs(across) <= band) & (along > band) & (along < length - band)]
+            if length < 4 * band or len(near) < 5:
+                lines.append((a, u))
+                continue
+            vx, vy, x0, y0 = cv2.fitLine(near.astype(np.float32), cv2.DIST_HUBER, 0, 0.01, 0.01).ravel()
+            lines.append((np.array([x0, y0], np.float64), np.array([vx, vy], np.float64)))
+        corners = polygon.copy()
+        for i in range(n):
+            (p0, d0), (p1, d1) = lines[i - 1], lines[i]
+            corner = _intersect(p0, p0 + d0, p1, p1 + d1)
+            # Nearly parallel neighbours give a far-off intersection; keep the traced corner then.
+            if corner is not None and np.linalg.norm(corner - polygon[i]) <= 2 * band:
+                corners[i] = corner
+        return corners
+
+    @staticmethod
+    def _merge_close(polygon: np.ndarray, reach: float) -> np.ndarray:
+        """Collapse corners closer than `reach` into one: a sliver edge is never a real cut."""
+        changed = True
+        while changed and len(polygon) > 3:
+            changed = False
+            n = len(polygon)
+            lengths = [np.linalg.norm(polygon[(i + 1) % n] - polygon[i]) for i in range(n)]
+            i = int(np.argmin(lengths))
+            if lengths[i] < reach:
+                polygon[i] = (polygon[i] + polygon[(i + 1) % n]) / 2
+                polygon = np.delete(polygon, (i + 1) % n, axis=0)
+                changed = True
+        return polygon
+
+    def _sharpen(self, polygon: np.ndarray, corner_mm: float | None = None) -> np.ndarray:
+        """Restore corners that tracing rounded off: a run of up to three short edges
+        between two long ones is replaced by the point where the long edges meet."""
+        short = (corner_mm or self.s.corner_mm) * self.px
+        changed = True
+        while changed and len(polygon) > 3:
+            changed = False
+            n = len(polygon)
+            lengths = [np.linalg.norm(polygon[(i + 1) % n] - polygon[i]) for i in range(n)]
+            for i in range(n):  # edge i-1 is long, edges i .. i+k-1 are short, edge i+k is long
+                if lengths[i - 1] < short:
                     continue
-                corner = _intersect(p0, p1, p2, p3)
-                if corner is None or np.linalg.norm(corner - (p1 + p2) / 2) > 2 * short:
+                k = 0
+                while k < 3 and k < n - 3 and lengths[(i + k) % n] < short:
+                    k += 1
+                after = (i + k) % n
+                if k == 0 or lengths[after] < short or lengths[i - 1] < 2 * lengths[i] or lengths[after] < 2 * lengths[after - 1]:
                     continue
-                polygon = np.delete(polygon, [(i + 1) % n], axis=0)
-                polygon[i if (i + 1) % n else i - 1] = corner
+                run = [polygon[(i + m) % n] for m in range(k + 1)]
+                corner = _intersect(polygon[i - 1], run[0], run[-1], polygon[(after + 1) % n])
+                if corner is None or np.linalg.norm(corner - np.mean(run, axis=0)) > 2 * short:
+                    continue
+                keep = [m for m in range(n) if m not in {(i + j) % n for j in range(1, k + 1)}]
+                polygon = polygon.copy()
+                polygon[i] = corner
+                polygon = polygon[keep]
                 changed = True
                 break
         return polygon

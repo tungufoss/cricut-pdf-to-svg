@@ -9,7 +9,8 @@ from pathlib import Path
 
 from .config import Project
 from .detect import PageDetector
-from .ocr import EdgeNumberReader
+from .edges import EdgeTable
+from .ocr import EdgeNumberReader, read_paper
 from .render import PageRenderer
 from .svg import InkscapeSvgWriter
 
@@ -46,7 +47,12 @@ def main() -> int:
     for number, material in pages:
         stem = f"{project.name}-page-{number:02d}-{material.id}"
         page = renderer.render(number, output / "previews" / f"{stem}.png")
-        results.append((page, detector.detect(page, material.id), material))
+        layout = detector.detect(page, material.id)
+        layout.paper = read_paper(layout.footer)
+        if layout.paper and layout.paper not in (material.id, material.name.lower()):
+            print(f"warning: page {number} says 'print on {layout.paper} paper' but the config says {material.id}",
+                  file=sys.stderr)
+        results.append((page, layout, material))
         print(f"page {number:02d} ({material.id}): {len(results[-1][1].pieces)} pieces", flush=True)
 
     reader = EdgeNumberReader()
@@ -66,6 +72,13 @@ def main() -> int:
           f"{len(labels)} numbers ({unsure} uncertain).")
     if flagged:
         print(f"check: {', '.join(flagged)}")
+    table = EdgeTable()
+    for page, layout, _ in results:
+        table.add(layout, page.mm_per_px)
+    edges = output / f"{project.name}-edges.csv"
+    statuses = table.write(edges)
+    table.write_report(output / f"{project.name}-report.md", project.name.title())
+    print(f"Wrote {edges}: " + ", ".join(f"{n} {s}" for s, n in statuses.most_common()))
     target = output / f"{project.name}.svg"
     writer.write(target)
     print(f"Wrote {len(pages)} page(s) to {target}. {len(flagged)} piece(s) flagged for review.")
