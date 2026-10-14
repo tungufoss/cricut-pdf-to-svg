@@ -17,7 +17,11 @@ project <- Sys.getenv("REPORT_PROJECT", basename(out))
 gen <- "generated"
 svg_path <- file.path(out, paste0(project, ".svg"))
 edges_path <- file.path(out, paste0(project, "-edges.csv"))
-stopifnot("run `make` first: review SVG not found" = file.exists(svg_path))
+summary_md <- file.path(out, paste0(project, "-report.md"))
+if (!file.exists(edges_path)) {
+  edges_path <- file.path("data", project, paste0(project, "-edges.csv"))
+  summary_md <- file.path("data", project, paste0(project, "-report.md"))
+}
 
 unlink(gen, recursive = TRUE)
 dir.create(file.path(gen, "sheets"), recursive = TRUE)
@@ -29,10 +33,14 @@ RING <- c(matching = "#1a9e8f", `needs work` = "#d61f69")
 
 edges <- if (file.exists(edges_path)) read_edges(edges_path) else NULL
 if (!is.null(edges)) invisible(file.copy(edges_path, file.path(gen, "edges.csv")))
-summary_md <- file.path(out, paste0(project, "-report.md"))
 if (file.exists(summary_md)) invisible(file.copy(summary_md, file.path(gen, "summary.md")))
 
 # Sheet geometry comes from the Inkscape pages in the review SVG (all in mm).
+if (!file.exists(svg_path)) {
+  message("no review SVG at ", svg_path, ": building without sheet images")
+  write_csv(tibble(page = integer()), file.path(gen, "sheets.csv"))
+  quit(save = "no")
+}
 pages <- read_xml(svg_path) |>
   xml_find_all("//inkscape:page", NS) |>
   map(xml_attrs) |>

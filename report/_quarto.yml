@@ -3,6 +3,7 @@
 project:
   type: website
   output-dir: _site
+  render: ["*.qmd"]   # not the pipeline summary in data/
   pre-render: Rscript R/prepare.R
   resources:
     # Referenced from CSS (mask-image), which Quarto does not scan
