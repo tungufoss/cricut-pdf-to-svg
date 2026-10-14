@@ -4,10 +4,12 @@
 suppressPackageStartupMessages({
   library(dplyr)
   library(forcats)
+  library(ggplot2)
   library(purrr)
   library(readr)
   library(stringr)
   library(tibble)
+  library(tidyr)
 })
 
 # "ok" means the number was found on two pieces whose glue edges match.
