@@ -1,0 +1,26 @@
+# Results site for the converter. Build with `make report` from the repository root
+# (sets REPORT_OUT / REPORT_PROJECT); R/prepare.R gathers the outputs into _generated/ first.
+project:
+  type: book
+  output-dir: _book
+  pre-render: Rscript R/prepare.R
+
+book:
+  title: "Low Poly PDF to SVG"
+  subtitle: "Bowser papercraft: conversion results"
+  repo-url: https://github.com/tungufoss/lowpoly-pdf-to-svg
+  chapters:
+    - index.qmd
+    - sheets.qmd
+    - glue-pairs.qmd
+    - usage.qmd
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+
+execute:
+  echo: false
+  warning: false
+  message: false

@@ -28,3 +28,9 @@ install:
 
 clean:
 	rm -rf $(OUT)
+
+# Results site (Quarto book in report/, R with tidyverse, xml2 and DT).
+#   make report     render report/_book/index.html from the current output
+.PHONY: report
+report: $(OUT)/$(PROJECT).svg
+	LC_ALL=C.UTF-8 REPORT_OUT=$(abspath $(OUT)) REPORT_PROJECT=$(PROJECT) quarto render report
