@@ -34,6 +34,10 @@ source:
   pdf: bowser.pdf          # in data/, not committed
   page_size: letter
 
+folds:                     # which printed line style is which fold
+  dash_dot: mountain       # Pepakura default; swap if a template
+  dashed: valley           # draws mountain folds dashed
+
 output:
   default_sheet: a4        # a4 or 12x12 for nesting
 

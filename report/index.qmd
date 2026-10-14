@@ -36,7 +36,11 @@ The Bowser papercraft mask is by [Sweets The Cat](https://sweetsthecat.itch.io/)
 ```{r}
 #| results: asis
 if (file.exists("generated/summary.md")) {
-  cat(readLines("generated/summary.md"), sep = "\n")
+  # The pipeline's summary: its first paragraph here; the tables are drawn below from the CSV.
+  lines <- readLines("generated/summary.md")
+  body <- lines[!str_starts(lines, "#")]
+  first <- cumsum(body == "" & lag(body != "", default = FALSE))
+  cat(body[first == min(first[body != ""])], sep = "\n")
 } else if (!is.null(edges)) {
   n <- count(edges, verdict) |> deframe()
   cat(sprintf("%d sheets, %d printed edge numbers: **%d matching**, **%d need work**.\n",

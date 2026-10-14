@@ -69,8 +69,10 @@ def _kernel(size: int) -> np.ndarray:
 
 
 class PageDetector:
-    def __init__(self, settings: DetectorSettings | None = None):
+    def __init__(self, settings: DetectorSettings | None = None, folds: dict[str, FoldKind] | None = None):
         self.s = settings or DetectorSettings()
+        # Which fold each line style means; set per template in the project YAML.
+        self.folds = folds or {"dash_dot": FoldKind.MOUNTAIN, "dashed": FoldKind.VALLEY}
 
     def detect(self, page: PageImage, material: str) -> PageLayout:
         px = self.px = 1.0 / page.mm_per_px
@@ -480,8 +482,7 @@ class PageDetector:
         near = [abs(cv2.pointPolygonTest(polygon, (float(x), float(y)), True)) <= distance for x, y in samples]
         return sum(near) > len(near) / 2
 
-    @staticmethod
-    def _fold_kind(dashes: np.ndarray, a: Point, b: Point, px: float) -> FoldKind:
+    def _fold_kind(self, dashes: np.ndarray, a: Point, b: Point, px: float) -> FoldKind:
         """Dash-dot lines contain short 'dot' runs between the dashes."""
         tolerant = cv2.dilate(dashes, _kernel(3))
         length = math.dist(a, b)
@@ -492,10 +493,10 @@ class PageDetector:
         edges = np.flatnonzero(np.diff(np.concatenate(([0], samples, [0]))))
         runs = (edges[1::2] - edges[::2]) / 2.0          # run lengths in pixels
         interior = runs[1:-1] if len(runs) > 2 else runs  # end runs are often clipped
-        # At 180 dpi a valley dash measures ~11 px; a mountain dash-dot alternates
+        # At 180 dpi a dash measures ~11 px; a dash-dot line alternates
         # ~19 px dashes with ~7 px runs where the dot merges with its neighbour.
         long = int((interior >= 15 * px / 7.09).sum())
-        return FoldKind.MOUNTAIN if long >= max(1, 0.25 * len(interior)) else FoldKind.VALLEY
+        return self.folds["dash_dot" if long >= max(1, 0.25 * len(interior)) else "dashed"]
 
     def _span_piece(self, folds: list[Fold], polygon: np.ndarray, support: np.ndarray, px: float) -> list[Fold]:
         """Stretch every fold into one straight line from cut edge to cut edge.
