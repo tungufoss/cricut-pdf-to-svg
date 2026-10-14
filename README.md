@@ -5,7 +5,7 @@ Turns low poly papercraft PDF templates into one Inkscape SVG, ready for review 
 ```sh
 make install   # Python deps; also needs Poppler (pdftoppm) and Tesseract
 make           # data/bowser.pdf -> output/bowser/bowser.svg
-make report    # results site in report/_book (needs Quarto and R with tidyverse, xml2, DT)
+make report    # results site in report/_site (needs Quarto and R with tidyverse, xml2, DT)
 ```
 
 The source PDF stays local in `data/` and is not committed.

@@ -25,7 +25,7 @@ dir.create(file.path(gen, "sheets"), recursive = TRUE)
 NS <- c(svg = "http://www.w3.org/2000/svg",
         inkscape = "http://www.inkscape.org/namespaces/inkscape",
         sodipodi = "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd")
-RING <- c(matching = "#2e7d32", `needs work` = "#d32f2f")
+RING <- c(matching = "#1a9e8f", `needs work` = "#d61f69")
 
 edges <- if (file.exists(edges_path)) read_edges(edges_path) else NULL
 if (!is.null(edges)) invisible(file.copy(edges_path, file.path(gen, "edges.csv")))

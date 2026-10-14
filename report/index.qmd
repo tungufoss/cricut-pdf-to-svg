@@ -1,4 +1,6 @@
-# Overview {.unnumbered}
+---
+title: "lowpoly-pdf-to-svg"
+---
 
 ```{r}
 #| include: false
@@ -7,7 +9,14 @@ edges <- if (file.exists("generated/edges.csv")) read_edges("generated/edges.csv
 sheets <- read_csv("generated/sheets.csv", show_col_types = FALSE)
 ```
 
-This site shows what the converter made of the Bowser papercraft template: each PDF page next to the traced SVG (@sec-sheets), and whether the printed edge numbers pair up into glue edges of the same length (@sec-glue). How to run the converter and review its output is in @sec-usage.
+Turns low poly papercraft PDF templates into one Inkscape SVG, ready for review and Cricut Design Space. Every piece becomes a group with its cut outline, score lines for the folds and pen-drawn edge numbers, tagged with its cardstock colour.
+
+```bash
+make install
+make            # data/bowser.pdf -> output/bowser/bowser.svg
+```
+
+The first template is the Bowser mask. The [Results](sheets.qmd) pages show each PDF page next to the traced SVG, and whether the printed edge numbers pair up into [glue edges](glue-pairs.qmd) of the same length.
 
 ## The model
 
@@ -47,7 +56,7 @@ if (!is.null(edges)) {
     ggplot(aes(n, fct_rev(status), fill = verdict)) +
     geom_col() +
     geom_text(aes(label = n), hjust = -0.15, size = 3.2) +
-    scale_fill_manual(values = c(matching = "#2e7d32", `needs work` = "#d32f2f")) +
+    scale_fill_manual(values = c(matching = "#1a9e8f", `needs work` = "#d61f69")) +
     scale_x_continuous(expand = expansion(mult = c(0, 0.1))) +
     labs(x = "edge numbers", y = NULL, fill = NULL) +
     theme_minimal() +

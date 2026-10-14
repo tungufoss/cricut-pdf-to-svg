@@ -1,4 +1,6 @@
-# Glue pairs {#sec-glue}
+---
+title: "Glue pairs"
+---
 
 ```{r}
 #| include: false
@@ -17,7 +19,7 @@ if (is.null(edges)) {
     filter(!is.na(length_diff_mm), side != "none", partner_side != "none") |>
     ggplot(aes(length_diff_mm, fill = verdict)) +
     geom_histogram(binwidth = 1, boundary = 0) +
-    scale_fill_manual(values = c(matching = "#2e7d32", `needs work` = "#d32f2f")) +
+    scale_fill_manual(values = c(matching = "#1a9e8f", `needs work` = "#d61f69")) +
     labs(x = "length difference between the two edges (mm)", y = "edge numbers", fill = NULL) +
     theme_minimal() +
     theme(legend.position = "top")
@@ -35,7 +37,7 @@ if (!is.null(edges)) {
                    "Piece B", "Side B", "Length B", "Diff", "A read"),
       options = list(pageLength = 25)
     ) |>
-    formatStyle("verdict", color = styleEqual(c("matching", "needs work"), c("#2e7d32", "#d32f2f")),
+    formatStyle("verdict", color = styleEqual(c("matching", "needs work"), c("#1a9e8f", "#d61f69")),
                 fontWeight = "bold")
 }
 ```

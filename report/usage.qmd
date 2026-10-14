@@ -1,24 +1,6 @@
-# Using the converter {#sec-usage}
-
-## Convert a template
-
-The source PDF is kept locally at `data/bowser.pdf` and is ignored by Git. The manifest at `data/bowser.yaml` maps its pages to cardstock materials. Install Python 3.10 or newer, Poppler (`pdftoppm`) and Tesseract OCR (`tesseract`), then from the repository root run:
-
-```sh
-make install
-make                 # all pages -> output/bowser/bowser.svg
-make page PAGE=4     # one page -> output/bowser/page-4/bowser.svg
-```
-
-Without `make`, run the same steps directly:
-
-```sh
-python -m pip install -r requirements.txt
-python -m src.cricut_pdf_svg --config data/bowser.yaml
-python -m src.cricut_pdf_svg --config data/bowser.yaml --page 4 --output output/bowser/page-4
-```
-
-If Poppler is not on `PATH`, add `--pdftoppm C:\path\to\pdftoppm.exe`.
+---
+title: "Guide"
+---
 
 ## Pipeline
 
@@ -54,5 +36,7 @@ The numbers are text, so you can correct one by double-clicking it. For the Cric
 - Export SVGs organized by material and sheet for review and Cricut Design Space.
 
 Cricut Design Space imports SVG vectors as Cut by default. After import, assign the fold layer to Score and the number layer to Draw/Pen, then attach them to the matching cut pieces. See [Cricut's SVG upload guide](https://help.cricut.com/hc/en-us/articles/360009556313-How-to-upload-images-into-Design-Space) and [operation guide](https://help.cricut.com/hc/en-us/articles/26922998476183-Design-Space-Selecting-Operation).
+
+See `PLAN.md` in the repository for the remaining development stages.
 
 See `PLAN.md` in the repository for the remaining development stages.

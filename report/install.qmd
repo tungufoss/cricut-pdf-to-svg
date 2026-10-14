@@ -1,0 +1,22 @@
+---
+title: "Install"
+---
+
+Python 3.10 or newer, [Poppler](https://poppler.freedesktop.org/) (`pdftoppm`) and [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) (`tesseract`).
+
+```bash
+git clone https://github.com/tungufoss/lowpoly-pdf-to-svg.git
+cd lowpoly-pdf-to-svg
+make install         # python -m pip install -r requirements.txt
+```
+
+If Poppler is not on `PATH`, pass `--pdftoppm C:\path\to\pdftoppm.exe` to the converter.
+
+## For this site
+
+The results pages are built with [Quarto](https://quarto.org/) and R (tidyverse, xml2, DT):
+
+```bash
+make report          # render report/_site
+make preview         # serve on localhost, re-render on save
+```

@@ -1,0 +1,20 @@
+---
+title: "Quickstart"
+---
+
+Put the template PDF in `data/` (it is not committed) and describe it in a YAML manifest, such as `data/bowser.yaml`, which maps PDF pages to cardstock colours. Then:
+
+```bash
+make                 # all pages -> output/bowser/bowser.svg
+make page PAGE=4     # one page  -> output/bowser/page-4/bowser.svg
+make report          # check the result on the Results pages
+```
+
+Without `make`:
+
+```bash
+python -m src.cricut_pdf_svg --config data/bowser.yaml
+python -m src.cricut_pdf_svg --config data/bowser.yaml --page 4 --output output/bowser/page-4
+```
+
+Open `output/bowser/bowser.svg` in Inkscape 1.2 or newer and work through the [guide](usage.qmd).
