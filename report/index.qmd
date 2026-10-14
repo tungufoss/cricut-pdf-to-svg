@@ -6,7 +6,9 @@ title: "lowpoly-pdf-to-svg"
 #| include: false
 source("R/edges.R")
 edges <- if (file.exists("generated/edges.csv")) read_edges("generated/edges.csv")
-sheets <- read_csv("generated/sheets.csv", show_col_types = FALSE)
+# Cardstock per PDF page, from the project manifest
+manifest <- yaml::read_yaml(file.path("..", "data", paste0(Sys.getenv("REPORT_PROJECT", "bowser"), ".yaml")))
+cardstock <- map_dfr(manifest$materials, \(m) tibble(page = as.integer(m$pages), Cardstock = m$name))
 ```
 
 Turns low poly papercraft PDF templates into one Inkscape SVG, ready for review and Cricut Design Space. Every piece becomes a group with its cut outline, score lines for the folds and pen-drawn edge numbers, tagged with its cardstock colour.
@@ -44,9 +46,9 @@ if (file.exists("generated/summary.md")) {
 } else if (!is.null(edges)) {
   n <- count(edges, verdict) |> deframe()
   cat(sprintf("%d sheets, %d printed edge numbers: **%d matching**, **%d need work**.\n",
-              nrow(sheets), nrow(edges), n[["matching"]], n[["needs work"]]))
+              n_distinct(edges$page), nrow(edges), n[["matching"]], n[["needs work"]]))
 } else {
-  cat(sprintf("%d sheets converted. The edge-number check has not been run yet.\n", nrow(sheets)))
+  cat("The edge-number check has not been run yet.\n")
 }
 ```
 
@@ -72,8 +74,11 @@ if (!is.null(edges)) {
 #| label: tbl-sheets
 #| tbl-cap: "Edge numbers per sheet, worst first."
 if (!is.null(edges)) {
-  sheets |>
-    transmute(Page = sprintf("%02d", page), Cardstock = label, Matching = matching, `Needs work` = `needs work`,
+  edges |>
+    count(page, verdict) |>
+    pivot_wider(names_from = verdict, values_from = n, values_fill = 0) |>
+    left_join(cardstock, by = "page") |>
+    transmute(Page = sprintf("%02d", page), Cardstock, Matching = matching, `Needs work` = `needs work`,
               `Share ok` = scales::percent(matching / (matching + `needs work`), accuracy = 1)) |>
     arrange(desc(`Needs work` / (Matching + `Needs work`))) |>
     knitr::kable(align = "llrrr")

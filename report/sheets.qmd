@@ -13,6 +13,9 @@ Left is the PDF page as rendered for tracing; right is the same page of `bowser.
 
 ```{r}
 #| results: asis
+if (nrow(sheets) == 0) {
+  cat("::: {.callout-note}\nThe traced sheets are the creator's pattern, which is free for personal use only, so they are not published here. Run `make preview` in a local checkout with the template PDF to see them.\n:::\n")
+}
 for (s in transpose(sheets)) {
   cat(sprintf("\n## Page %02d · %s {#page-%02d}\n\n", s$page, s$label, s$page))
   if (has_counts) cat(sprintf("%d edge numbers matching, %d need work.\n\n", s$matching, s$`needs work`))
