@@ -5,7 +5,10 @@ name: Publish Quarto site
 on:
   push:
     branches: [main]
-  workflow_dispatch:
+    paths:
+      - '.github/workflows/publish.yml'
+      - 'data/**'
+      - 'report/**'
 
 permissions:
   contents: read
