@@ -16,15 +16,15 @@ Without `make`, run the same steps directly:
 
 ```sh
 python -m pip install -r requirements.txt
-python -m src.cricut_pdf_svg --config data/bowser.yaml
-python -m src.cricut_pdf_svg --config data/bowser.yaml --page 4 --output output/bowser/page-4
+python -m src.lowpoly_pdf_to_svg --config data/bowser.yaml
+python -m src.lowpoly_pdf_to_svg --config data/bowser.yaml --page 4 --output output/bowser/page-4
 ```
 
 If Poppler is not on `PATH`, add `--pdftoppm C:\path\to\pdftoppm.exe`.
 
 ## Pipeline
 
-Each stage is a class in `src/cricut_pdf_svg/`:
+Each stage is a class in `src/lowpoly_pdf_to_svg/`:
 
 | Stage | Module | What it does |
 | --- | --- | --- |
