@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .config import Project
 from .detect import PageDetector
+from .ocr import EdgeNumberReader
 from .render import PageRenderer
 from .svg import InkscapeSvgWriter
 
@@ -41,23 +42,33 @@ def main() -> int:
     output = args.output or Path("output") / project.name
     renderer = PageRenderer(project.pdf, args.dpi, renderer_path)
     detector = PageDetector()
-    writer = InkscapeSvgWriter(f"{project.name.title()} papercraft")
-    flagged = 0
+    results = []
     for number, material in pages:
         stem = f"{project.name}-page-{number:02d}-{material.id}"
         page = renderer.render(number, output / "previews" / f"{stem}.png")
-        layout = detector.detect(page, material.id)
+        results.append((page, detector.detect(page, material.id), material))
+        print(f"page {number:02d} ({material.id}): {len(results[-1][1].pieces)} pieces", flush=True)
+
+    reader = EdgeNumberReader()
+    if not reader.available:
+        print("warning: tesseract was not found, so edge numbers are left as '?'", file=sys.stderr)
+    labels = [label for _, layout, _ in results for piece in layout.pieces for label in piece.labels]
+    print(f"reading {len(labels)} edge numbers ...", flush=True)
+    reader.read_all(labels)
+
+    writer = InkscapeSvgWriter(f"{project.name.title()} papercraft")
+    for page, layout, material in results:
         writer.add(page, layout, material)
-        folds = sum(len(p.folds) for p in layout.pieces)
-        labels = sum(len(p.labels) for p in layout.pieces)
-        review = [p.id for p in layout.pieces if p.needs_review]
-        flagged += len(review)
-        note = f"; check folds on {', '.join(review)}" if review else ""
-        print(f"page {number:02d} ({material.id}): {len(layout.pieces)} pieces, {folds} folds, "
-              f"{labels} numbers, {len(layout.stray_lines)} stray lines{note}")
+    folds = [f for _, layout, _ in results for p in layout.pieces for f in p.folds]
+    flagged = [p.id for _, layout, _ in results for p in layout.pieces if p.needs_review]
+    unsure = sum(not label.trusted for label in labels)
+    print(f"{len(folds)} folds ({sum(not f.snapped for f in folds)} stretched far to reach the cut), "
+          f"{len(labels)} numbers ({unsure} uncertain).")
+    if flagged:
+        print(f"check: {', '.join(flagged)}")
     target = output / f"{project.name}.svg"
     writer.write(target)
-    print(f"Wrote {len(pages)} page(s) to {target}. {flagged} piece(s) flagged for review.")
+    print(f"Wrote {len(pages)} page(s) to {target}. {len(flagged)} piece(s) flagged for review.")
     return 0
 
 

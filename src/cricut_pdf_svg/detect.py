@@ -35,8 +35,20 @@ class DetectorSettings:
     fold_gap_mm: float = 2.0        # longest gap between two dashes of the same fold
     fold_join_mm: float = 8.0       # longest gap joining collinear fold pieces (a number printed on a fold)
     snap_mm: float = 1.5            # fold ends closer than this to a cut vertex/edge snap to it
-    fold_extend_mm: float = 4.0     # a fold may be lengthened or trimmed this much to meet the cut line
+    fold_min_ink: float = 0.6       # share of a fold line that must be printed dashes
+    fold_extend_mm: float = 6.0     # folds stretched further than this to reach the cut are flagged
     outline_tolerance_px: float = 1.5
+    corner_mm: float = 1.2          # cut edges shorter than this between long edges are rounded corners
+
+
+def _intersect(p0, p1, p2, p3):
+    """Intersection of the infinite lines p0-p1 and p2-p3, or None if parallel."""
+    d1, d2 = p1 - p0, p3 - p2
+    denom = d1[0] * d2[1] - d1[1] * d2[0]
+    if abs(denom) < 1e-9:
+        return None
+    t = ((p2[0] - p0[0]) * d2[1] - (p2[1] - p0[1]) * d2[0]) / denom
+    return p0 + d1 * t
 
 
 def _kernel(size: int) -> np.ndarray:
@@ -48,7 +60,7 @@ class PageDetector:
         self.s = settings or DetectorSettings()
 
     def detect(self, page: PageImage, material: str) -> PageLayout:
-        px = 1.0 / page.mm_per_px
+        px = self.px = 1.0 / page.mm_per_px
         rgb = page.rgb.astype(np.int32)
         r, g, b = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
         gray = (0.299 * r + 0.587 * g + 0.114 * b).astype(np.int32)
@@ -80,16 +92,15 @@ class PageDetector:
             piece = Piece(f"piece-{page.number:02d}-{len(pieces) + 1:02d}", material, outline)
             piece.holes = holes[index]
             inside = cv2.erode(region, _kernel(5))
-            piece.folds = self._folds(dash & inside, outline, px)
+            piece.folds = self._folds(dash & inside, (dash | glyph) & inside, outline, px)
             owner[region > 0] = len(pieces) + 1
             pieces.append(piece)
 
         layout = PageLayout(page.number, material, pieces)
-        for box, strokes in self._labels(gray, red, glyph, px):
-            x, y, w, h = box
-            hit = owner[y + h // 2, x + w // 2] or self._nearest_piece(pieces, (x + w / 2, y + h / 2), 2 * px)
-            target = pieces[hit - 1].labels if hit else layout.stray_labels
-            target.append(Label(box, strokes))
+        for label in self._labels(gray, text_core, glyph, px):
+            x, y, w, h = label.box
+            hit = owner[y + h // 2, x + w // 2] or self._nearest_piece(pieces, label.center, 2 * px)
+            (pieces[hit - 1].labels if hit else layout.stray_labels).append(label)
         covered = cv2.dilate((owner > 0).astype(np.uint8), _kernel(7))
         stray = ((solid | dash) & (covered == 0)).astype(bool)
         layout.stray_lines = self._centerlines(stray, min_length=int(px))
@@ -132,7 +143,8 @@ class PageDetector:
             contours, _ = cv2.findContours(cv2.erode(region, _kernel(3)), cv2.RETR_EXTERNAL,
                                            cv2.CHAIN_APPROX_NONE)
             contour = max(contours, key=cv2.contourArea)
-            polygons.append(cv2.approxPolyDP(contour, self.s.outline_tolerance_px, True))
+            polygon = cv2.approxPolyDP(contour, self.s.outline_tolerance_px, True)[:, 0, :].astype(np.float64)
+            polygons.append(self._sharpen(polygon).astype(np.float32).reshape(-1, 1, 2))
         outlines: list[list[Point] | None] = []
         holes: list[list[list[Point]]] = [[] for _ in regions]
         for i, polygon in enumerate(polygons):
@@ -148,9 +160,31 @@ class PageDetector:
                 outlines.append(None)
         return outlines, holes
 
+    def _sharpen(self, polygon: np.ndarray) -> np.ndarray:
+        """Restore corners that tracing rounded off: a short edge between two long ones
+        is replaced by the point where the long edges meet."""
+        short = self.s.corner_mm * self.px
+        changed = True
+        while changed and len(polygon) > 3:
+            changed = False
+            n = len(polygon)
+            for i in range(n):
+                p0, p1, p2, p3 = (polygon[(i + k) % n] for k in (-1, 0, 1, 2))
+                edge = np.linalg.norm(p2 - p1)
+                if edge >= short or min(np.linalg.norm(p1 - p0), np.linalg.norm(p3 - p2)) < 2 * edge:
+                    continue
+                corner = _intersect(p0, p1, p2, p3)
+                if corner is None or np.linalg.norm(corner - (p1 + p2) / 2) > 2 * short:
+                    continue
+                polygon = np.delete(polygon, [(i + 1) % n], axis=0)
+                polygon[i if (i + 1) % n else i - 1] = corner
+                changed = True
+                break
+        return polygon
+
     # -- folds ------------------------------------------------------------------
 
-    def _folds(self, dashes: np.ndarray, outline: list[Point], px: float) -> list[Fold]:
+    def _folds(self, dashes: np.ndarray, support: np.ndarray, outline: list[Point], px: float) -> list[Fold]:
         found = cv2.HoughLinesP(dashes * 255, 1, np.pi / 720, 12,
                                 minLineLength=self.s.fold_min_mm * px,
                                 maxLineGap=self.s.fold_gap_mm * px)
@@ -165,8 +199,8 @@ class PageDetector:
         # Antialiased cut lines next to numbers can look like dashes; a real fold never runs along the cut.
         merged = [(a, b) for a, b in merged if not self._along_outline(polygon, a, b, 2.5)]
         folds = [Fold(a, b, self._fold_kind(dashes, a, b, px)) for a, b in merged]
-        self._snap(folds, polygon, self.s.snap_mm * px, self.s.fold_extend_mm * px)
-        return folds
+        # Numbers printed on a fold interrupt its dashes, so they count as support.
+        return self._span_piece(folds, polygon, support, px)
 
     @staticmethod
     def _merge_collinear(segments, gap: float, tolerance: float = 3.0):
@@ -212,94 +246,97 @@ class PageDetector:
         long = int((interior >= 15 * px / 7.09).sum())
         return FoldKind.MOUNTAIN if long >= max(1, 0.25 * len(interior)) else FoldKind.VALLEY
 
-    @staticmethod
-    def _snap(folds: list[Fold], polygon: np.ndarray, reach: float, extend: float) -> None:
+    def _span_piece(self, folds: list[Fold], polygon: np.ndarray, support: np.ndarray, px: float) -> list[Fold]:
+        """Stretch every fold into one straight line from cut edge to cut edge.
+
+        Each fold is extended from its midpoint in both directions to the first cut
+        edge it meets, and each end snaps to a cut corner when one is close. A stretched
+        line must still be mostly dashes, which rejects Hough lines that cut across a fan
+        of folds. Folds that end up on the same pair of edge points are one fold seen twice.
+        """
+        evidence = cv2.dilate(support, _kernel(5))
         vertices = polygon[:, 0, :].astype(float)
-        ends = [(fold, which) for fold in folds for which in ("a", "b")]
-        settled: dict[tuple[int, str], bool] = {}
-        for fold, which in ends:
-            point = np.asarray(getattr(fold, which))
-            other = np.asarray(fold.b if which == "a" else fold.a)
-            corner = PageDetector._vertex_on_line(other, point, vertices, reach, extend)
-            if corner is not None:
-                setattr(fold, which, tuple(corner))
-                settled[(id(fold), which)] = True
-                continue
-            hit = PageDetector._ray_to_outline(other, point, vertices, extend)
-            if hit is not None:
-                point = hit
-            distances = np.linalg.norm(vertices - point, axis=1)
-            nearest = int(np.argmin(distances))
-            if distances[nearest] <= reach:
-                setattr(fold, which, tuple(vertices[nearest]))
-                settled[(id(fold), which)] = True
-            elif abs(cv2.pointPolygonTest(polygon, (float(point[0]), float(point[1])), True)) <= reach:
-                setattr(fold, which, tuple(point))
-                settled[(id(fold), which)] = True
-        # Interior vertices: several fold ends meeting inside the piece.
-        loose = [(f, w) for f, w in ends if not settled.get((id(f), w))]
-        for fold, which in loose:
-            point = np.asarray(getattr(fold, which))
-            partners = [(f, w) for f, w in ends if f is not fold
-                        and math.dist(getattr(f, w), point) <= reach * 2]
-            if len(partners) >= 2:
-                group = [(fold, which)] + partners
-                centre = tuple(np.mean([getattr(f, w) for f, w in group], axis=0))
-                for f, w in group:
-                    setattr(f, w, centre)
-                    settled[(id(f), w)] = True
+        reach, extend = self.s.snap_mm * px, self.s.fold_extend_mm * px
+        spans: list[tuple[Fold, float]] = []
         for fold in folds:
-            fold.snapped = settled.get((id(fold), "a"), False) and settled.get((id(fold), "b"), False)
+            a, b = np.asarray(fold.a), np.asarray(fold.b)
+            mid, length = (a + b) / 2, np.linalg.norm(b - a)
+            if length == 0 or cv2.pointPolygonTest(polygon, (float(mid[0]), float(mid[1])), False) <= 0:
+                continue
+            u = (b - a) / length
+            # Crossings inside the detected dashes are corners the fold merely passes near.
+            hits = [t for t in self._crossings(mid, u, vertices, reach) if abs(t) >= length / 2 - reach]
+            ahead, behind = [t for t in hits if t > 0], [t for t in hits if t < 0]
+            if not ahead or not behind:
+                continue
+            start, end = mid + u * max(behind), mid + u * min(ahead)
+            if self._coverage(evidence, start, end) < self.s.fold_min_ink:
+                continue
+            ends = []
+            for point in (start, end):
+                distances = np.linalg.norm(vertices - point, axis=1)
+                nearest = int(np.argmin(distances))
+                ends.append(vertices[nearest] if distances[nearest] <= reach else point)
+            stretched = max(abs(max(behind)), min(ahead)) - length / 2
+            span = Fold(tuple(ends[0]), tuple(ends[1]), fold.kind, snapped=stretched <= extend)
+            if math.dist(span.a, span.b) >= self.s.fold_min_mm * px:
+                spans.append((span, length))
+        # Keep the best-supported copy of each fold.
+        kept: list[tuple[Fold, float]] = []
+        for span, support in sorted(spans, key=lambda item: -item[1]):
+            same = any(
+                (math.dist(span.a, k.a) <= reach and math.dist(span.b, k.b) <= reach)
+                or (math.dist(span.a, k.b) <= reach and math.dist(span.b, k.a) <= reach)
+                for k, _ in kept)
+            if not same:
+                kept.append((span, support))
+        return [span for span, _ in kept]
 
     @staticmethod
-    def _vertex_on_line(start: np.ndarray, end: np.ndarray, vertices: np.ndarray, reach: float, extend: float):
-        """The cut vertex the fold start->end points at, if one lies near its end."""
-        length = np.linalg.norm(end - start)
-        if length == 0:
-            return None
-        u = (end - start) / length
-        offsets = vertices - start
-        along = offsets @ u
-        across = np.abs(offsets @ np.array([-u[1], u[0]]))
-        candidates = np.flatnonzero((across <= reach) & (np.abs(along - length) <= extend))
-        if not len(candidates):
-            return None
-        return vertices[candidates[np.argmin(np.abs(along[candidates] - length))]]
+    def _coverage(mask: np.ndarray, a, b) -> float:
+        """Share of the line a-b (ends excluded) that lies on mask pixels."""
+        steps = max(2, int(math.dist(a, b)))
+        xs = np.linspace(a[0], b[0], steps)[1:-1].round().astype(int).clip(0, mask.shape[1] - 1)
+        ys = np.linspace(a[1], b[1], steps)[1:-1].round().astype(int).clip(0, mask.shape[0] - 1)
+        return float(mask[ys, xs].mean()) if len(xs) else 0.0
 
     @staticmethod
-    def _ray_to_outline(start: np.ndarray, end: np.ndarray, vertices: np.ndarray, extend: float):
-        """Where the line start->end crosses the outline nearest to `end`, within `extend` px."""
-        direction = end - start
-        length = np.linalg.norm(direction)
-        if length == 0:
-            return None
-        u = direction / length
-        best = None
+    def _crossings(origin: np.ndarray, u: np.ndarray, vertices: np.ndarray, corner_reach: float) -> list[float]:
+        """Distances along origin + t*u at which the line crosses the outline."""
+        hits = []
         for p, q in zip(vertices, np.roll(vertices, -1, axis=0)):
             edge = q - p
             denom = u[0] * edge[1] - u[1] * edge[0]
             if abs(denom) < 1e-9:
                 continue
-            offset = p - start
-            t = (offset[0] * edge[1] - offset[1] * edge[0]) / denom   # along the fold
-            s = (offset[0] * u[1] - offset[1] * u[0]) / denom          # along the edge
-            if 0 <= s <= 1 and abs(t - length) <= extend and (best is None or abs(t - length) < abs(best - length)):
-                best = t
-        return None if best is None else start + u * best
+            offset = p - origin
+            t = (offset[0] * edge[1] - offset[1] * edge[0]) / denom
+            s = (offset[0] * u[1] - offset[1] * u[0]) / denom
+            if 0 <= s <= 1:
+                hits.append(float(t))
+        # A fold that ends on a corner can slip between its two edges; count corners near the line.
+        offsets = vertices - origin
+        across = np.abs(offsets @ np.array([-u[1], u[0]]))
+        hits.extend(float(t) for t in (offsets @ u)[across <= corner_reach])
+        return hits
 
     # -- labels -----------------------------------------------------------------
 
-    def _labels(self, gray: np.ndarray, red: np.ndarray, glyph: np.ndarray, px: float):
-        """Group glyphs into numbers and trace each one's centerline for the pen."""
+    def _labels(self, gray: np.ndarray, text_core: np.ndarray, glyph: np.ndarray, px: float):
+        """Group glyphs into numbers; keep each one's crop, centre, direction and size."""
         grouped = cv2.dilate(glyph, _kernel(round(px)))
         count, groups, stats, _ = cv2.connectedComponentsWithStats(grouped, connectivity=8)
-        strokes_mask = (gray < 150) & ~red
         for i in range(1, count):
             x, y, w, h, _ = stats[i]
-            mask = (groups[y:y + h, x:x + w] == i) & strokes_mask[y:y + h, x:x + w] & (glyph[y:y + h, x:x + w] > 0)
-            strokes = self._centerlines(mask, min_length=2, offset=(x, y))
-            if strokes:
-                yield (int(x), int(y), int(w), int(h)), strokes
+            mask = groups[y:y + h, x:x + w] == i
+            ys, xs = np.nonzero(mask & text_core[y:y + h, x:x + w])
+            if len(xs) < 5:
+                continue
+            (cx, cy), (rw, rh), angle = cv2.minAreaRect(np.column_stack([xs, ys]).astype(np.float32))
+            if rw < rh:  # make the long side the reading direction
+                angle, rw, rh = angle + 90, rh, rw
+            ink = np.where(mask, 255 - gray[y:y + h, x:x + w], 0).clip(0, 255).astype(np.uint8)
+            yield Label((int(x), int(y), int(w), int(h)), (float(cx + x), float(cy + y)), float(angle), float(rh), ink)
 
     @staticmethod
     def _centerlines(mask: np.ndarray, min_length: int, offset: tuple[int, int] = (0, 0)) -> list[list[Point]]:

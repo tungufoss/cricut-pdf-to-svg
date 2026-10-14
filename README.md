@@ -4,7 +4,7 @@ A local tool for converting papercraft PDF pages into Cricut-oriented SVG paths.
 
 ## Convert the Bowser template
 
-The source PDF is kept locally at `data/bowser.pdf` and is ignored by Git. The manifest at `data/bowser.yaml` maps its pages to cardstock materials. Install Python 3.10 or newer and Poppler (`pdftoppm`), then from the repository root run:
+The source PDF is kept locally at `data/bowser.pdf` and is ignored by Git. The manifest at `data/bowser.yaml` maps its pages to cardstock materials. Install Python 3.10 or newer, Poppler (`pdftoppm`) and Tesseract OCR (`tesseract`), then from the repository root run:
 
 ```sh
 make install
@@ -30,7 +30,8 @@ Each stage is a class in `src/cricut_pdf_svg/`:
 | --- | --- | --- |
 | Manifest | `config.py` | Reads the YAML: source PDF, sheet size, pages per cardstock. |
 | Render | `render.py` | Renders each page with `pdftoppm` at 180 dpi; the PNG is kept in `output/<project>/previews/`. |
-| Detect | `detect.py` | Separates grey cut lines, dashed folds and black edge numbers. Piece interiors are areas enclosed by cut lines; folds are found with a Hough transform, joined across numbers printed on them, classified as mountain (dash-dot) or valley (dashed), and snapped to the cut vertices they end on. Numbers are traced to single centerlines for the Cricut pen. |
+| Detect | `detect.py` | Separates grey cut lines, dashed folds and black edge numbers. Piece interiors are areas enclosed by cut lines. Folds are found with a Hough transform, classified as mountain (dash-dot) or valley (dashed), and stretched into one straight line from cut edge to cut edge; a line that is not mostly printed dashes is dropped. |
+| Read numbers | `ocr.py` | Tesseract reads each number; its confident reads train a digit matcher on the template's own font, which reads every number again. Every edge number is printed exactly twice, so uncertain reads prefer the candidate that completes a pair. |
 | Model | `model.py` | `Piece`, `Fold`, `Label` and `PageLayout`, in page pixels. |
 | Write | `svg.py` | One Inkscape SVG for the whole project, in millimetres. |
 
@@ -39,10 +40,12 @@ Each stage is a class in `src/cricut_pdf_svg/`:
 `bowser.svg` needs Inkscape 1.2 or newer. Every PDF page is an Inkscape page laid out left to right at its true size (US Letter for this source). The layers are:
 
 - **Source**: the rendered scans, locked and faint, to compare traces against.
-- **Pieces**, with one sublayer per cardstock: each piece is one group named like `piece-04-03`, holding its `Cut` outline, `Score` folds (`Mountain folds` dash-dot blue, `Valley folds` dashed green) and `Draw` edge numbers. The group carries `data-material` for later nesting.
+- **Pieces**, with one sublayer per cardstock: each piece is one group named like `piece-04-03`, holding its `Cut` outline, `Score` folds (`Mountain folds` dash-dot blue, `Valley folds` dashed green) and `Draw` edge numbers as rotated text. The group carries `data-material` for later nesting.
 - **Review** (hidden): artwork outside every piece, such as credits, instructions or an outline the detector could not close. Move anything that belongs to a piece into it.
 
-Pieces whose folds could not be tied to a cut vertex are labelled `⚠ check folds` and the fold path has `data-review="unsnapped"`. Search for them with Edit > Find. Before uploading to Design Space, delete the Source and Review layers, then assign Score to the fold paths and Draw/Pen to the number paths and attach them to each cut outline.
+Numbers the reader is unsure of are orange (`data-review="ocr"`), and their piece is labelled `⚠ check numbers`. On the Bowser template about 56% of numbers are read with confidence, and a spot check put those at roughly 90% correct; the orange ones are wrong more often. Folds that had to be stretched far to reach the cut have `data-review="unsnapped"` and the piece is labelled `⚠ check folds`. Search for either with Edit > Find.
+
+The numbers are text, so you can correct one by double-clicking it. For the Cricut pen, turn them into single-stroke paths with Extensions > Text > Hershey Text before export. Before uploading to Design Space, delete the Source and Review layers, then assign Score to the fold paths and Draw/Pen to the number paths and attach them to each cut outline.
 
 ## Intended workflow
 

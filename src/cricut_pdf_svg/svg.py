@@ -23,7 +23,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape, quoteattr
 
 from .config import Material
-from .model import FoldKind, PageLayout, Piece, Point
+from .model import FoldKind, Label, PageLayout, Piece, Point
 from .render import PageImage
 
 CUT_STYLE = "fill:none;stroke:#000000;stroke-width:0.25"
@@ -31,7 +31,8 @@ FOLD_STYLE = {
     FoldKind.MOUNTAIN: "fill:none;stroke:#1f5fbf;stroke-width:0.25;stroke-dasharray:2.5,0.8,0.4,0.8",
     FoldKind.VALLEY: "fill:none;stroke:#2e8b57;stroke-width:0.25;stroke-dasharray:1.5,1",
 }
-DRAW_STYLE = "fill:none;stroke:#8e24aa;stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round"
+DRAW_STYLE = "fill:#8e24aa;stroke:none;font-family:Arial,sans-serif;font-weight:bold;text-anchor:middle"
+UNSURE_FILL = "#e65100"  # numbers the reader was unsure of
 REVIEW_STYLE = "fill:none;stroke:#e65100;stroke-width:0.2"
 PAGE_GAP_MM = 20.0
 
@@ -77,7 +78,7 @@ class InkscapeSvgWriter:
             group = by_material.setdefault(page.material.id, (page.material, []))[1]
             group.extend(self._piece(piece, pen) for piece in page.layout.pieces)
             stray = [pen.path(points) for points in page.layout.stray_lines]
-            stray += [pen.path(points) for label in page.layout.stray_labels for points in label.strokes]
+            stray += [pen.box(label.box) for label in page.layout.stray_labels]
             reviews.append(f'<g id="review-{number:02d}" inkscape:label="Page {number:02d}">\n' + "\n".join(stray) + "\n</g>")
 
         materials = "\n".join(
@@ -111,9 +112,11 @@ class InkscapeSvgWriter:
 
     @staticmethod
     def _piece(piece: Piece, pen: "_Pen") -> str:
-        flag = " ⚠ check folds" if piece.needs_review else ""
+        checks = [what for what, needed in (("folds", any(not f.snapped for f in piece.folds)),
+                                              ("numbers", any(not l.trusted for l in piece.labels))) if needed]
+        flag = f" ⚠ check {' and '.join(checks)}" if checks else ""
         cut = "\n".join(pen.path(points, closed=True) for points in [piece.outline, *piece.holes])
-        draw = "\n".join(pen.path(points) for label in piece.labels for points in label.strokes)
+        draw = "\n".join(pen.text(label) for label in piece.labels)
         score = []
         for kind in FoldKind:
             lines = "\n".join(pen.path([f.a, f.b], extra="" if f.snapped else ' data-review="unsnapped"')
@@ -135,6 +138,18 @@ class _Pen:
     def __init__(self, mm_per_px: float, offset_mm: float):
         self.scale = mm_per_px
         self.offset = offset_mm
+
+    def box(self, box: tuple[int, int, int, int]) -> str:
+        x, y, w, h = box
+        return self.path([(x, y), (x + w, y), (x + w, y + h), (x, y + h)], closed=True)
+
+    def text(self, label: Label) -> str:
+        s = self.scale
+        cx, cy = label.center[0] * s + self.offset, label.center[1] * s
+        size = label.height * s / 0.72  # digit height is about 0.72 em
+        unsure = "" if label.trusted else f' fill="{UNSURE_FILL}" data-review="ocr"'
+        return (f'<text x="{cx:.3f}" y="{cy:.3f}" font-size="{size:.2f}" dominant-baseline="central" '
+                f'transform="rotate({label.angle:.1f} {cx:.3f} {cy:.3f})"{unsure}>{escape(label.text)}</text>')
 
     def path(self, points: list[Point], closed: bool = False, extra: str = "") -> str:
         s, ox = self.scale, self.offset

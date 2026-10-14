@@ -8,6 +8,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
+import numpy as np
+
 Point = tuple[float, float]  # (x, y)
 
 
@@ -27,9 +29,19 @@ class Fold:
 
 @dataclass
 class Label:
-    """A printed edge number, kept as centerline strokes for the Cricut pen."""
+    """A printed edge number: where it sits, which way it reads, and what it says."""
     box: tuple[int, int, int, int]       # x, y, w, h
-    strokes: list[list[Point]]
+    center: Point
+    angle: float                          # degrees clockwise that turn upright text into place
+    height: float                         # digit height in px
+    ink: np.ndarray = field(repr=False)   # white-on-black crop used for reading
+    text: str = ""
+    confident: bool = False              # both readers agreed, or Tesseract was sure
+    paired: bool = False                 # the same number is printed exactly twice
+
+    @property
+    def trusted(self) -> bool:
+        return self.confident and self.paired
 
 
 @dataclass
@@ -43,7 +55,7 @@ class Piece:
 
     @property
     def needs_review(self) -> bool:
-        return any(not fold.snapped for fold in self.folds)
+        return any(not fold.snapped for fold in self.folds) or any(not l.trusted for l in self.labels)
 
 
 @dataclass
@@ -52,5 +64,5 @@ class PageLayout:
     page: int
     material: str
     pieces: list[Piece]
-    stray_labels: list[Label] = field(default_factory=list)
+    stray_labels: list[Label] = field(default_factory=list)   # credits and instructions
     stray_lines: list[list[Point]] = field(default_factory=list)
