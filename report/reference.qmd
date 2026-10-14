@@ -1,0 +1,72 @@
+---
+title: "Reference"
+---
+
+## Command line
+
+`python -m src.lowpoly_pdf_to_svg [options]`
+
+| Option | Default | Description |
+|---|---|---|
+| `--config` | `data/bowser.yaml` | Project YAML manifest |
+| `--output` | `output/<project>` | Output directory |
+| `--dpi` | `180` | PDF render resolution |
+| `--page` | all pages | Convert only this 1-based page; repeatable |
+| `--pdftoppm` | `pdftoppm` | Poppler `pdftoppm` executable |
+
+## Make targets
+
+| Target | What it does |
+|---|---|
+| `make` | Convert every page in the manifest into `output/<project>/<project>.svg` |
+| `make page PAGE=4` | Convert one page into `output/<project>/page-4/` |
+| `make install` | Install the Python dependencies |
+| `make report` | Render this site into `report/_site` |
+| `make preview` | Serve this site on localhost and re-render on save |
+| `make report-data` | Copy the edge table and summary into `report/data/` for GitHub Pages; commit them to update the public site |
+| `make clean` | Remove generated output |
+
+## Manifest
+
+```{.yaml filename="data/bowser.yaml"}
+project: bowser
+
+source:
+  pdf: bowser.pdf          # in data/, not committed
+  page_size: letter
+
+folds:                     # which printed line style is which fold
+  dash_dot: mountain       # Pepakura default; swap if a template
+  dashed: valley           # draws mountain folds dashed
+
+output:
+  default_sheet: a4        # a4 or 12x12 for nesting
+
+materials:                 # one entry per cardstock colour
+  - id: red
+    name: Red cardstock
+    pages: [4, 5, 6, 7, 8, 9, 10]
+```
+
+## Outputs
+
+| File | Contents |
+|---|---|
+| `output/<project>/<project>.svg` | One Inkscape SVG, every page side by side; document size in inches, drawing in millimetres |
+| `output/<project>/previews/<project>-page-PP-<material>.png` | Each PDF page as rendered for tracing |
+| `output/<project>/<project>-edges.csv` | One row per printed edge number, read by the [glue pairs](glue-pairs.qmd) page |
+| `output/<project>/<project>-report.md` | Summary of the edge check, shown on the home page |
+
+### Edge table columns
+
+| Column | Description |
+|---|---|
+| `number` | The printed edge number, as text (leading zeros kept) |
+| `piece` | Piece id `piece-PP-NN`, PP the PDF page |
+| `side` | `edge`, `tab` or `none` (no cut edge found under the number) |
+| `length_mm` | Length of that edge |
+| `x_mm`, `y_mm` | Position of the number on its page |
+| `ocr_trusted` | `yes` when the number was read with confidence |
+| `partner_piece`, `partner_side`, `partner_length_mm` | The other place the same number is printed |
+| `length_diff_mm` | Difference between the two edge lengths |
+| `status` | `ok`, `length mismatch`, `both tabs`, `no tab`, `unpaired`, `line not found`, `printed N times` |
