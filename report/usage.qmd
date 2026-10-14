@@ -18,7 +18,7 @@ Each stage is a class in `src/lowpoly_pdf_to_svg/`:
 
 ## Reviewing in Inkscape
 
-`bowser.svg` needs Inkscape 1.2 or newer. Every PDF page is an Inkscape page laid out left to right at its true size (US Letter for this source). The layers are:
+`bowser.svg` needs Inkscape 1.2 or newer. Every PDF page is an Inkscape page at its true size (US Letter for this source), with one row of pages per cardstock. The layers are:
 
 - **Source**: the rendered scans, locked and faint, to compare traces against.
 - **Pieces**, with one sublayer per cardstock: each piece is one group named like `piece-04-03`, holding its `Cut` outline, `Score` folds (`Mountain folds` dash-dot blue, `Valley folds` dashed green) and `Draw` edge numbers as rotated text. The group carries `data-material` for later nesting.

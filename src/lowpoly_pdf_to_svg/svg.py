@@ -1,6 +1,6 @@
 """Stage 3: write the whole project as one Inkscape review SVG.
 
-Every PDF page becomes an Inkscape page (Inkscape 1.2+), laid out left to right.
+Every PDF page becomes an Inkscape page (Inkscape 1.2+), one row per cardstock.
 The document size is given in inches, as Cricut Design Space expects; drawing
 coordinates (the viewBox) stay in millimetres, so both read the true size.
 Layers span the whole file:
@@ -60,24 +60,33 @@ class InkscapeSvgWriter:
         path.write_text(self.render(path.parent), encoding="utf-8")
 
     def render(self, directory: Path) -> str:
-        offsets, x = [], 0.0
+        # One row of pages per cardstock, rows in the order the materials first appear.
+        rows: dict[str, list[PageResult]] = {}
         for page in self.pages:
-            offsets.append(x)
-            x += page.image.size_mm[0] + PAGE_GAP_MM
-        width = max(x - PAGE_GAP_MM, 1.0)
-        height = max((p.image.size_mm[1] for p in self.pages), default=1.0)
+            rows.setdefault(page.material.id, []).append(page)
+        offsets: dict[int, tuple[float, float]] = {}
+        width, y = 1.0, 0.0
+        for row in rows.values():
+            x = 0.0
+            for page in row:
+                offsets[id(page)] = (x, y)
+                x += page.image.size_mm[0] + PAGE_GAP_MM
+            width = max(width, x - PAGE_GAP_MM)
+            y += max(p.image.size_mm[1] for p in row) + PAGE_GAP_MM
+        height = max(y - PAGE_GAP_MM, 1.0)
 
         inkscape_pages, sources, reviews = [], [], []
         by_material: dict[str, tuple[Material, list[str]]] = {}
-        for page, ox in zip(self.pages, offsets):
+        for page in self.pages:
+            ox, oy = offsets[id(page)]
             w, h = page.image.size_mm
             number = page.layout.page
             inkscape_pages.append(f'<inkscape:page id="page-{number:02d}" inkscape:label="Page {number:02d} · '
-                                  f'{escape(page.material.name)}" x="{ox:.3f}" y="0" width="{w:.3f}" height="{h:.3f}"/>')
+                                  f'{escape(page.material.name)}" x="{ox:.3f}" y="{oy:.3f}" width="{w:.3f}" height="{h:.3f}"/>')
             href = Path(os.path.relpath(page.image.path, directory)).as_posix()
-            sources.append(f'<image id="source-{number:02d}" xlink:href={quoteattr(href)} x="{ox:.3f}" y="0" '
+            sources.append(f'<image id="source-{number:02d}" xlink:href={quoteattr(href)} x="{ox:.3f}" y="{oy:.3f}" '
                            f'width="{w:.3f}" height="{h:.3f}" preserveAspectRatio="none"/>')
-            pen = _Pen(page.image.mm_per_px, ox)
+            pen = _Pen(page.image.mm_per_px, ox, oy)
             group = by_material.setdefault(page.material.id, (page.material, []))[1]
             group.extend(self._piece(piece, pen) for piece in page.layout.pieces)
             stray = [pen.path(points) for points in page.layout.stray_lines]
@@ -138,9 +147,10 @@ class InkscapeSvgWriter:
 class _Pen:
     """Converts page pixels to document millimetres, shifted onto the page's slot."""
 
-    def __init__(self, mm_per_px: float, offset_mm: float):
+    def __init__(self, mm_per_px: float, offset_mm: float, top_mm: float = 0.0):
         self.scale = mm_per_px
         self.offset = offset_mm
+        self.top = top_mm
 
     def box(self, box: tuple[int, int, int, int]) -> str:
         x, y, w, h = box
@@ -148,13 +158,13 @@ class _Pen:
 
     def text(self, label: Label) -> str:
         s = self.scale
-        cx, cy = label.center[0] * s + self.offset, label.center[1] * s
+        cx, cy = label.center[0] * s + self.offset, label.center[1] * s + self.top
         size = label.height * s / 0.72  # digit height is about 0.72 em
         unsure = "" if label.trusted else f' fill="{UNSURE_FILL}" data-review="ocr"'
         return (f'<text x="{cx:.3f}" y="{cy:.3f}" font-size="{size:.2f}" dominant-baseline="central" '
                 f'transform="rotate({label.angle:.1f} {cx:.3f} {cy:.3f})"{unsure}>{escape(label.text)}</text>')
 
     def path(self, points: list[Point], closed: bool = False, extra: str = "") -> str:
-        s, ox = self.scale, self.offset
-        commands = " ".join(f"{x * s + ox:.3f},{y * s:.3f}" for x, y in points)
+        s, ox, oy = self.scale, self.offset, self.top
+        commands = " ".join(f"{x * s + ox:.3f},{y * s + oy:.3f}" for x, y in points)
         return f'<path d="M {commands}{" Z" if closed else ""}"{extra}/>'
