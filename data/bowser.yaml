@@ -1,7 +1,7 @@
 project: bowser
 
 source:
-  pdf: ../bowser.pdf
+  pdf: bowser.pdf
   page_size: letter
 
 output:

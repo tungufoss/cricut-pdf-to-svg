@@ -1,0 +1,7 @@
+# Source PDFs are user-supplied and not redistributed.
+data/*.pdf
+data/*.png
+# Generated output is reproducible with `make`.
+output/
+__pycache__/
+*.pyc

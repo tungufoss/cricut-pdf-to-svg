@@ -1,6 +1,25 @@
 # Cricut PDF to SVG
 
-A tool for turning papercraft PDF templates into grouped, Cricut-ready SVG layouts. The repository is in the planning stage; the converter and nesting workflow are not implemented yet.
+A local tool for converting papercraft PDF pages into Cricut-oriented SVG paths. The first Bowser converter is implemented; visual correction, piece grouping, and sheet nesting remain future work.
+
+## Convert the Bowser template
+
+The source PDF is kept locally at `data/bowser.pdf` and is ignored by Git. The manifest at `data/bowser.yaml` maps its pages to cardstock materials. Install Python 3.10 or newer and Poppler (`pdftoppm`), then from the repository root run:
+
+```powershell
+python -m pip install -r requirements.txt
+python -m src.cricut_pdf_svg --config data/bowser.yaml
+```
+
+The converter writes one SVG for each page assigned in the manifest under `output/bowser/`, plus rendered review images under `output/bowser/previews/`. SVGs use the PDF page's original physical size (US Letter for this source) and contain named Cut, Score, and Draw groups. The Draw group is empty because the edge numbers need recognition and matching; add or correct them manually before cutting. The fold classification is heuristic and must also be reviewed against the preview.
+
+To convert just one page while reviewing the output:
+
+```powershell
+python -m src.cricut_pdf_svg --config data/bowser.yaml --page 4
+```
+
+If Poppler is not on `PATH`, pass its executable explicitly with `--pdftoppm C:\path\to\pdftoppm.exe`. The exporter preserves source-page scale; it does not yet regroup individual pieces or nest them onto the manifest's A4 sheet. Before cutting, compare every SVG with its preview, confirm the Cut and Score paths, add the edge-number Draw paths, then set Cricut operations and attach each item's operations in Design Space.
 
 ## Intended workflow
 
@@ -12,7 +31,7 @@ A tool for turning papercraft PDF templates into grouped, Cricut-ready SVG layou
 
 Cricut Design Space imports SVG vectors as Cut by default. After import, assign the fold layer to Score and the number layer to Draw/Pen, then attach them to the matching cut pieces. See [Cricut's SVG upload guide](https://help.cricut.com/hc/en-us/articles/360009556313-How-to-upload-images-into-Design-Space) and [operation guide](https://help.cricut.com/hc/en-us/articles/26922998476183-Design-Space-Selecting-Operation).
 
-See PLAN.md for the proposed development stages.
+See PLAN.md for the remaining development stages.
 
 ## Bowser papercraft credit
 
