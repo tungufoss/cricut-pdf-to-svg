@@ -14,7 +14,7 @@ Each stage is a class in `src/lowpoly_pdf_to_svg/`:
 | Read numbers | `ocr.py` | Tesseract reads each number; its confident reads train a digit matcher on the template's own font, which reads every number again. Every edge number is printed exactly twice, so uncertain reads prefer the candidate that completes a pair. |
 | Edge pairs | `edges.py` | Links each number to the line it marks (a plain cut edge, or the fold of a glue tab) and pairs the two copies. Writes `<project>-edges.csv` and the summary `<project>-report.md`: a good pair is one tab and one plain edge of the same length. |
 | Model | `model.py` | `Piece`, `Fold`, `Label` and `PageLayout`, in page pixels. |
-| Write | `svg.py` | One Inkscape SVG for the whole project, in millimetres. |
+| Write | `svg.py` | One Inkscape SVG for the whole project: document size in inches for Cricut Design Space, drawing coordinates in millimetres. |
 
 ## Reviewing in Inkscape
 

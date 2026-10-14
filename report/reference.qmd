@@ -51,7 +51,7 @@ materials:                 # one entry per cardstock colour
 
 | File | Contents |
 |---|---|
-| `output/<project>/<project>.svg` | One Inkscape SVG, every page side by side, in millimetres |
+| `output/<project>/<project>.svg` | One Inkscape SVG, every page side by side; document size in inches, drawing in millimetres |
 | `output/<project>/previews/<project>-page-PP-<material>.png` | Each PDF page as rendered for tracing |
 | `output/<project>/<project>-edges.csv` | One row per printed edge number, read by the [glue pairs](glue-pairs.qmd) page |
 | `output/<project>/<project>-report.md` | Summary of the edge check, shown on the home page |

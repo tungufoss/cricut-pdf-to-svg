@@ -1,7 +1,9 @@
 """Stage 3: write the whole project as one Inkscape review SVG.
 
 Every PDF page becomes an Inkscape page (Inkscape 1.2+), laid out left to right.
-Layers span the whole file, in millimetres:
+The document size is given in inches, as Cricut Design Space expects; drawing
+coordinates (the viewBox) stay in millimetres, so both read the true size.
+Layers span the whole file:
 
 * "Source" layer (locked, faint): the rendered pages, for checking traces by eye.
 * "Pieces" layer with one sublayer per cardstock: one group per piece, each holding
@@ -35,6 +37,7 @@ DRAW_STYLE = "fill:#8e24aa;stroke:none;font-family:Arial,sans-serif;font-weight:
 UNSURE_FILL = "#e65100"  # numbers the reader was unsure of
 REVIEW_STYLE = "fill:none;stroke:#e65100;stroke-width:0.2"
 PAGE_GAP_MM = 20.0
+MM_PER_INCH = 25.4
 
 
 @dataclass
@@ -91,7 +94,7 @@ class InkscapeSvgWriter:
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
      xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
      xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-     width="{width:.3f}mm" height="{height:.3f}mm" viewBox="0 0 {width:.3f} {height:.3f}">
+     width="{width / MM_PER_INCH:.4f}in" height="{height / MM_PER_INCH:.4f}in" viewBox="0 0 {width:.3f} {height:.3f}">
 <title>{escape(self.title)}</title>
 <sodipodi:namedview inkscape:document-units="mm">
 {nl.join(inkscape_pages)}
