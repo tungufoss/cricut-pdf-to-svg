@@ -1,25 +1,48 @@
 # Cricut PDF to SVG
 
-A local tool for converting papercraft PDF pages into Cricut-oriented SVG paths. The first Bowser converter is implemented; visual correction, piece grouping, and sheet nesting remain future work.
+A local tool for converting papercraft PDF pages into Cricut-oriented SVG paths. It detects every piece, its mountain and valley folds and its edge numbers, and writes the whole template as one Inkscape file for review. Sheet nesting is future work.
 
 ## Convert the Bowser template
 
 The source PDF is kept locally at `data/bowser.pdf` and is ignored by Git. The manifest at `data/bowser.yaml` maps its pages to cardstock materials. Install Python 3.10 or newer and Poppler (`pdftoppm`), then from the repository root run:
 
-```powershell
+```sh
+make install
+make                 # all pages -> output/bowser/bowser.svg
+make page PAGE=4     # one page -> output/bowser/page-4/bowser.svg
+```
+
+Without `make`, run the same steps directly:
+
+```sh
 python -m pip install -r requirements.txt
 python -m src.cricut_pdf_svg --config data/bowser.yaml
+python -m src.cricut_pdf_svg --config data/bowser.yaml --page 4 --output output/bowser/page-4
 ```
 
-The converter writes one SVG for each page assigned in the manifest under `output/bowser/`, plus rendered review images under `output/bowser/previews/`. SVGs use the PDF page's original physical size (US Letter for this source) and contain named Cut, Score, and Draw groups. The Draw group is empty because the edge numbers need recognition and matching; add or correct them manually before cutting. The fold classification is heuristic and must also be reviewed against the preview.
+If Poppler is not on `PATH`, add `--pdftoppm C:\path\to\pdftoppm.exe`.
 
-To convert just one page while reviewing the output:
+## Pipeline
 
-```powershell
-python -m src.cricut_pdf_svg --config data/bowser.yaml --page 4
-```
+Each stage is a class in `src/cricut_pdf_svg/`:
 
-If Poppler is not on `PATH`, pass its executable explicitly with `--pdftoppm C:\path\to\pdftoppm.exe`. The exporter preserves source-page scale; it does not yet regroup individual pieces or nest them onto the manifest's A4 sheet. Before cutting, compare every SVG with its preview, confirm the Cut and Score paths, add the edge-number Draw paths, then set Cricut operations and attach each item's operations in Design Space.
+| Stage | Module | What it does |
+| --- | --- | --- |
+| Manifest | `config.py` | Reads the YAML: source PDF, sheet size, pages per cardstock. |
+| Render | `render.py` | Renders each page with `pdftoppm` at 180 dpi; the PNG is kept in `output/<project>/previews/`. |
+| Detect | `detect.py` | Separates grey cut lines, dashed folds and black edge numbers. Piece interiors are areas enclosed by cut lines; folds are found with a Hough transform, joined across numbers printed on them, classified as mountain (dash-dot) or valley (dashed), and snapped to the cut vertices they end on. Numbers are traced to single centerlines for the Cricut pen. |
+| Model | `model.py` | `Piece`, `Fold`, `Label` and `PageLayout`, in page pixels. |
+| Write | `svg.py` | One Inkscape SVG for the whole project, in millimetres. |
+
+## Reviewing in Inkscape
+
+`bowser.svg` needs Inkscape 1.2 or newer. Every PDF page is an Inkscape page laid out left to right at its true size (US Letter for this source). The layers are:
+
+- **Source**: the rendered scans, locked and faint, to compare traces against.
+- **Pieces**, with one sublayer per cardstock: each piece is one group named like `piece-04-03`, holding its `Cut` outline, `Score` folds (`Mountain folds` dash-dot blue, `Valley folds` dashed green) and `Draw` edge numbers. The group carries `data-material` for later nesting.
+- **Review** (hidden): artwork outside every piece, such as credits, instructions or an outline the detector could not close. Move anything that belongs to a piece into it.
+
+Pieces whose folds could not be tied to a cut vertex are labelled `⚠ check folds` and the fold path has `data-review="unsnapped"`. Search for them with Edit > Find. Before uploading to Design Space, delete the Source and Review layers, then assign Score to the fold paths and Draw/Pen to the number paths and attach them to each cut outline.
 
 ## Intended workflow
 
