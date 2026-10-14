@@ -198,6 +198,7 @@ class PageDetector:
         polygon = np.asarray(outline, np.float32).reshape(-1, 1, 2)
         # Antialiased cut lines next to numbers can look like dashes; a real fold never runs along the cut.
         merged = [(a, b) for a, b in merged if not self._along_outline(polygon, a, b, 2.5)]
+        merged = [self._refit(dashes, a, b) for a, b in merged]
         folds = [Fold(a, b, self._fold_kind(dashes, a, b, px)) for a, b in merged]
         # Numbers printed on a fold interrupt its dashes, so they count as support.
         return self._span_piece(folds, polygon, support, px)
@@ -222,6 +223,28 @@ class PageDetector:
             else:
                 merged.append([p, q])
         return [(tuple(a), tuple(b)) for a, b in merged]
+
+    @staticmethod
+    def _refit(dashes: np.ndarray, a: Point, b: Point, band: float = 3.0) -> tuple[Point, Point]:
+        """Least-squares line through the dash pixels near a Hough segment (Hough is quantised)."""
+        ys, xs = np.nonzero(dashes)
+        points = np.column_stack([xs, ys]).astype(np.float64)
+        p, q = np.asarray(a), np.asarray(b)
+        length = np.linalg.norm(q - p)
+        if length == 0:
+            return a, b
+        u = (q - p) / length
+        offsets = points - p
+        along, across = offsets @ u, offsets @ np.array([-u[1], u[0]])
+        near = points[(np.abs(across) <= band) & (along >= -band) & (along <= length + band)]
+        if len(near) < 10:
+            return a, b
+        vx, vy, x0, y0 = cv2.fitLine(near.astype(np.float32), cv2.DIST_HUBER, 0, 0.01, 0.01).ravel()
+        d, origin = np.array([vx, vy]), np.array([x0, y0])
+        if d @ u < 0:
+            d = -d
+        ts = (near - origin) @ d
+        return tuple(origin + d * ts.min()), tuple(origin + d * ts.max())
 
     @staticmethod
     def _along_outline(polygon: np.ndarray, a: Point, b: Point, distance: float) -> bool:
