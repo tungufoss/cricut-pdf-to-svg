@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 from .config import Project
+from .corrections import Correction, Corrections
 from .detect import PageDetector
 from .edges import EdgeTable
 from .ocr import EdgeNumberReader, read_paper
@@ -76,13 +77,28 @@ def main() -> int:
     reader = EdgeNumberReader()
     if not reader.available:
         print("warning: tesseract was not found, so edge numbers are left as '?'", file=sys.stderr)
+    corrections = Corrections.load(output / f"{project.name}-corrections.csv")
     new_labels = [label for _, layout, _ in fresh for piece in layout.pieces for label in piece.labels]
-    print(f"reading {len(new_labels)} edge numbers ...", flush=True)
-    reader.read_all(new_labels)
+    known = corrections.match([(layout, page.mm_per_px) for page, layout, _ in fresh])
+    print(f"reading {len(new_labels)} edge numbers ({len(known)} corrected by hand teach the reader) ...", flush=True)
+    reader.read_all(new_labels, known)
     cache.mkdir(parents=True, exist_ok=True)
     for page, layout, _ in fresh:
         with (cache / f"page-{layout.page:02d}.pickle").open("wb") as handle:
             pickle.dump((page, layout), handle)
+    if corrections.rows:
+        applied, missed = corrections.apply([(layout, page.mm_per_px) for page, layout, _ in results])
+        print(f"applied {applied} hand corrections" + (f", {len(missed)} matched no number: "
+              + ", ".join(f"{c.piece} {c.read}->{c.number}" for c in missed) if missed else ""))
+    # Clear-cut misreads are fixed without asking; the rest wait for the number check page.
+    measured = [(layout, page.mm_per_px) for page, layout, _ in results]
+    first = EdgeTable()
+    for layout, mm in measured:
+        first.add(layout, mm)
+    sure = [m for m in first.misreads() if m["sure"] == "yes"]
+    Corrections([Correction(m["piece"], float(m["x_mm"]), float(m["y_mm"]), m["read"], m["suggested"])
+                 for m in sure]).apply(measured)
+    print(f"fixed {len(sure)} clear-cut misreads without asking")
     labels = [label for _, layout, _ in results for piece in layout.pieces for label in piece.labels]
 
     writer = InkscapeSvgWriter(f"{project.name.title()} papercraft")
@@ -96,13 +112,14 @@ def main() -> int:
     if flagged:
         print(f"check: {', '.join(flagged)}")
     table = EdgeTable()
-    for page, layout, _ in results:
-        table.add(layout, page.mm_per_px)
+    for layout, mm in measured:
+        table.add(layout, mm)
     edges = output / f"{project.name}-edges.csv"
     statuses = table.write(edges)
-    misreads = table.write_misreads(output / f"{project.name}-misreads.csv")
-    print(f"Wrote {output / (project.name + '-misreads.csv')}: {len(misreads)} likely misreads")
-    table.write_report(output / "README.md", project.name, datetime.date.today().isoformat())
+    misreads = table.write_misreads(output / f"{project.name}-misreads.csv",
+                                    applied=[dict(m, sure="applied") for m in sure])
+    print(f"Wrote {output / (project.name + '-misreads.csv')}: {len(misreads)} likely misreads left to check")
+    table.write_report(output / "README.md", project.name, datetime.date.today().isoformat(), applied=len(sure))
     print(f"Wrote {edges}: " + ", ".join(f"{n} {s}" for s, n in statuses.most_common()))
     target = output / f"{project.name}.svg"
     writer.write(target)

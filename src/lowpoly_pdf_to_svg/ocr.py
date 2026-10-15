@@ -101,8 +101,11 @@ class EdgeNumberReader:
         self.templates = np.zeros((0, HEIGHT * CELL_WIDTH))
         self.digits = np.zeros(0, dtype="<U1")
 
-    def read_all(self, labels: list[Label]) -> None:
-        """Fill in text, orientation and confidence on every label, in place."""
+    def read_all(self, labels: list[Label], known: dict[int, str] | None = None) -> None:
+        """Fill in text, orientation and confidence on every label, in place. Labels in
+        `known` (id(label) -> text, from hand corrections) keep that text and also teach
+        the digit matcher, so each correction helps read the other numbers."""
+        known = known or {}
         if not labels:
             return
         if not self.available:
@@ -112,11 +115,15 @@ class EdgeNumberReader:
         os.environ.setdefault("OMP_THREAD_LIMIT", "1")  # one thread per Tesseract process
         with ThreadPoolExecutor(self.workers) as pool:
             tesseract = list(pool.map(self._tesseract, labels))
-        self._train(labels, tesseract)
+        self._train(labels, tesseract, known)
         candidates = [self._candidates(label) for label in labels]
         decided: list[int] = []
         for i, (label, (t_text, t_conf, t_flip), options) in enumerate(zip(labels, tesseract, candidates)):
-            if t_text and ((options and t_text == options[0][0]) or t_conf >= TRUST):
+            if id(label) in known:
+                label.text, label.confident = known[id(label)], True
+                label.angle = (label.angle + (t_flip if t_text else 0)) % 360
+                decided.append(i)
+            elif t_text and ((options and t_text == options[0][0]) or t_conf >= TRUST):
                 label.text, label.confident = t_text, True
                 label.angle = (label.angle + t_flip) % 360
                 decided.append(i)
@@ -171,9 +178,12 @@ class EdgeNumberReader:
                     best = (text, conf, flip)
         return best
 
-    def _train(self, labels: list[Label], tesseract) -> None:
+    def _train(self, labels: list[Label], tesseract, known: dict[int, str]) -> None:
         samples: dict[str, list[np.ndarray]] = collections.defaultdict(list)
         for label, (text, conf, flip) in zip(labels, tesseract):
+            if id(label) in known:
+                # A hand-corrected number teaches its digits, upright as Tesseract turned it.
+                text, conf = known[id(label)], math.inf
             if conf < TRAIN or not 2 <= len(text) <= 3:
                 continue
             image = _upright(label.ink, label.angle + flip)

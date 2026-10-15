@@ -11,3 +11,4 @@ __pycache__/
 *.pyc
 data/*/review.png
 data/*/cache/
+data/*/*-check.json

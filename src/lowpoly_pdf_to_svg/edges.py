@@ -16,6 +16,8 @@ from pathlib import Path
 from .model import Label, PageLayout
 
 LENGTH_TOLERANCE_MM = 1.0
+SURE_MM = 0.3         # a suggested fix this close in length, and otherwise clear-cut, is applied without asking
+SURE_CONF = 80.0      # Tesseract confidence below which a read counts as shaky
 
 
 @dataclass
@@ -131,6 +133,7 @@ class EdgeTable:
                 evidence = _similar(a, b)
                 if evidence:
                     pairs.append((evidence[0], diff, a, b, evidence[1]))
+        options = collections.Counter(id(r) for _, _, a, b, _ in pairs for r in (a, b))
         for rank, diff, a, b, why in sorted(pairs, key=lambda p: (p[0], p[1])):
             if id(a) in used or id(b) in used:
                 continue
@@ -140,22 +143,35 @@ class EdgeTable:
                 wrong, right = (a, b) if a["number"] in clean else (b, a)
             else:
                 wrong, right = (a, b) if a["_row"].label.conf <= b["_row"].label.conf else (b, a)
-            found.append({"piece": wrong["piece"], "side": wrong["side"], "length_mm": wrong["length_mm"],
+            found.append({"piece": wrong["piece"], "x_mm": wrong["x_mm"], "y_mm": wrong["y_mm"],
+                          "side": wrong["side"], "length_mm": wrong["length_mm"],
                           "read": wrong["number"], "ocr_conf": wrong["ocr_conf"], "suggested": right["number"],
-                          "partner_piece": right["piece"], "partner_side": right["side"],
+                          "partner_piece": right["piece"], "partner_x_mm": right["x_mm"],
+                          "partner_y_mm": right["y_mm"], "partner_side": right["side"],
                           "partner_length_mm": right["length_mm"], "length_diff_mm": f"{diff:.1f}",
-                          "why": why + ("; the read number already pairs elsewhere" if wrong["number"] in clean else "")})
+                          "why": why + ("; the read number already pairs elsewhere" if wrong["number"] in clean else ""),
+                          "sure": "yes" if self._sure(rank, diff, options[id(a)], options[id(b)], wrong, right, clean) else "no"})
         return sorted(found, key=lambda f: (float(f["length_diff_mm"]), f["piece"]))
 
-    def write_misreads(self, path: Path) -> list[dict]:
+    @staticmethod
+    def _sure(rank: int, diff: float, options_a: int, options_b: int, wrong: dict, right: dict, clean: set) -> bool:
+        """Clear-cut enough to apply without asking: OCR itself offered the suggested number,
+        the lines agree within SURE_MM, neither copy has another candidate, and either the read
+        number already pairs elsewhere or the copy to fix was read with low confidence, and the
+        suggested number has no clean pair yet."""
+        return (rank == 0 and diff <= SURE_MM and options_a == options_b == 1 and right["number"] not in clean and
+                (wrong["number"] in clean or wrong["_row"].label.conf < SURE_CONF <= right["_row"].label.conf))
+
+    def write_misreads(self, path: Path, applied: list[dict] = ()) -> list[dict]:
+        """Open suggestions, after the ones already applied (sure = "applied")."""
         found = self.misreads()
         with path.open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, MISREAD_COLUMNS)
+            writer = csv.DictWriter(handle, MISREAD_COLUMNS, extrasaction="ignore")
             writer.writeheader()
-            writer.writerows(found)
+            writer.writerows([*applied, *found])
         return found
 
-    def write_report(self, path: Path, project: str, generated: str = "") -> None:
+    def write_report(self, path: Path, project: str, generated: str = "", applied: int = 0) -> None:
         """The model folder's README: what is in it, how far the conversion got, and
         which edge pairs agree and which need a look."""
         records = self.records()
@@ -224,9 +240,10 @@ class EdgeTable:
                 lines.append(f"| {piece} | {len(rows) - len(bad)} | {len(bad)} | {listed} |")
         found = self.misreads(records)
         lines += ["", "## Likely misreads", "",
-                  f"{len(found)} numbers that did not pair up sit on a line of the same length as another unpaired "
-                  "number on the other side (edge against tab), and the two numbers look alike. "
-                  "Check them with `make number NUMBER=<n>`.", "",
+                  f"{applied} clear-cut misreads were fixed without asking (marked `applied` in "
+                  f"`{project}-misreads.csv`). {len(found)} more numbers that did not pair up sit on a line of the "
+                  "same length as another unpaired number on the other side (edge against tab), and the two numbers "
+                  "look alike. Check them with `make fix` and `app/number-check.html`.", "",
                   "| piece | side | mm | read | suggested | partner | partner mm | why |", "|---|---|---:|---|---|---|---:|---|"]
         for f in found:
             lines.append(f"| {f['piece']} | {f['side']} | {f['length_mm']} | {f['read']} | {f['suggested']} | "
@@ -235,8 +252,8 @@ class EdgeTable:
         path.write_text("\n".join(lines), encoding="utf-8")
 
 
-MISREAD_COLUMNS = ["piece", "side", "length_mm", "read", "ocr_conf", "suggested", "partner_piece",
-                   "partner_side", "partner_length_mm", "length_diff_mm", "why"]
+MISREAD_COLUMNS = ["piece", "x_mm", "y_mm", "side", "length_mm", "read", "ocr_conf", "suggested",
+                   "partner_piece", "partner_x_mm", "partner_y_mm", "partner_side", "partner_length_mm", "length_diff_mm", "why", "sure"]
 
 
 def _similar(a: dict, b: dict) -> tuple[int, str] | None:
