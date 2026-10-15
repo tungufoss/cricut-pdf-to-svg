@@ -34,6 +34,15 @@ class CheckData:
 
     def cards(self) -> list[dict]:
         cards, covered = [], set()
+        # Hand corrections that still do not pair: the correction, its partner or the line is off.
+        for r in self.edges:
+            if r.get("corrected") != "yes" or r["status"] == "ok":
+                continue
+            copies = [r] + [o for o in self.edges if o is not r and o["number"] == r["number"]][:2]
+            covered.update((o["piece"], o["x_mm"], o["y_mm"]) for o in copies)
+            cards.append({"kind": "doubt", "suggested": "", "why": r["status"],
+                          "panels": [self._panel(o["piece"], o["x_mm"], o["y_mm"], o["number"], o["side"], o["length_mm"])
+                                     for o in copies]})
         for m in self.misreads:
             this = self._panel(m["piece"], m["x_mm"], m["y_mm"], m["read"], m["side"], m["length_mm"])
             other = self._panel(m["partner_piece"], m["partner_x_mm"], m["partner_y_mm"], m["suggested"],

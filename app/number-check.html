@@ -26,7 +26,7 @@ input.set{border-color:var(--ok);background:#eef8f0}
 <header><h1 id="title">Number check</h1>
 <button id="open">Open model folder</button><label class="meta">or load <input type="file" id="file" accept=".json" style="width:auto"></label>
 <span id="count"></span>
-<button data-f="todo" class="on">To do</button><button data-f="suggested">Suggested</button>
+<button data-f="todo" class="on">To do</button><button data-f="doubt">Doubtful fixes</button><button data-f="suggested">Suggested</button>
 <button data-f="open">Open</button><button data-f="auto">Fixed for you</button><button data-f="all">All</button>
 <button class="save" id="save">Save corrections</button></header>
 <main id="list"><p>Run <code>make fix</code>, then open the model folder (such as <code>data/bowser</code>).
@@ -70,7 +70,9 @@ document.getElementById("file").addEventListener("change", async e => {
   if (f) { folder = null; start(JSON.parse(await f.text()), []); }
 });
 const remember = () => { try { localStorage.setItem(store, JSON.stringify(answers)); } catch (e) {} };
-const done = c => c.kind === "auto" || c.panels.some(p => answers[key(p)] !== undefined && answers[key(p)] !== "");
+let touched = new Set();
+const done = c => c.kind === "auto" || (c.kind === "doubt" ? c.panels.some(p => touched.has(key(p)))
+  : c.panels.some(p => answers[key(p)] !== undefined && answers[key(p)] !== ""));
 
 function render() {
   const list = document.getElementById("list");
@@ -85,26 +87,27 @@ function card(c) {
   const el = document.createElement("div");
   el.className = "card" + (done(c) ? " done" : "");
   const [a, b] = c.panels;
-  const title = c.kind === "auto" ? `Read ${a.read}, fixed to ${c.suggested} without asking (type to override)`
+  const title = c.kind === "doubt" ? `You set ${a.read}, but it still does not pair: ${c.why}. Check every copy below.`
+    : c.kind === "auto" ? `Read ${a.read}, fixed to ${c.suggested} without asking (type to override)`
     : c.kind === "suggested" ? `Read ${a.read}, probably ${c.suggested}` : `${a.read}: ${c.why}`;
-  el.innerHTML = `<div class="head"><b>${title}</b><span class="why">${c.kind !== "open" ? c.why : ""}</span></div><div class="panels"></div>`;
+  el.innerHTML = `<div class="head"><b>${title}</b><span class="why">${["suggested", "auto"].includes(c.kind) ? c.why : ""}</span></div><div class="panels"></div>`;
   const panels = el.querySelector(".panels");
   c.panels.forEach((p, i) => {
     const div = document.createElement("div");
     div.className = "panel";
-    const label = i === 0 ? (c.kind === "suggested" ? "this number" : "this number") : (c.kind === "suggested" ? "matching line" : "its pair");
+    const label = c.kind === "doubt" ? (i === 0 ? "your fix" : "other copy") : i === 0 ? "this number" : (c.kind === "open" ? "its pair" : "matching line");
     div.innerHTML = `<img src="${p.image}" alt="scan around ${p.read}">
       <div><span class="read">${p.read}</span> <span class="meta">${label}: ${p.piece}, ${p.side} ${p.length} mm</span></div>
       <div class="row"><button data-a="keep">✓ as read</button><span class="meta">should be</span><input inputmode="numeric"></div>`;
     const input = div.querySelector("input");
     const value = answers[key(p)];
     if (value !== undefined) { input.value = value; input.classList.toggle("set", value !== ""); }
-    const set = v => { answers[key(p)] = v; remember(); input.value = v; input.classList.toggle("set", v !== ""); el.classList.toggle("done", done(c)); count(); };
+    const set = v => { touched.add(key(p)); answers[key(p)] = v; remember(); input.value = v; input.classList.toggle("set", v !== ""); el.classList.toggle("done", done(c)); count(); };
     input.addEventListener("change", () => set(input.value.trim()));
     div.querySelector("[data-a=keep]").addEventListener("click", () => set(p.read));
     panels.appendChild(div);
   });
-  if (c.kind !== "open") {
+  if (c.kind === "suggested" || c.kind === "auto") {
     const row = document.createElement("div");
     row.className = "row";
     row.style.marginTop = "8px";

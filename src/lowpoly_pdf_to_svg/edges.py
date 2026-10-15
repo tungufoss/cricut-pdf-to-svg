@@ -38,7 +38,7 @@ class EdgeRow:
 
 
 class EdgeTable:
-    COLUMNS = ["number", "piece", "side", "length_mm", "x_mm", "y_mm", "ocr_trusted", "ocr_conf", "ocr_alternatives",
+    COLUMNS = ["number", "piece", "side", "length_mm", "x_mm", "y_mm", "ocr_trusted", "ocr_conf", "ocr_alternatives", "corrected",
                "partner_piece", "partner_side", "partner_length_mm", "length_diff_mm", "status"]
 
     def __init__(self):
@@ -69,6 +69,7 @@ class EdgeTable:
                 "ocr_trusted": "yes" if row.label.trusted else "no",
                 "ocr_conf": f"{row.label.conf:.0f}",
                 "ocr_alternatives": " ".join(row.label.alternatives),
+                "corrected": "yes" if row.label.corrected else "",
                 "partner_piece": partner.piece if partner else "",
                 "partner_side": partner.side if partner else "",
                 "partner_length_mm": f"{partner.length_mm:.1f}" if partner else "",
@@ -238,6 +239,15 @@ class EdgeTable:
             if bad:
                 listed = ", ".join(f"{r['number']} ({r['status']})" for r in bad)
                 lines.append(f"| {piece} | {len(rows) - len(bad)} | {len(bad)} | {listed} |")
+        doubtful = [r for r in records if r["corrected"] and r["status"] != "ok"]
+        corrected = sum(1 for r in records if r["corrected"])
+        lines += ["", "## Hand corrections that still do not pair", "",
+                  f"{corrected} numbers were set by hand; {len(doubtful)} of them still do not form a clean pair, "
+                  "so the correction, its partner or the traced line is likely off. They come first on the check page.", "",
+                  "| piece | number | side | mm | status | partner | partner mm |", "|---|---|---|---:|---|---|---:|"]
+        for r in doubtful:
+            lines.append(f"| {r['piece']} | {r['number']} | {r['side']} | {r['length_mm']} | {r['status']} | "
+                         f"{r['partner_piece']} {r['partner_side']} | {r['partner_length_mm']} |")
         found = self.misreads(records)
         lines += ["", "## Likely misreads", "",
                   f"{applied} clear-cut misreads were fixed without asking (marked `applied` in "

@@ -69,6 +69,7 @@ class Corrections:
                 missed.append(row)
                 continue
             label.text, label.confident, label.conf = row.number, True, 100.0
+            label.corrected = True
             applied += 1
         if applied:
             counts = collections.Counter(l.text for layout, _ in layouts for p in layout.pieces for l in p.labels)
