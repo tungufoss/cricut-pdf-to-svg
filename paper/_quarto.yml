@@ -1,0 +1,45 @@
+# Paper 1 in the quarto-hi article template (HI-IDN/quarto-hi article.qmd, theme v0.2.0 in
+# _extensions/). Build with `make paper` from the repository root: HTML and PDF go to
+# paper/_output/. Kept out of the public GitHub Pages site, which renders report/ only.
+# The PDF uses Typst, which ships with Quarto, so no TeX install is needed.
+project:
+  output-dir: _output
+  render: [index.qmd]
+
+lang: en
+bibliography: references.bib
+csl: apa.csl
+link-citations: true
+number-sections: true
+
+execute:
+  echo: false
+  warning: false
+  message: false
+  freeze: auto
+
+format:
+  haskoli-islands-html:
+    css: styles/article.css
+    include-after-body: styles/article-meta.html
+    include-in-header:
+      - text: |
+          <link rel="icon" type="image/svg+xml" href="img/hi/favicon.svg">
+    appendix-cite-as: display
+    format-links: false
+    other-links:
+      - text: PDF
+        icon: file-pdf
+        href: index.pdf
+    embed-resources: true
+  typst:
+    papersize: a4
+    margin:
+      x: 2.5cm
+      y: 2.5cm
+    mainfont: "Jost"          # HÍ font, bundled in fonts/ (OFL, latin subset from Fontsource)
+    font-paths: fonts
+    fontsize: 10.5pt
+    section-numbering: "1.1"
+    include-in-header: styles/hi-article.typ
+    citeproc: true            # pandoc formats citations; Typst 0.11 cannot read this APA style
