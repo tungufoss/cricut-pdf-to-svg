@@ -10,8 +10,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 7,piece-12-05,none,0.0,24.3,142.7,yes,100,111 114 141 440 011,yes,piece-12-04,none,0.0,0.0,line not found
 009,piece-20-06,tab,32.2,148.7,218.4,no,-1,80 60 09 69 609,,piece-20-07,edge,32.3,0.2,ok
 009,piece-20-07,edge,32.3,123.6,222.5,yes,100,30 05 09 86 005,yes,piece-20-06,tab,32.2,0.2,ok
-10,piece-05-01,edge,91.1,140.5,177.9,yes,100,70 100 15 700 107,yes,piece-11-02,tab,37.8,53.3,length mismatch
-10,piece-11-02,tab,37.8,48.1,38.6,yes,100,70 100 700 15 160,yes,piece-05-01,edge,91.1,53.3,length mismatch
+10,piece-05-01,edge,37.6,140.5,177.9,yes,100,70 100 15 700 107,yes,piece-11-02,tab,37.8,0.2,ok
+10,piece-11-02,tab,37.8,48.1,38.6,yes,100,70 100 700 15 160,yes,piece-05-01,edge,37.6,0.2,ok
 11,piece-11-02,tab,15.6,39.4,17.0,yes,100,14 41 131 101 66,yes,piece-11-04,none,0.0,15.6,line not found
 11,piece-11-04,none,0.0,184.0,75.1,yes,100,77 49 42 70 71,yes,piece-11-02,tab,15.6,15.6,line not found
 12,piece-11-03,tab,42.3,76.7,82.6,yes,95,42 122 17 132 96,,piece-11-09,edge,42.5,0.2,ok
@@ -30,7 +30,7 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 17,piece-12-04,none,0.0,53.7,60.6,no,-1,177 127 171 11 57,,,,,,extra copy: likely misread
 18,piece-05-02,edge,41.8,163.0,106.1,no,91,16 48 148 146 46,,piece-11-08,tab,41.5,0.3,ok
 18,piece-11-08,tab,41.5,73.3,133.4,no,96,16 158 188 156 186,,piece-05-02,edge,41.8,0.3,ok
-18,piece-24-03,edge,56.4,116.7,62.0,no,100,13 73 78 143 148,yes,,,,,extra copy: likely misread
+18,piece-24-03,edge,29.7,116.7,62.0,no,100,13 73 78 143 148,yes,,,,,extra copy: likely misread
 19,piece-05-06,edge,44.7,172.1,243.1,yes,76,18 79 78 66 56,,piece-11-08,tab,44.6,0.0,ok
 19,piece-11-08,tab,44.6,59.8,169.6,no,90,18 119 159 110 150,,piece-05-06,edge,44.7,0.0,ok
 20,piece-05-08,edge,44.1,28.9,263.9,yes,95,26 210 70 05 260,,piece-11-08,tab,44.0,0.0,ok
@@ -72,12 +72,12 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 38,piece-05-07,edge,40.4,53.5,180.5,yes,96,36 388 318 68 88,,piece-05-05,tab,40.3,0.1,ok
 39,piece-05-03,edge,29.4,68.9,82.7,yes,100,38 89 35 19 10,yes,piece-05-05,tab,29.5,0.1,ok
 39,piece-05-05,tab,29.5,48.6,79.9,yes,0,2 89 69 88 38,,piece-05-03,edge,29.4,0.1,ok
-40,piece-05-05,tab,31.0,14.7,55.8,yes,100,46 409 400 469 460,yes,piece-05-07,edge,38.9,7.9,length mismatch
-40,piece-05-07,edge,38.9,7.8,212.2,yes,100,0 45 400 460 05,yes,piece-05-05,tab,31.0,7.9,length mismatch
+40,piece-05-05,tab,31.0,14.7,55.8,yes,100,46 409 400 469 460,yes,piece-05-07,edge,30.8,0.2,ok
+40,piece-05-07,edge,30.8,7.8,212.2,yes,100,0 45 400 460 05,yes,piece-05-05,tab,31.0,0.2,ok
 040,piece-11-02,none,0.0,30.8,73.6,no,-1,440 400 010 447 018,,piece-12-06,none,0.0,0.0,line not found
 040,piece-12-06,none,0.0,87.9,114.7,no,-1,06 66 149 140 99,,piece-11-02,none,0.0,0.0,line not found
-41,piece-05-05,tab,20.6,8.8,39.4,yes,100,44 441 491 61 841,yes,piece-11-03,edge,43.6,22.9,length mismatch
-41,piece-11-03,edge,43.6,39.7,82.5,yes,100,4 441 44 461 11,yes,piece-05-05,tab,20.6,22.9,length mismatch
+41,piece-05-05,tab,20.6,8.8,39.4,yes,100,44 441 491 61 841,yes,piece-11-03,edge,20.5,0.1,ok
+41,piece-11-03,edge,20.5,39.7,82.5,yes,100,4 441 44 461 11,yes,piece-05-05,tab,20.6,0.1,ok
 42,piece-05-03,edge,22.1,50.0,39.2,yes,-1,12 47 412 442 17,,piece-05-05,tab,22.1,0.0,ok
 42,piece-05-05,tab,22.1,21.9,37.7,yes,96,12 43 412 442 212,,piece-05-03,edge,22.1,0.0,ok
 44,piece-05-01,tab,42.5,127.9,37.0,yes,-1,424 444 55 46 58,,piece-05-04,edge,42.5,0.0,ok
@@ -96,14 +96,14 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 49,piece-05-02,tab,37.1,194.0,84.2,yes,96,40 55 65 58 68,,piece-05-01,edge,36.7,0.4,ok
 50,piece-05-02,tab,43.0,168.6,64.2,yes,0,8 60 00 55 08,,piece-11-02,edge,43.3,0.3,ok
 50,piece-11-02,edge,43.3,11.4,111.9,yes,65,55 60 09 500 00,,piece-05-02,tab,43.0,0.3,ok
-51,piece-05-01,edge,91.1,148.9,133.0,yes,100,54 61 561 551 861,yes,piece-05-02,tab,54.2,36.8,length mismatch
-51,piece-05-02,tab,54.2,176.7,20.6,yes,100,61 59 69 58 54,yes,piece-05-01,edge,91.1,36.8,length mismatch
+51,piece-05-01,edge,53.5,148.9,133.0,yes,100,54 61 561 551 861,yes,piece-05-02,tab,54.2,0.7,ok
+51,piece-05-02,tab,54.2,176.7,20.6,yes,100,61 59 69 58 54,yes,piece-05-01,edge,53.5,0.7,ok
 52,piece-05-03,edge,32.2,75.6,110.6,yes,95,62 59 29 50 20,,piece-05-04,tab,32.1,0.1,ok
 52,piece-05-04,tab,32.1,99.0,135.7,yes,88,62 53 63 562 662,,piece-05-03,edge,32.2,0.1,ok
 53,piece-05-01,edge,42.7,120.1,142.2,yes,100,58 63 68 593 693,yes,piece-05-04,tab,42.8,0.1,ok
 53,piece-05-04,tab,42.8,104.8,132.4,yes,100,63 58 69 68 89,yes,piece-05-01,edge,42.7,0.1,ok
-54,piece-05-03,edge,35.0,80.0,55.2,yes,100,64 59 84 58 89,yes,piece-05-04,tab,26.8,8.2,length mismatch
-54,piece-05-04,tab,26.8,99.8,78.6,yes,100,84 59 50 51 464,yes,piece-05-03,edge,35.0,8.2,length mismatch
+54,piece-05-03,edge,26.8,80.0,55.2,yes,100,64 59 84 58 89,yes,piece-05-04,tab,26.8,0.0,ok
+54,piece-05-04,tab,26.8,99.8,78.6,yes,100,84 59 50 51 464,yes,piece-05-03,edge,26.8,0.0,ok
 55,piece-05-01,edge,28.4,132.5,72.2,no,-1,56 65 66,,piece-05-04,tab,28.4,0.0,ok
 55,piece-05-04,tab,28.4,121.3,67.3,no,60,39 66 56 65 99,,piece-05-01,edge,28.4,0.0,ok
 56,piece-05-03,tab,36.7,38.7,20.3,yes,94,66 58 68 99 90,,piece-11-03,edge,36.1,0.6,ok
@@ -124,15 +124,15 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 65,piece-05-05,edge,25.4,27.5,79.2,yes,92,85 66 86 09 645,,piece-05-07,tab,25.5,0.1,ok
 65,piece-05-07,tab,25.5,23.2,192.4,yes,94,95 66 59 99 50,,piece-05-05,edge,25.4,0.1,ok
 066,piece-16-10,edge,13.2,199.2,217.4,no,-1,49 494 491 464 47,,,,,,unpaired
-66,piece-18-01,edge,9.5,67.3,48.3,no,100,68 69 96 99 77,yes,piece-18-03,tab,9.6,0.1,ok
+66,piece-18-01,edge,9.5,67.3,48.3,yes,100,68 69 96 99 77,yes,piece-18-03,tab,9.6,0.1,ok
 66,piece-18-03,tab,9.6,41.5,68.7,no,64,33 65 99 86 85,,piece-18-01,edge,9.5,0.1,ok
-66,piece-20-07,edge,38.9,103.0,234.5,no,100,68 86 99 88 89,yes,,,,,extra copy: likely misread
 67,piece-18-06,edge,30.9,12.4,129.7,no,100,87 57 167 107 96,yes,,,,,extra copy: likely misread
 67,piece-20-01,tab,21.4,13.6,90.8,no,100,57 61 51 677 877,yes,piece-20-06,edge,21.3,0.0,ok
 67,piece-20-06,edge,21.3,151.3,179.7,no,100,87 61 81 69 99,yes,piece-20-01,tab,21.4,0.0,ok
 67,piece-20-08,tab,31.1,23.1,194.9,no,100,87 61 99 81 69,yes,,,,,extra copy: likely misread
-68,piece-16-10,none,0.0,174.3,243.6,no,0,8 644 648 844 848,,piece-20-08,tab,38.9,38.9,line not found
-68,piece-20-08,tab,38.9,57.3,223.1,yes,100,8 88 66 69 86,yes,piece-16-10,none,0.0,38.9,line not found
+68,piece-16-10,none,0.0,174.3,243.6,no,0,8 644 648 844 848,,,,,,extra copy: likely misread
+68,piece-20-07,edge,38.9,103.0,234.5,no,100,68 86 99 88 89,yes,piece-20-08,tab,38.9,0.0,ok
+68,piece-20-08,tab,38.9,57.3,223.1,no,100,8 88 66 69 86,yes,piece-20-07,edge,38.9,0.0,ok
 69,piece-18-05,edge,23.4,59.2,96.0,yes,100,89 59 68 58 88,yes,piece-20-08,tab,23.3,0.1,ok
 69,piece-20-08,tab,23.3,15.7,221.2,yes,100,63 59 66 56 76,yes,piece-18-05,edge,23.4,0.1,ok
 70,piece-20-06,edge,36.5,128.8,190.6,yes,96,700 79 750 09 709,,piece-20-07,tab,36.4,0.1,ok
@@ -182,8 +182,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 91,piece-24-14,edge,36.3,168.7,192.5,yes,-1,81 691 601 591 548,,piece-18-06,tab,36.3,0.0,ok
 92,piece-18-05,edge,25.7,62.1,238.0,yes,100,82 56 55 26 25,yes,piece-18-06,tab,25.6,0.1,ok
 92,piece-18-06,tab,25.6,50.3,230.6,yes,100,2 82 56 26 982,yes,piece-18-05,edge,25.7,0.1,ok
-93,piece-18-06,tab,39.0,11.3,164.6,no,67,33 83 86 88 66,,piece-20-07,edge,46.8,7.8,length mismatch
-93,piece-20-07,edge,46.8,62.2,180.6,yes,37,6 83 66 68 86,,piece-18-06,tab,39.0,7.8,length mismatch
+93,piece-18-06,tab,39.0,11.3,164.6,no,67,33 83 86 88 66,,piece-20-07,edge,38.9,0.0,ok
+93,piece-20-07,edge,38.9,62.2,180.6,yes,37,6 83 66 68 86,,piece-18-06,tab,39.0,0.0,ok
 94,piece-18-05,edge,43.7,69.4,162.7,yes,71,86 64 644 96 944,,piece-18-06,tab,43.9,0.2,ok
 94,piece-18-06,tab,43.9,45.3,155.2,no,-1,84 944 844 66 994,,piece-18-05,edge,43.7,0.2,ok
 95,piece-17-09,none,0.0,31.6,266.8,no,0,2 415 45 849 749,,piece-18-03,tab,23.5,23.5,line not found
@@ -232,8 +232,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 116,piece-20-03,edge,24.7,87.0,68.8,yes,100,118 416 146 418 148,yes,piece-20-02,tab,24.9,0.2,ok
 117,piece-20-02,tab,27.8,153.3,51.0,no,72,147 717 111 747 711,,piece-20-04,edge,27.7,0.0,ok
 117,piece-20-04,edge,27.7,165.4,49.9,yes,56,147 717 07 747 111,,piece-20-02,tab,27.8,0.0,ok
-118,piece-18-08,edge,53.6,146.2,194.2,yes,100,448 116 148 418 146,yes,piece-20-02,tab,45.9,7.8,length mismatch
-118,piece-20-02,tab,45.9,124.8,15.2,yes,100,116 418 178 416 176,yes,piece-18-08,edge,53.6,7.8,length mismatch
+118,piece-18-08,edge,45.7,146.2,194.2,yes,100,448 116 148 418 146,yes,piece-20-02,tab,45.9,0.1,ok
+118,piece-20-02,tab,45.9,124.8,15.2,yes,100,116 418 178 416 176,yes,piece-18-08,edge,45.7,0.1,ok
 119,piece-20-02,tab,34.8,107.6,41.1,yes,100,418 149 112 419 142,yes,piece-20-03,edge,34.8,0.0,ok
 119,piece-20-03,edge,34.8,87.0,18.5,yes,100,118 149 419 148 418,yes,piece-20-02,tab,34.8,0.0,ok
 120,piece-20-03,edge,28.8,83.1,132.2,yes,91,125 720 170 725 175,,piece-20-05,tab,28.7,0.1,ok
@@ -338,8 +338,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 169,piece-14-10,tab,31.5,117.8,196.2,yes,91,160 189 180 469 695,,piece-14-06,edge,32.1,0.5,ok
 170,piece-14-09,edge,34.4,126.9,187.3,yes,96,179 120 470 129 479,,piece-14-10,tab,34.1,0.3,ok
 170,piece-14-10,tab,34.1,108.5,203.9,yes,96,176 470 110 476 116,,piece-14-09,edge,34.4,0.3,ok
-171,piece-14-06,edge,59.6,94.2,254.8,yes,100,71 111 471 177 411,yes,piece-14-10,tab,51.5,8.1,length mismatch
-171,piece-14-10,tab,51.5,183.8,248.1,yes,100,111 471 174 411 114,yes,piece-14-06,edge,59.6,8.1,length mismatch
+171,piece-14-06,edge,51.7,94.2,254.8,yes,100,71 111 471 177 411,yes,piece-14-10,tab,51.5,0.1,ok
+171,piece-14-10,tab,51.5,183.8,248.1,yes,100,111 471 174 411 114,yes,piece-14-06,edge,51.7,0.1,ok
 172,piece-14-09,edge,31.9,81.7,140.1,yes,91,122 472 173 422 123,,piece-14-10,tab,32.0,0.1,ok
 172,piece-14-10,tab,32.0,157.4,247.8,yes,96,122 173 472 123 422,,piece-14-09,edge,31.9,0.1,ok
 173,piece-14-06,tab,33.8,23.1,98.2,yes,90,178 113 473 118 478,,piece-16-03,edge,33.8,0.0,ok
@@ -374,8 +374,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 187,piece-18-04,tab,37.2,156.1,55.3,yes,94,157 787 181 757 151,,piece-18-02,edge,37.2,0.1,ok
 188,piece-16-09,edge,30.5,33.0,215.2,yes,96,168 186 788 166 768,,piece-18-04,tab,30.5,0.0,ok
 188,piece-18-04,tab,30.5,198.4,89.6,yes,92,186 168 166 488 486,,piece-16-09,edge,30.5,0.0,ok
-189,piece-18-04,tab,42.5,176.4,106.0,yes,100,169 180 160 789 686,yes,piece-18-07,edge,93.7,51.1,length mismatch
-189,piece-18-07,edge,93.7,199.8,175.3,yes,100,188 169 168 489 488,yes,piece-18-04,tab,42.5,51.1,length mismatch
+189,piece-18-04,tab,42.5,176.4,106.0,yes,100,169 180 160 789 686,yes,piece-18-07,edge,42.7,0.2,ok
+189,piece-18-07,edge,42.7,199.8,175.3,yes,100,188 169 168 489 488,yes,piece-18-04,tab,42.5,0.2,ok
 190,piece-16-09,tab,23.3,119.5,239.5,yes,70,130 197 137 066 065,,piece-18-04,edge,23.2,0.1,ok
 190,piece-18-04,edge,23.2,173.8,9.7,yes,85,180 100 196 106 066,,piece-16-09,tab,23.3,0.1,ok
 191,piece-16-08,edge,45.8,95.5,168.6,yes,94,151 791 197 751 157,,piece-16-09,tab,45.9,0.1,ok
@@ -385,8 +385,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 193,piece-16-09,tab,28.5,43.2,270.2,yes,96,103 198 493 108 403,,piece-16-05,edge,28.6,0.0,ok
 194,piece-11-10,edge,38.6,199.5,235.6,yes,100,104 184 494 196 484,yes,piece-16-09,tab,38.8,0.2,ok
 194,piece-16-09,tab,38.8,154.3,244.0,yes,100,494 184 191 484 181,yes,piece-11-10,edge,38.6,0.2,ok
-195,piece-16-09,tab,51.3,13.7,231.5,yes,100,18 165 196 495 166,yes,piece-18-07,edge,93.7,42.3,length mismatch
-195,piece-18-07,edge,93.7,200.1,222.2,yes,100,196 185 186 495 496,yes,piece-16-09,tab,51.3,42.3,length mismatch
+195,piece-16-09,tab,51.3,13.7,231.5,yes,100,18 165 196 495 166,yes,piece-18-07,edge,50.9,0.4,ok
+195,piece-18-07,edge,50.9,200.1,222.2,yes,100,196 185 186 495 496,yes,piece-16-09,tab,51.3,0.4,ok
 196,piece-16-05,edge,31.1,59.5,137.4,yes,100,961 186 189 199 996,yes,piece-16-08,tab,31.1,0.0,ok
 196,piece-16-08,tab,31.1,76.8,169.4,yes,100,188 186 198 596 966,yes,piece-16-05,edge,31.1,0.0,ok
 197,piece-16-08,tab,25.2,120.0,192.7,yes,100,167 497 191 467 161,yes,piece-16-09,edge,25.2,0.0,ok
@@ -443,8 +443,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 222,piece-23-03,edge,45.0,11.0,141.7,yes,96,322 223 232 323 332,,piece-05-06,tab,45.0,0.0,ok
 223,piece-05-06,tab,50.3,168.7,149.9,yes,96,228 323 233 652 328,,piece-11-10,edge,50.4,0.1,ok
 223,piece-11-10,edge,50.4,159.4,202.0,yes,91,228 323 233 328 238,,piece-05-06,tab,50.3,0.1,ok
-224,piece-05-06,tab,47.9,164.5,197.6,yes,100,324 234 226 334 326,yes,piece-11-09,edge,54.9,7.0,length mismatch
-224,piece-11-09,edge,54.9,125.5,176.3,yes,100,724 221 274 721 774,yes,piece-05-06,tab,47.9,7.0,length mismatch
+224,piece-05-06,tab,47.9,164.5,197.6,yes,100,324 234 226 334 326,yes,piece-11-09,edge,46.9,1.0,ok
+224,piece-11-09,edge,46.9,125.5,176.3,yes,100,724 221 274 721 774,yes,piece-05-06,tab,47.9,1.0,ok
 225,piece-23-01,edge,32.4,142.2,34.5,yes,95,226 275 325 276 326,,piece-23-02,tab,32.5,0.1,ok
 225,piece-23-02,tab,32.5,80.2,79.7,yes,96,226 325 275 326 276,,piece-23-01,edge,32.4,0.1,ok
 226,piece-23-02,tab,39.5,75.1,106.3,yes,0,4 225 726 276 725,,piece-23-03,edge,39.6,0.1,ok
@@ -540,8 +540,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 270,piece-07-08,tab,44.0,93.6,192.2,yes,72,279 276 210 970 216,,piece-07-05,edge,43.9,0.0,ok
 271,piece-07-07,edge,30.4,21.1,246.9,yes,95,211 274 771 214 711,,piece-07-08,tab,30.1,0.3,ok
 271,piece-07-08,tab,30.1,61.7,239.6,yes,96,211 371 274 311 214,,piece-07-07,edge,30.4,0.3,ok
-272,piece-06-06,edge,20.8,157.1,239.2,yes,100,212 277 772 217 712,yes,piece-07-07,tab,29.0,8.2,length mismatch
-272,piece-07-07,tab,29.0,11.4,221.9,yes,100,222 372 277 322 295,yes,piece-06-06,edge,20.8,8.2,length mismatch
+272,piece-06-06,edge,12.9,157.1,239.2,yes,100,212 277 772 217 712,yes,piece-07-07,tab,29.0,16.0,length mismatch
+272,piece-07-07,tab,29.0,11.4,221.9,yes,100,222 372 277 322 295,yes,piece-06-06,edge,12.9,16.0,length mismatch
 273,piece-07-01,tab,29.0,12.3,8.6,yes,100,2738 278 223 373 228,yes,piece-07-07,tab,29.0,0.0,both tabs
 273,piece-07-07,tab,29.0,8.0,235.2,yes,100,213 278 373 218 313,yes,piece-07-01,tab,29.0,0.0,both tabs
 274,piece-07-07,tab,125.5,42.5,223.1,yes,100,214 774 276 595 695,yes,piece-07-10,edge,61.1,64.3,length mismatch
@@ -550,15 +550,14 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 275,piece-07-09,edge,47.7,113.6,159.0,yes,100,276 375 376 215 216,yes,piece-07-07,tab,47.7,0.0,ok
 276,piece-06-06,edge,33.2,108.0,259.7,yes,96,272 226 776 222 772,,piece-07-07,tab,33.1,0.0,ok
 276,piece-07-07,tab,33.1,41.8,178.4,yes,96,272 216 212 376 995,,piece-06-06,edge,33.2,0.0,ok
-277,piece-16-07,edge,32.2,178.4,199.8,yes,100,271 217 777 211 771,yes,piece-24-01,tab,24.0,8.2,length mismatch
-277,piece-24-01,tab,24.0,8.7,49.5,yes,100,217 271 377 211 317,yes,piece-16-07,edge,32.2,8.2,length mismatch
+277,piece-16-07,edge,24.1,178.4,199.8,yes,100,271 217 777 211 771,yes,piece-24-01,tab,24.0,0.0,ok
+277,piece-24-01,tab,24.0,8.7,49.5,yes,100,217 271 377 211 317,yes,piece-16-07,edge,24.1,0.0,ok
 278,piece-24-01,edge,37.4,44.1,24.3,yes,100,278 216 218 376 378,,piece-24-01,tab,37.7,0.3,ok
 278,piece-24-01,tab,37.7,25.5,51.2,yes,85,276 228 778 226 776,,piece-24-01,edge,37.4,0.3,ok
 279,piece-16-03,edge,20.5,186.4,105.1,yes,95,278 219 379 218 699,,piece-24-01,tab,20.4,0.0,ok
 279,piece-24-01,tab,20.4,38.7,7.8,yes,80,273 276 779 229 776,,piece-16-03,edge,20.5,0.0,ok
 280,piece-24-01,tab,21.4,19.4,12.8,no,100,0 260 266 286 360,yes,,,,,unpaired
-281,piece-09-06,tab,14.9,100.0,245.0,no,87,631 681 661 261 684,,piece-24-05,tab,32.6,17.7,both tabs
-281,piece-24-05,tab,32.6,38.5,74.4,yes,90,261 284 264 381 361,,piece-09-06,tab,14.9,17.7,both tabs
+281,piece-24-05,tab,32.6,38.5,74.4,no,90,261 284 264 381 361,,,,,,unpaired
 282,piece-16-02,edge,20.6,150.7,40.5,yes,100,4 262 582 562 286,yes,piece-24-05,tab,20.0,0.6,ok
 282,piece-24-05,tab,20.0,8.4,78.7,yes,100,262 982 289 962 269,yes,piece-16-02,edge,20.6,0.6,ok
 283,piece-16-10,edge,17.2,191.9,265.5,yes,100,263 288 268 383 363,yes,piece-24-05,tab,18.3,1.2,length mismatch
@@ -567,8 +566,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 284,piece-24-08,tab,31.5,35.9,128.0,yes,-1,264 784 764 280 260,,piece-24-08,edge,31.6,0.0,ok
 285,piece-16-02,edge,28.6,136.8,14.1,yes,34,982 265 286 266 385,,piece-24-08,tab,28.8,0.1,ok
 285,piece-24-08,tab,28.8,27.9,105.1,yes,96,265 286 785 266 765,,piece-16-02,edge,28.6,0.1,ok
-286,piece-09-05,edge,62.9,193.8,198.6,no,79,982 296 298 288 969,,piece-16-04,edge,13.8,49.1,no tab
-286,piece-16-04,edge,13.8,98.7,122.7,yes,100,266 288 268 386 366,yes,piece-09-05,edge,62.9,49.1,no tab
+286,piece-09-05,edge,51.3,193.8,198.6,no,79,982 296 298 288 969,,piece-16-04,edge,13.8,37.5,no tab
+286,piece-16-04,edge,13.8,98.7,122.7,yes,100,266 288 268 386 366,yes,piece-09-05,edge,51.3,37.5,no tab
 287,piece-14-02,edge,22.8,159.3,61.5,yes,96,267 281 261 387 367,,piece-14-03,tab,22.7,0.1,ok
 287,piece-14-03,tab,22.7,170.1,62.3,yes,88,267 281 261 387 367,,piece-14-02,edge,22.8,0.1,ok
 288,piece-14-03,tab,24.3,197.4,69.0,no,100,266 268 286 388 982,yes,piece-15-01,edge,24.3,0.0,ok
@@ -593,8 +592,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 297,piece-07-08,edge,51.9,99.2,140.9,yes,100,287 291 281 797 962,yes,piece-07-06,tab,52.0,0.1,ok
 299,piece-09-04,tab,42.1,139.1,150.7,yes,100,298 299 295 255 662,,piece-10-05,edge,42.3,0.1,ok
 299,piece-10-05,edge,42.3,159.9,217.0,no,64,20 289 298 682 662,,piece-09-04,tab,42.1,0.1,ok
-300,piece-09-04,tab,43.0,105.6,110.9,yes,100,200 306 360 206 000,yes,piece-09-05,edge,60.4,17.5,length mismatch
-300,piece-09-05,edge,60.4,161.1,159.8,yes,100,225 000 306 360 008,yes,piece-09-04,tab,43.0,17.5,length mismatch
+300,piece-09-04,tab,43.0,105.6,110.9,yes,100,200 306 360 206 000,yes,piece-09-05,edge,40.3,2.7,length mismatch
+300,piece-09-05,edge,40.3,161.1,159.8,yes,100,225 000 306 360 008,yes,piece-09-04,tab,43.0,2.7,length mismatch
 301,piece-09-04,tab,61.6,121.7,48.4,yes,88,361 601 307 661 367,,piece-11-08,edge,61.4,0.1,ok
 301,piece-11-08,edge,61.4,12.6,167.5,yes,20,31 801 361 861 304,,piece-09-04,tab,61.6,0.1,ok
 302,piece-07-09,edge,30.2,137.3,181.7,yes,100,802 352 852 303 503,yes,piece-09-04,tab,30.5,0.4,ok
@@ -621,8 +620,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 312,piece-09-07,edge,25.8,173.0,266.7,yes,100,372 812 317 872 377,yes,piece-08-05,tab,54.2,28.4,length mismatch
 313,piece-07-06,edge,41.9,199.4,203.9,yes,73,813 318 818 373 873,,piece-08-05,tab,42.2,0.4,ok
 313,piece-08-05,tab,42.2,163.7,157.1,yes,88,813 318 343 818 843,,piece-07-06,edge,41.9,0.4,ok
-314,piece-08-05,tab,14.9,183.1,128.4,yes,100,814 374 874 316 816,yes,piece-09-07,edge,22.9,8.0,length mismatch
-314,piece-09-07,edge,22.9,106.5,273.1,yes,100,814 344 311 568 558,yes,piece-08-05,tab,14.9,8.0,length mismatch
+314,piece-08-05,tab,14.9,183.1,128.4,yes,100,814 374 874 316 816,yes,piece-09-07,edge,14.8,0.1,ok
+314,piece-09-07,edge,14.8,106.5,273.1,yes,100,814 344 311 568 558,yes,piece-08-05,tab,14.9,0.1,ok
 315,piece-06-05,edge,15.5,111.0,238.7,yes,9,316 815 816 345 346,,piece-06-06,tab,15.4,0.1,ok
 315,piece-06-06,tab,15.4,168.9,238.2,yes,96,316 815 375 816 376,,piece-06-05,edge,15.5,0.1,ok
 316,piece-06-03,edge,37.3,149.4,206.5,yes,100,378 318 816 818 376,yes,piece-06-06,tab,38.3,1.1,length mismatch
@@ -638,8 +637,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 321,piece-09-07,edge,55.4,179.7,238.0,yes,94,821 371 328 871 828,,piece-09-05,tab,55.2,0.2,ok
 322,piece-09-04,edge,40.7,109.7,152.3,yes,0,22 622 332 323 632,,piece-09-05,tab,41.1,0.4,ok
 322,piece-09-05,tab,41.1,151.8,119.2,yes,94,622 323 332 623 632,,piece-09-04,edge,40.7,0.4,ok
-323,piece-09-04,edge,56.1,101.2,65.5,yes,100,823 328 333 828 833,yes,piece-09-05,tab,50.6,5.5,length mismatch
-323,piece-09-05,tab,50.6,177.0,201.6,yes,100,326 623 333 626 336,yes,piece-09-04,edge,56.1,5.5,length mismatch
+323,piece-09-04,edge,48.4,101.2,65.5,yes,100,823 328 333 828 833,yes,piece-09-05,tab,50.6,2.3,length mismatch
+323,piece-09-05,tab,50.6,177.0,201.6,yes,100,326 623 333 626 336,yes,piece-09-04,edge,48.4,2.3,length mismatch
 324,piece-09-07,tab,45.8,194.6,248.7,yes,88,824 321 394 658 858,,piece-10-05,edge,45.5,0.2,ok
 324,piece-10-05,edge,45.5,134.9,274.9,yes,87,374 321 224 371 274,,piece-09-07,tab,45.8,0.2,ok
 325,piece-09-07,tab,46.7,136.8,268.2,no,-1,326 335 336 825 826,,,,,,unpaired
@@ -729,8 +728,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 367,piece-14-01,edge,15.1,46.7,18.8,yes,58,496 387 867 361 887,,piece-16-04,tab,15.1,0.0,ok
 367,piece-16-04,tab,15.1,101.9,25.1,yes,79,867 387 887 361 861,,piece-14-01,edge,15.1,0.0,ok
 369,piece-14-06,edge,44.8,82.0,216.1,no,-1,698 366 696 309 608,,,,,,unpaired
-370,piece-16-03,tab,15.3,196.3,166.9,yes,96,870 320 379 820 879,,piece-24-05,edge,22.7,7.4,length mismatch
-370,piece-24-05,edge,22.7,17.4,66.7,yes,96,376 870 300 876 306,,piece-16-03,tab,15.3,7.4,length mismatch
+370,piece-16-03,tab,15.3,196.3,166.9,yes,96,870 320 379 820 879,,piece-24-05,edge,14.9,0.4,ok
+370,piece-24-05,edge,14.9,17.4,66.7,yes,96,376 870 300 876 306,,piece-16-03,tab,15.3,0.4,ok
 371,piece-16-03,tab,13.0,200.4,186.6,yes,100,374 571 311 511 574,yes,piece-24-08,edge,13.0,0.0,ok
 371,piece-24-08,edge,13.0,8.6,112.7,yes,100,71 271 374 274 321,yes,piece-16-03,tab,13.0,0.0,ok
 372,piece-16-03,tab,48.6,193.9,39.6,yes,-1,872 371 312 871 812,,piece-16-07,edge,46.6,2.0,length mismatch
@@ -750,16 +749,16 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 380,piece-06-04,tab,34.6,186.6,140.7,no,93,390 880 890 385 395,,,,,,extra copy: likely misread
 380,piece-16-02,tab,12.2,151.5,28.0,no,94,360 880 386 860 366,,piece-16-03,edge,12.1,0.1,ok
 380,piece-16-03,edge,12.1,202.5,179.1,no,100,360 380 880 089 099,,piece-16-02,tab,12.2,0.1,ok
-381,piece-16-02,edge,41.1,148.7,82.5,no,76,384 361 861 881 364,,piece-16-10,tab,18.0,23.2,length mismatch
-381,piece-16-10,tab,18.0,199.4,240.8,yes,100,361 681 661 384 364,yes,piece-16-02,edge,41.1,23.2,length mismatch
+381,piece-16-02,edge,17.9,148.7,82.5,no,76,384 361 861 881 364,,piece-16-10,tab,18.0,0.0,ok
+381,piece-16-10,tab,18.0,199.4,240.8,yes,100,361 681 661 384 364,yes,piece-16-02,edge,17.9,0.0,ok
 382,piece-16-10,tab,22.2,189.8,239.8,yes,96,362 882 862 383 363,,piece-24-01,edge,22.4,0.2,ok
 382,piece-24-01,edge,22.4,8.3,27.4,yes,94,362 882 862 383 363,,piece-16-10,tab,22.2,0.2,ok
 384,piece-24-05,edge,18.9,33.4,61.6,no,-1,364 864 366 884 386,,,,,,unpaired
-385,piece-16-02,edge,41.1,146.9,61.9,yes,92,365 386 366 885 865,,piece-16-10,tab,23.3,17.8,length mismatch
-385,piece-16-10,tab,23.3,197.6,261.3,yes,-1,386 365 366 885 886,,piece-16-02,edge,41.1,17.8,length mismatch
-386,piece-06-03,edge,54.8,144.8,206.9,no,100,388 366 886 368 888,yes,,,,,printed 3 times
-386,piece-06-04,tab,43.2,189.0,19.3,no,0,27 366 382 362 886,,,,,,printed 3 times
-386,piece-16-03,tab,22.4,190.6,148.7,no,0,8 368 366 388 868,,,,,,printed 3 times
+385,piece-16-02,edge,23.2,146.9,61.9,yes,92,365 386 366 885 865,,piece-16-10,tab,23.3,0.1,ok
+385,piece-16-10,tab,23.3,197.6,261.3,yes,-1,386 365 366 885 886,,piece-16-02,edge,23.2,0.1,ok
+386,piece-06-03,edge,42.5,144.8,206.9,no,100,388 366 886 368 888,yes,piece-06-04,tab,43.2,0.7,ok
+386,piece-06-04,tab,43.2,189.0,19.3,no,0,27 366 382 362 886,,piece-06-03,edge,42.5,0.7,ok
+386,piece-16-03,tab,22.4,190.6,148.7,no,0,8 368 366 388 868,,,,,,extra copy: likely misread
 387,piece-06-01,edge,54.8,77.2,27.7,yes,-1,367 887 867 381 361,,piece-06-04,tab,54.7,0.1,ok
 387,piece-06-04,tab,54.7,166.5,60.5,yes,96,367 381 887 361 867,,piece-06-01,edge,54.8,0.1,ok
 388,piece-06-04,tab,46.3,182.5,60.4,yes,100,888 386 368 886 868,yes,piece-06-05,edge,46.4,0.1,ok
@@ -768,14 +767,14 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 389,piece-12-01,edge,34.3,35.1,37.2,yes,100,369 380 360 889 869,yes,piece-06-04,tab,34.4,0.1,ok
 391,piece-06-01,edge,42.1,84.6,122.8,yes,100,381 891 394 881 384,yes,piece-06-04,tab,42.1,0.1,ok
 391,piece-06-04,tab,42.1,159.4,153.4,yes,100,381 891 881 397 387,yes,piece-06-01,edge,42.1,0.1,ok
-392,piece-06-04,tab,40.2,195.0,177.4,yes,39,782 382 892 882 393,,piece-07-01,edge,42.9,2.8,length mismatch
-392,piece-07-01,edge,42.9,6.8,148.5,yes,100,382 362 892 393 862,yes,piece-06-04,tab,40.2,2.8,length mismatch
+392,piece-06-04,tab,40.2,195.0,177.4,yes,39,782 382 892 882 393,,piece-07-01,edge,40.3,0.1,ok
+392,piece-07-01,edge,40.3,6.8,148.5,yes,100,382 362 892 393 862,yes,piece-06-04,tab,40.2,0.1,ok
 393,piece-04-05,tab,31.7,187.4,149.5,yes,51,828 398 893 898 383,,piece-04-07,edge,31.9,0.2,ok
 393,piece-04-07,edge,31.9,111.9,173.4,yes,100,33 303 193 398 103,yes,piece-04-05,tab,31.7,0.2,ok
 394,piece-04-02,edge,34.1,142.9,108.3,yes,61,304 384 894 884 668,,piece-04-05,tab,34.2,0.1,ok
 394,piece-04-05,tab,34.2,160.1,110.2,yes,40,384 894 884 396 386,,piece-04-02,edge,34.1,0.1,ok
-395,piece-04-05,tab,25.4,176.2,81.5,yes,-1,396 385 386 895 896,,piece-04-07,edge,33.6,8.2,length mismatch
-395,piece-04-07,edge,33.6,177.5,193.8,yes,95,396 305 895 306 896,,piece-04-05,tab,25.4,8.2,length mismatch
+395,piece-04-05,tab,25.4,176.2,81.5,yes,-1,396 385 386 895 896,,piece-04-07,edge,25.4,0.1,ok
+395,piece-04-07,edge,25.4,177.5,193.8,yes,95,396 305 895 306 896,,piece-04-05,tab,25.4,0.1,ok
 396,piece-04-02,edge,27.6,143.0,49.2,yes,100,398 386 896 388 898,yes,piece-04-05,tab,27.8,0.2,ok
 396,piece-04-05,tab,27.8,166.0,56.8,yes,100,65 395 966 336 335,yes,piece-04-02,edge,27.6,0.2,ok
 397,piece-18-01,edge,8.0,82.8,79.5,yes,94,387 897 391 887 381,,piece-19-01,none,0.0,8.0,line not found
@@ -805,8 +804,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 410,piece-04-04,tab,42.8,103.1,130.5,yes,53,419 440 449 065 055,,piece-04-03,edge,42.7,0.1,ok
 411,piece-04-02,edge,32.3,126.4,103.4,yes,91,471 611 414 665 671,,piece-04-04,tab,32.1,0.2,ok
 411,piece-04-04,tab,32.1,109.1,133.6,yes,44,417 471 611 665 655,,piece-04-02,edge,32.3,0.2,ok
-412,piece-04-02,edge,35.0,129.5,48.0,yes,95,413 472 012 965 565,,piece-04-04,tab,26.7,8.3,length mismatch
-412,piece-04-04,tab,26.7,107.2,76.8,yes,100,442 413 912 443 942,yes,piece-04-02,edge,35.0,8.3,length mismatch
+412,piece-04-02,edge,26.8,129.5,48.0,yes,95,413 472 012 965 565,,piece-04-04,tab,26.7,0.1,ok
+412,piece-04-04,tab,26.7,107.2,76.8,yes,100,442 413 912 443 942,yes,piece-04-02,edge,26.8,0.1,ok
 413,piece-04-03,edge,28.4,73.2,72.0,yes,90,418 443 013 448 018,,piece-04-04,tab,28.4,0.0,ok
 413,piece-04-04,tab,28.4,85.6,65.6,yes,91,418 443 613 448 618,,piece-04-03,edge,28.4,0.0,ok
 414,piece-04-02,tab,22.1,161.2,36.3,no,88,114 411 474 555 565,,piece-04-05,edge,22.2,0.0,ok
@@ -871,7 +870,7 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 442,piece-21-02,tab,22.8,163.0,153.1,yes,64,441 642 641 412 411,,piece-21-01,edge,23.4,0.6,ok
 443,piece-20-01,edge,25.3,53.1,160.6,yes,-1,143 448 413 865 665,,piece-21-02,tab,25.5,0.3,ok
 443,piece-21-02,tab,25.5,171.1,164.6,yes,96,413 448 143 418 113,,piece-20-01,edge,25.3,0.3,ok
-444,piece-17-07,edge,68.2,48.7,167.7,no,-1,144 644 494 146 164,,,,,,extra copy: likely misread
+444,piece-17-07,edge,42.0,48.7,167.7,no,-1,144 644 494 146 164,,,,,,extra copy: likely misread
 444,piece-21-02,tab,32.3,188.9,152.7,no,15,44 446 484 844 655,,piece-21-06,edge,32.4,0.2,ok
 444,piece-21-06,edge,32.4,18.9,233.2,no,89,144 414 440 656 666,,piece-21-02,tab,32.3,0.2,ok
 445,piece-21-02,tab,21.3,202.9,90.8,yes,100,45 446 045 415 046,yes,piece-21-06,edge,21.2,0.1,ok
@@ -889,14 +888,15 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 450,piece-24-13,edge,36.3,39.8,192.7,yes,100,459 460 469 850 859,yes,piece-19-07,tab,36.3,0.0,ok
 451,piece-19-05,edge,42.1,142.8,208.1,yes,100,45 461 454 651 464,yes,piece-19-07,tab,42.1,0.1,ok
 451,piece-19-07,tab,42.1,160.9,207.2,yes,100,461 481 484 454 181,yes,piece-19-05,edge,42.1,0.1,ok
-452,piece-21-07,edge,46.8,142.7,175.8,no,96,462 457 952 467 597,,,,,,unpaired
+452,piece-19-07,tab,39.0,195.6,170.3,yes,100,452 295 395 162 463,,piece-21-07,edge,38.9,0.0,ok
+452,piece-21-07,edge,38.9,142.7,175.8,yes,96,462 457 952 467 597,,piece-19-07,tab,39.0,0.0,ok
 453,piece-19-05,edge,40.8,146.1,125.0,yes,96,456 463 466 43 653,,piece-19-07,tab,40.8,0.0,ok
 453,piece-19-07,tab,40.8,174.5,132.4,yes,-1,463 458 468 805 605,,piece-19-05,edge,40.8,0.0,ok
-454,piece-19-04,none,0.0,149.5,26.5,yes,0,4 464 450 154 645,,piece-19-07,edge,28.1,28.1,line not found
-454,piece-19-07,edge,28.1,194.0,267.7,yes,92,464 459 854 469 605,,piece-19-04,none,0.0,28.1,line not found
+454,piece-19-04,none,0.0,149.5,26.5,yes,0,4 464 450 154 645,,piece-19-07,edge,10.7,10.7,line not found
+454,piece-19-07,edge,10.7,194.0,267.7,yes,92,464 459 854 469 605,,piece-19-04,none,0.0,10.7,line not found
 455,piece-19-04,tab,30.3,196.3,101.2,yes,96,456 485 486 655 995,,piece-19-08,edge,29.9,0.4,ok
 455,piece-19-08,edge,29.9,99.5,151.7,yes,95,456 465 466 995 655,,piece-19-04,tab,30.3,0.4,ok
-456,piece-04-01,edge,37.7,8.5,51.6,no,88,405 406 455 907 007,,,,,,extra copy: likely misread
+456,piece-04-01,edge,29.4,8.5,51.6,no,88,405 406 455 907 007,,,,,,extra copy: likely misread
 456,piece-19-01,edge,33.1,141.3,67.3,no,71,436 458 466 468 395,,piece-19-04,tab,33.1,0.0,ok
 456,piece-19-04,tab,33.1,167.6,95.9,no,96,455 466 465 156 995,,piece-19-01,edge,33.1,0.0,ok
 457,piece-19-04,tab,23.9,172.4,61.6,yes,96,487 451 481 157 187,,piece-24-12,none,0.0,23.9,line not found
@@ -905,13 +905,12 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 458,piece-19-08,edge,14.7,87.3,194.4,yes,94,456 468 466 995 895,,piece-19-04,tab,14.8,0.1,ok
 459,piece-19-04,tab,15.5,177.9,43.0,yes,100,459 460 450 685 605,,piece-24-12,edge,15.3,0.1,ok
 459,piece-24-12,edge,15.3,166.0,142.3,yes,100,4539 450 430 439 43,yes,piece-19-04,tab,15.5,0.1,ok
-460,piece-19-04,tab,17.5,158.5,15.6,yes,-1,450 469 095 459 098,,piece-19-07,edge,28.1,10.6,length mismatch
-460,piece-19-07,edge,28.1,195.4,253.7,yes,96,480 465 485 096 095,,piece-19-04,tab,17.5,10.6,length mismatch
+460,piece-19-04,tab,17.5,158.5,15.6,yes,-1,450 469 095 459 098,,piece-19-07,edge,17.4,0.1,ok
+460,piece-19-07,edge,17.4,195.4,253.7,yes,96,480 465 485 096 095,,piece-19-04,tab,17.5,0.1,ok
 461,piece-19-04,tab,24.4,170.9,16.7,yes,95,481 464 484 161 181,,piece-19-08,edge,24.4,0.0,ok
 461,piece-19-08,edge,24.4,96.2,246.4,yes,83,484 481 464 661 681,,piece-19-04,tab,24.4,0.0,ok
-462,piece-19-05,tab,26.3,140.9,262.3,no,100,482 463 483 162 695,yes,piece-24-16,edge,26.3,0.0,ok
-462,piece-19-07,tab,39.0,195.6,170.3,no,93,452 295 395 162 463,,,,,,extra copy: likely misread
-462,piece-24-16,edge,26.3,49.8,238.1,no,100,482 467 662 487 682,yes,piece-19-05,tab,26.3,0.0,ok
+462,piece-19-05,tab,26.3,140.9,262.3,yes,100,482 463 483 162 695,yes,piece-24-16,edge,26.3,0.0,ok
+462,piece-24-16,edge,26.3,49.8,238.1,yes,100,482 467 662 487 682,yes,piece-19-05,tab,26.3,0.0,ok
 463,piece-19-05,tab,25.7,149.1,240.7,yes,100,483 468 488 663 683,yes,piece-19-07,edge,25.6,0.1,ok
 463,piece-19-07,edge,25.6,162.5,239.6,yes,100,483 453 466 456 663,yes,piece-19-05,tab,25.7,0.1,ok
 464,piece-19-05,tab,17.0,107.4,225.2,no,84,484 597 595 587 664,,piece-19-06,edge,17.0,0.0,ok
@@ -924,8 +923,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 467,piece-21-08,edge,23.1,188.2,218.4,yes,100,87 487 461 481 967,yes,piece-19-05,tab,23.3,0.1,ok
 468,piece-19-05,edge,18.5,110.7,242.8,yes,95,458 466 456 668 658,,piece-19-06,tab,18.4,0.0,ok
 468,piece-19-06,tab,18.4,47.2,240.2,yes,91,448 465 445 168 46,,piece-19-05,edge,18.5,0.0,ok
-470,piece-17-05,edge,34.7,188.3,59.3,yes,96,479 170 420 179 429,,piece-19-06,tab,26.9,7.9,length mismatch
-470,piece-19-06,tab,26.9,15.1,255.1,yes,96,410 476 416 170 40,,piece-17-05,edge,34.7,7.9,length mismatch
+470,piece-17-05,edge,26.7,188.3,59.3,yes,96,479 170 420 179 429,,piece-19-06,tab,26.9,0.1,ok
+470,piece-19-06,tab,26.9,15.1,255.1,yes,96,410 476 416 170 40,,piece-17-05,edge,26.7,0.1,ok
 471,piece-19-05,edge,34.1,107.0,201.1,yes,82,474 171 477 411 177,,piece-19-06,tab,34.1,0.0,ok
 471,piece-19-06,tab,34.1,28.6,208.9,no,63,4714 411 474 671 414,,piece-19-05,edge,34.1,0.0,ok
 472,piece-19-03,edge,42.5,31.1,107.2,yes,92,422 477 172 427 122,,piece-19-06,tab,42.5,0.0,ok
@@ -938,8 +937,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 475,piece-21-03,tab,24.7,98.4,94.1,yes,96,476 415 416 975 095,,piece-21-01,edge,24.8,0.1,ok
 476,piece-21-03,tab,20.1,58.4,77.3,yes,100,478 416 418 076 078,yes,piece-21-04,edge,20.1,0.0,ok
 476,piece-21-04,edge,20.1,45.3,75.2,yes,100,478 416 418 976 978,yes,piece-21-03,tab,20.1,0.0,ok
-477,piece-19-08,edge,53.7,62.0,194.3,yes,88,471 417 411 677 07,,piece-21-03,tab,45.8,7.9,length mismatch
-477,piece-21-03,tab,45.8,84.0,15.9,yes,96,417 471 177 411 117,,piece-19-08,edge,53.7,7.9,length mismatch
+477,piece-19-08,edge,45.8,62.0,194.3,yes,88,471 417 411 677 07,,piece-21-03,tab,45.8,0.0,ok
+477,piece-21-03,tab,45.8,84.0,15.9,yes,96,417 471 177 411 117,,piece-19-08,edge,45.8,0.0,ok
 478,piece-21-03,tab,34.7,61.4,22.9,yes,96,476 418 416 178 176,,piece-21-04,edge,34.7,0.0,ok
 478,piece-21-04,edge,34.7,50.9,20.3,yes,82,476 418 416 945 678,,piece-21-03,tab,34.7,0.0,ok
 479,piece-21-01,edge,34.8,124.0,18.2,no,79,473 419 476 416 679,,piece-21-03,tab,34.8,0.0,ok
@@ -980,14 +979,14 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 496,piece-19-08,none,0.0,98.7,263.4,yes,76,498 426 428 965 995,,piece-19-07,edge,17.7,17.7,line not found
 497,piece-12-02,edge,18.2,134.2,47.7,no,0,7 487 491 481 797,,piece-24-09,tab,18.4,0.2,ok
 497,piece-24-09,tab,18.4,119.6,103.1,yes,100,497 401 107 491 197,,piece-12-02,edge,18.2,0.2,ok
-498,piece-24-07,edge,52.8,99.1,107.9,yes,87,496 488 486 665 685,,piece-24-09,tab,53.2,0.3,ok
-498,piece-24-09,tab,53.2,112.6,110.4,yes,67,867 496 488 486 965,,piece-24-07,edge,52.8,0.3,ok
+498,piece-24-07,edge,23.4,99.1,107.9,yes,87,496 488 486 665 685,,piece-24-09,tab,53.2,29.7,length mismatch
+498,piece-24-09,tab,53.2,112.6,110.4,yes,67,867 496 488 486 965,,piece-24-07,edge,23.4,29.7,length mismatch
 499,piece-12-02,edge,31.0,136.9,23.7,yes,100,498 495 409 665 865,yes,piece-24-09,tab,30.9,0.0,ok
 499,piece-24-09,tab,30.9,129.5,120.5,yes,100,498 489 488 665 685,yes,piece-12-02,edge,31.0,0.0,ok
 500,piece-12-07,edge,43.2,116.4,83.7,yes,100,600 560 660 509 609,yes,piece-24-09,tab,43.1,0.1,ok
 500,piece-24-09,tab,43.1,130.5,157.0,yes,100,600 505 009 605 550,yes,piece-12-07,edge,43.2,0.1,ok
-501,piece-24-07,edge,52.8,98.9,134.7,yes,71,551 601 651 504 554,,piece-24-09,tab,53.2,0.3,ok
-501,piece-24-09,tab,53.2,112.3,136.9,yes,29,30 601 591 691 504,,piece-24-07,edge,52.8,0.3,ok
+501,piece-24-07,edge,29.4,98.9,134.7,yes,71,551 601 651 504 554,,piece-24-09,tab,53.2,23.8,length mismatch
+501,piece-24-09,tab,53.2,112.3,136.9,yes,29,30 601 591 691 504,,piece-24-07,edge,29.4,23.8,length mismatch
 502,piece-15-04,edge,33.9,135.6,85.7,yes,100,542 602 642 509 549,yes,piece-15-05,tab,33.8,0.1,ok
 502,piece-15-05,tab,33.8,79.5,82.5,yes,100,602 592 692 507 607,yes,piece-15-04,edge,33.9,0.1,ok
 503,piece-15-02,edge,26.6,97.6,39.5,yes,95,593 903 508 993 805,,piece-15-05,tab,26.4,0.2,ok
@@ -1036,8 +1035,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 525,piece-15-10,tab,30.9,138.4,171.4,yes,94,526 625 626 535 536,,piece-15-09,edge,30.9,0.0,ok
 526,piece-15-10,tab,36.3,37.5,250.0,yes,94,528 826 576 925 965,,piece-17-04,edge,36.2,0.1,ok
 526,piece-17-04,edge,36.2,115.0,78.5,yes,85,528 626 628 939 536,,piece-15-10,tab,36.3,0.1,ok
-527,piece-15-08,edge,56.1,142.1,234.8,yes,96,327 521 537 321 337,,piece-15-10,tab,42.3,13.8,length mismatch
-527,piece-15-10,tab,42.3,79.0,211.0,yes,-1,627 522 597 622 697,,piece-15-08,edge,56.1,13.8,length mismatch
+527,piece-15-08,edge,41.2,142.1,234.8,yes,96,327 521 537 321 337,,piece-15-10,tab,42.3,1.1,length mismatch
+527,piece-15-10,tab,42.3,79.0,211.0,yes,-1,627 522 597 622 697,,piece-15-08,edge,41.2,1.1,length mismatch
 528,piece-15-09,edge,32.9,103.8,163.1,yes,6,522 526 628 626 598,,piece-15-10,tab,32.7,0.2,ok
 528,piece-15-10,tab,32.7,91.8,217.7,yes,94,526 628 538 626 536,,piece-15-09,edge,32.9,0.2,ok
 529,piece-15-06,edge,25.0,23.0,177.4,yes,0,629 520 620 659 539,,piece-15-08,tab,25.0,0.0,ok
@@ -1054,7 +1053,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 534,piece-15-10,edge,31.7,106.9,186.8,yes,100,634 584 684 536 530,yes,piece-15-08,tab,32.6,0.8,ok
 535,piece-15-08,tab,36.3,87.3,249.3,yes,87,3 635 585 538 685,,piece-17-03,edge,36.3,0.1,ok
 535,piece-17-03,edge,36.3,23.2,176.9,yes,51,538 635 565 638 568,,piece-15-08,tab,36.3,0.1,ok
-536,piece-15-08,tab,52.0,105.0,263.0,no,96,535 636 635 586 980,,,,,,unpaired
+536,piece-15-08,tab,52.0,105.0,263.0,yes,96,535 636 635 586 980,,piece-15-10,edge,51.6,0.3,ok
+536,piece-15-10,edge,51.6,41.3,239.5,yes,100,556 516 559 656 519,,piece-15-08,tab,52.0,0.3,ok
 537,piece-17-10,edge,31.0,62.5,235.4,yes,100,637 587 531 687 631,yes,piece-19-02,tab,30.9,0.1,ok
 537,piece-19-02,tab,30.9,76.3,9.1,yes,100,507 567 607 667 501,yes,piece-17-10,edge,31.0,0.1,ok
 538,piece-13-03,edge,54.3,166.7,17.0,yes,0,536 638 636 588 586,,piece-19-02,tab,54.5,0.2,ok
@@ -1119,8 +1119,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 569,piece-24-16,tab,23.6,25.4,241.0,yes,100,665 599 589 59 669,yes,piece-19-05,edge,23.6,0.0,ok
 570,piece-04-06,tab,27.5,22.0,268.9,no,68,578 579 679 529 670,,piece-10-01,edge,16.7,10.7,length mismatch
 570,piece-10-01,edge,16.7,80.0,19.7,yes,94,670 520 576 620 676,,piece-04-06,tab,27.5,10.7,length mismatch
-571,piece-24-16,tab,24.6,16.3,260.8,yes,0,71 671 574 511 674,,piece-24-16,edge,33.3,8.7,length mismatch
-571,piece-24-16,edge,33.3,35.5,272.1,yes,94,671 577 511 677 611,,piece-24-16,tab,24.6,8.7,length mismatch
+571,piece-24-16,tab,24.6,16.3,260.8,yes,0,71 671 574 511 674,,piece-24-16,edge,24.7,0.1,ok
+571,piece-24-16,edge,24.7,35.5,272.1,yes,94,671 577 511 677 611,,piece-24-16,tab,24.6,0.1,ok
 572,piece-04-08,tab,50.2,77.0,261.4,yes,100,2 577 592 672 597,yes,piece-12-10,edge,50.2,0.1,ok
 572,piece-12-10,edge,50.2,81.7,234.4,yes,100,672 512 577 612 677,yes,piece-04-08,tab,50.2,0.1,ok
 573,piece-04-08,tab,58.9,130.8,266.4,yes,100,523 673 578 623 528,yes,piece-12-11,edge,58.9,0.0,ok
@@ -1132,8 +1132,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 576,piece-04-06,tab,44.3,19.3,206.2,no,100,576 678 676 518 516,,piece-22-05,edge,44.3,0.0,ok
 576,piece-22-05,edge,44.3,185.5,198.3,no,95,676 578 516 678 949,,piece-04-06,tab,44.3,0.0,ok
 576,piece-24-16,none,0.0,12.1,244.9,no,72,019 570 670 510 676,,,,,,extra copy: likely misread
-577,piece-04-06,tab,47.9,42.9,207.0,yes,96,677 571 517 671 617,,piece-12-09,edge,56.0,8.2,length mismatch
-577,piece-12-09,edge,56.0,84.8,175.4,yes,8,215 377 527 572 327,,piece-04-06,tab,47.9,8.2,length mismatch
+577,piece-04-06,tab,47.9,42.9,207.0,yes,96,677 571 517 671 617,,piece-12-09,edge,48.1,0.2,ok
+577,piece-12-09,edge,48.1,84.8,175.4,yes,8,215 377 527 572 327,,piece-04-06,tab,47.9,0.2,ok
 578,piece-04-06,tab,38.1,14.5,247.3,no,88,576 678 676 518 516,,piece-22-06,edge,38.2,0.1,ok
 578,piece-04-08,edge,27.4,197.7,249.5,no,92,579 678 679 518 519,,,,,,extra copy: likely misread
 578,piece-22-06,edge,38.2,197.7,253.0,no,87,576 678 676 518 516,,piece-04-06,tab,38.1,0.1,ok
@@ -1228,9 +1228,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 621,piece-07-01,tab,33.0,8.6,74.6,yes,100,821 624 631 824 831,yes,piece-06-05,edge,33.1,0.1,ok
 622,piece-07-03,edge,52.1,174.2,24.8,yes,-1,522 623 632 523 532,,piece-07-05,tab,52.0,0.0,ok
 622,piece-07-05,tab,52.0,63.6,28.0,yes,96,822 632 623 832 823,,piece-07-03,edge,52.1,0.0,ok
-623,piece-07-05,tab,54.3,55.9,28.3,no,69,523 626 526 633 533,,piece-07-08,edge,54.0,0.3,ok
-623,piece-07-08,edge,54.0,106.3,144.7,no,78,823 628 828 693 893,,piece-07-05,tab,54.3,0.3,ok
-623,piece-24-02,tab,24.1,196.5,53.3,no,94,629 628 829 828 699,,,,,,extra copy: likely misread
+623,piece-07-05,tab,54.3,55.9,28.3,yes,69,523 626 526 633 533,,piece-07-08,edge,54.0,0.3,ok
+623,piece-07-08,edge,54.0,106.3,144.7,yes,78,823 628 828 693 893,,piece-07-05,tab,54.3,0.3,ok
 624,piece-07-02,edge,40.7,112.3,112.9,yes,100,824 620 694 820 894,yes,piece-07-05,tab,40.7,0.0,ok
 624,piece-07-05,tab,40.7,66.0,73.9,yes,100,824 620 634 820 834,yes,piece-07-02,edge,40.7,0.0,ok
 625,piece-07-05,tab,39.5,38.4,117.1,yes,100,626 525 526 635 636,yes,piece-07-08,edge,39.4,0.1,ok
@@ -1242,7 +1241,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 628,piece-17-06,edge,59.2,75.4,113.0,no,-1,626 636 969 638 62,,,,,,extra copy: likely misread
 628,piece-24-02,edge,37.5,163.7,24.3,no,94,528 625 638 525 538,,piece-24-02,tab,37.6,0.1,ok
 628,piece-24-02,tab,37.6,179.6,53.2,no,100,628 626 528 526 820,,piece-24-02,edge,37.5,0.1,ok
-629,piece-17-07,edge,32.1,29.4,206.0,no,76,620 829 820 679 659,,,,,,unpaired
+629,piece-17-07,edge,23.9,29.4,206.0,yes,76,620 829 820 679 659,,piece-24-02,tab,24.1,0.1,ok
+629,piece-24-02,tab,24.1,196.5,53.3,yes,100,629 628 829 828 699,,piece-17-07,edge,23.9,0.1,ok
 630,piece-17-03,edge,20.5,22.3,105.3,yes,100,830 680 635 880 835,yes,piece-24-02,tab,20.4,0.1,ok
 630,piece-24-02,tab,20.4,171.2,8.5,yes,100,830 030 639 039 839,yes,piece-17-03,edge,20.5,0.1,ok
 631,piece-24-06,tab,18.6,177.2,68.5,no,96,831 681 637 881 837,,,,,,unpaired
@@ -1284,12 +1284,12 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 649,piece-12-11,tab,56.0,144.1,258.9,yes,100,849 648 848 859 858,yes,piece-09-01,edge,56.0,0.1,ok
 650,piece-07-03,tab,20.3,166.3,104.3,yes,31,09 850 660 099 009,,piece-08-02,edge,20.1,0.2,ok
 650,piece-08-02,edge,20.1,20.8,12.6,yes,96,850 660 653 860 853,,piece-07-03,tab,20.3,0.2,ok
-651,piece-07-03,tab,40.6,157.2,133.5,yes,67,654 681 851 881 699,,piece-09-06,edge,48.7,8.1,length mismatch
-651,piece-09-06,edge,48.7,123.9,237.2,yes,96,951 661 654 961 954,,piece-07-03,tab,40.6,8.1,length mismatch
-652,piece-07-03,tab,51.9,155.1,179.0,yes,79,799 662 852 862 399,,piece-09-02,edge,64.1,12.1,length mismatch
-652,piece-09-02,edge,64.1,31.4,24.9,yes,87,662 852 862 653 599,,piece-07-03,tab,51.9,12.1,length mismatch
-653,piece-07-03,tab,46.0,152.6,182.4,yes,82,853 663 863 658 858,,piece-07-04,edge,76.1,30.1,length mismatch
-653,piece-07-04,edge,76.1,110.1,28.0,yes,91,663 853 863 658 668,,piece-07-03,tab,46.0,30.1,length mismatch
+651,piece-07-03,tab,40.6,157.2,133.5,yes,67,654 681 851 881 699,,piece-09-06,edge,40.6,0.0,ok
+651,piece-09-06,edge,40.6,123.9,237.2,yes,96,951 661 654 961 954,,piece-07-03,tab,40.6,0.0,ok
+652,piece-07-03,tab,51.9,155.1,179.0,yes,79,799 662 852 862 399,,piece-09-02,edge,51.8,0.1,ok
+652,piece-09-02,edge,51.8,31.4,24.9,yes,87,662 852 862 653 599,,piece-07-03,tab,51.9,0.1,ok
+653,piece-07-03,tab,46.0,152.6,182.4,yes,82,853 663 863 658 858,,piece-07-04,edge,46.2,0.3,ok
+653,piece-07-04,edge,46.2,110.1,28.0,yes,91,663 853 863 658 668,,piece-07-03,tab,46.0,0.3,ok
 654,piece-07-03,tab,55.4,182.8,28.1,yes,-1,854 664 864 656 609,,piece-07-06,edge,55.4,0.0,ok
 654,piece-07-06,edge,55.4,197.4,251.2,yes,87,664 854 864 599 656,,piece-07-03,tab,55.4,0.0,ok
 655,piece-17-09,edge,27.7,13.1,215.9,no,-1,665 666 656 965 955,,,,,,unpaired
@@ -1297,17 +1297,17 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 656,piece-09-03,tab,51.8,58.7,29.6,no,92,853 658 858 856 668,,piece-09-02,edge,51.5,0.3,ok
 657,piece-09-01,edge,42.3,160.9,61.0,yes,100,667 857 867 651 661,yes,piece-09-03,tab,42.2,0.2,ok
 657,piece-09-03,tab,42.2,86.7,74.0,yes,100,667 687 867 661 681,,piece-09-01,edge,42.3,0.2,ok
-658,piece-09-02,edge,60.9,8.0,69.8,yes,100,329 656 556 666 558,yes,piece-09-03,tab,42.8,18.1,length mismatch
-658,piece-09-03,tab,42.8,57.8,117.3,yes,95,668 656 558 666 568,,piece-09-02,edge,60.9,18.1,length mismatch
-659,piece-12-08,edge,61.8,197.3,169.9,no,89,668 669 699 859 869,,piece-15-10,edge,51.6,10.2,no tab
-659,piece-15-10,edge,51.6,41.3,239.5,no,-1,556 516 559 656 519,,piece-12-08,edge,61.8,10.2,no tab
-660,piece-07-04,edge,76.1,106.1,66.4,yes,95,860 680 665 880 865,,piece-09-03,tab,30.5,45.6,length mismatch
-660,piece-09-03,tab,30.5,68.9,196.8,yes,80,6860 680 860 666 099,,piece-07-04,edge,76.1,45.6,length mismatch
+658,piece-09-02,edge,40.6,8.0,69.8,yes,100,329 656 556 666 558,yes,piece-09-03,tab,42.8,2.2,length mismatch
+658,piece-09-03,tab,42.8,57.8,117.3,yes,95,668 656 558 666 568,,piece-09-02,edge,40.6,2.2,length mismatch
+659,piece-09-03,tab,61.8,80.9,177.6,yes,100,839 659 559 658 669,,piece-12-08,edge,61.8,0.0,ok
+659,piece-12-08,edge,61.8,197.3,169.9,no,89,668 669 699 859 869,,piece-09-03,tab,61.8,0.0,ok
+660,piece-07-04,edge,29.9,106.1,66.4,yes,95,860 680 665 880 865,,piece-09-03,tab,30.5,0.6,ok
+660,piece-09-03,tab,30.5,68.9,196.8,yes,80,6860 680 860 666 099,,piece-07-04,edge,29.9,0.6,ok
 661,piece-08-03,tab,57.6,176.2,104.3,yes,95,681 561 667 581 687,,piece-08-06,edge,57.3,0.3,ok
 661,piece-08-06,edge,57.3,58.1,260.8,yes,70,681 561 581 589 599,,piece-08-03,tab,57.6,0.3,ok
 662,piece-08-02,edge,29.7,10.1,103.8,no,100,288 662 682 882 599,,piece-08-03,tab,29.6,0.0,ok
 662,piece-08-03,tab,29.6,158.3,24.7,no,88,862 682 882 299 669,,piece-08-02,edge,29.7,0.0,ok
-662,piece-24-12,edge,24.0,201.0,171.0,no,75,388 866 666 886 686,,,,,,extra copy: likely misread
+662,piece-24-12,edge,13.8,201.0,171.0,no,75,388 866 666 886 686,,,,,,extra copy: likely misread
 663,piece-08-01,edge,27.3,109.9,104.3,yes,100,863 668 683 868 883,yes,piece-08-03,tab,27.0,0.3,ok
 663,piece-08-03,tab,27.0,149.4,60.7,yes,100,883 563 653 553 665,yes,piece-08-01,edge,27.3,0.3,ok
 664,piece-08-01,edge,21.4,117.5,54.0,yes,86,684 864 884 599 666,,piece-08-03,tab,21.4,0.0,ok
@@ -1318,8 +1318,7 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 666,piece-08-05,edge,61.7,157.5,206.7,yes,84,999 686 866 668 886,,piece-08-02,tab,62.0,0.3,ok
 667,piece-07-03,edge,41.9,176.9,74.8,yes,96,687 867 887 661 999,,piece-08-02,tab,42.1,0.2,ok
 667,piece-08-02,tab,42.1,36.3,39.0,yes,92,867 687 887 661 861,,piece-07-03,edge,41.9,0.2,ok
-668,piece-08-02,tab,46.8,10.5,41.7,no,0,88 868 688 888 666,,piece-09-03,tab,61.8,15.0,both tabs
-668,piece-09-03,tab,61.8,80.9,177.6,no,31,839 659 559 658 669,,piece-08-02,tab,46.8,15.0,both tabs
+668,piece-08-02,tab,46.8,10.5,41.7,no,0,88 868 688 888 666,,,,,,unpaired
 669,piece-06-05,tab,30.7,128.6,223.2,yes,100,269 689 668 289 699,yes,piece-06-06,edge,30.8,0.1,ok
 669,piece-06-06,edge,30.8,191.3,243.7,yes,100,6 699 689 869 569,yes,piece-06-05,tab,30.7,0.1,ok
 670,piece-06-04,edge,38.3,193.5,19.5,yes,95,870 675 610 099 069,,piece-06-05,tab,38.3,0.0,ok
@@ -1335,8 +1334,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 675,piece-09-06,edge,55.3,28.0,207.9,yes,95,676 875 625 876 626,,piece-09-02,tab,55.2,0.2,ok
 676,piece-09-02,tab,41.1,7.8,111.6,yes,100,678 576 578 616 618,yes,piece-09-03,edge,40.7,0.4,ok
 676,piece-09-03,edge,40.7,57.4,75.6,yes,100,876 678 878 616 618,yes,piece-09-02,tab,41.1,0.4,ok
-677,piece-09-02,tab,50.6,14.5,25.4,yes,62,577 617 517 671 571,,piece-09-03,edge,56.2,5.6,length mismatch
-677,piece-09-03,edge,56.2,58.8,163.1,no,-1,877 817 871 617 671,,piece-09-02,tab,50.6,5.6,length mismatch
+677,piece-09-02,tab,50.6,14.5,25.4,yes,62,577 617 517 671 571,,piece-09-03,edge,48.5,2.1,length mismatch
+677,piece-09-03,edge,48.5,58.8,163.1,no,-1,877 817 871 617 671,,piece-09-02,tab,50.6,2.1,length mismatch
 678,piece-08-02,edge,25.6,6.3,77.5,yes,100,676 878 876 618 616,yes,piece-09-06,tab,25.3,0.3,ok
 678,piece-09-06,tab,25.3,33.5,236.9,yes,100,676 578 628 576 626,yes,piece-08-02,edge,25.6,0.3,ok
 679,piece-09-01,edge,45.7,136.5,3.1,yes,96,670 879 629 870 620,,piece-09-06,tab,45.6,0.2,ok
@@ -1365,14 +1364,14 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 693,piece-12-04,edge,12.4,38.9,51.0,no,-1,593 563 598 663 698,,piece-09-01,tab,55.2,42.9,length mismatch
 694,piece-12-10,edge,60.3,72.8,269.0,yes,96,594 684 691 569 589,,piece-13-03,tab,60.3,0.1,ok
 694,piece-13-03,tab,60.3,202.2,96.5,yes,74,768 684 894 884 669,,piece-12-10,edge,60.3,0.1,ok
-695,piece-12-07,edge,31.0,99.5,79.8,no,0,6 595 596 696 565,,piece-13-03,tab,50.8,19.8,length mismatch
-695,piece-13-03,tab,50.8,183.6,199.3,yes,95,295 698 685 969 298,,piece-12-07,edge,31.0,19.8,length mismatch
+695,piece-12-07,edge,23.9,99.5,79.8,no,0,6 595 596 696 565,,piece-13-03,tab,50.8,26.9,length mismatch
+695,piece-13-03,tab,50.8,183.6,199.3,yes,95,295 698 685 969 298,,piece-12-07,edge,23.9,26.9,length mismatch
 697,piece-10-02,edge,34.8,172.0,166.6,yes,100,097 667 691 067 091,yes,piece-10-04,tab,35.0,0.2,ok
 697,piece-10-04,tab,35.0,123.8,166.4,yes,100,617 817 897 619 699,yes,piece-10-02,edge,34.8,0.2,ok
 698,piece-10-04,tab,59.3,106.3,137.6,no,83,68 688 696 686 898,,piece-13-03,tab,54.3,5.0,both tabs
 698,piece-13-03,tab,54.3,154.0,30.7,no,52,6282 693 893 683 883,,piece-10-04,tab,59.3,5.0,both tabs
-700,piece-10-01,edge,100.0,51.7,20.9,yes,96,706 100 760 009 002,,piece-10-04,tab,99.9,0.1,ok
-700,piece-10-04,tab,99.9,125.9,17.2,yes,82,002 750 705 100 006,,piece-10-01,edge,100.0,0.1,ok
+700,piece-10-01,edge,32.6,51.7,20.9,yes,96,706 100 760 009 002,,piece-10-04,tab,99.9,67.3,length mismatch
+700,piece-10-04,tab,99.9,125.9,17.2,yes,82,002 750 705 100 006,,piece-10-01,edge,32.6,67.3,length mismatch
 701,piece-19-04,edge,23.3,163.2,33.7,no,0,71 791 201 708 291,,piece-24-12,tab,23.3,0.0,ok
 701,piece-24-12,tab,23.3,148.9,135.0,yes,-1,761 101 161 704 764,,piece-19-04,edge,23.3,0.0,ok
 702,piece-19-01,edge,23.1,140.7,33.3,yes,95,752 102 703 152 753,,piece-24-12,tab,22.9,0.1,ok
@@ -1428,16 +1427,16 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 727,piece-24-06,edge,20.7,201.8,85.7,yes,90,721 127 737 121 731,,piece-17-01,tab,62.4,41.7,length mismatch
 728,piece-10-04,edge,80.0,101.8,67.8,yes,96,726 128 778 126 776,,piece-17-01,tab,80.1,0.1,ok
 728,piece-17-01,tab,80.1,87.9,46.2,yes,96,726 128 126 798 796,,piece-10-04,edge,80.0,0.1,ok
-729,piece-17-01,edge,41.1,60.0,80.4,yes,73,726 728 129 799 128,,piece-17-09,tab,17.9,23.2,length mismatch
-729,piece-17-09,tab,17.9,12.4,239.3,yes,100,720 728 129 128 739,yes,piece-17-01,edge,41.1,23.2,length mismatch
-730,piece-17-07,edge,68.2,27.1,193.9,no,92,230 735 760 235 260,,,,,,unpaired
-731,piece-04-07,edge,55.9,142.9,187.4,yes,-1,781 231 281 734 784,,piece-24-02,edge,21.1,34.8,no tab
-731,piece-24-02,edge,21.1,189.7,15.3,yes,96,231 781 737 281 237,,piece-04-07,edge,55.9,34.8,no tab
+729,piece-17-01,edge,17.9,60.0,80.4,yes,73,726 728 129 799 128,,piece-17-09,tab,17.9,0.0,ok
+729,piece-17-09,tab,17.9,12.4,239.3,yes,100,720 728 129 128 739,yes,piece-17-01,edge,17.9,0.0,ok
+730,piece-17-07,edge,26.2,27.1,193.9,no,92,230 735 760 235 260,,,,,,unpaired
+731,piece-04-07,edge,32.5,142.9,187.4,yes,-1,781 231 281 734 784,,piece-24-02,edge,21.1,11.4,no tab
+731,piece-24-02,edge,21.1,189.7,15.3,yes,96,231 781 737 281 237,,piece-04-07,edge,32.5,11.4,no tab
 732,piece-17-03,edge,22.3,18.2,148.7,no,95,762 132 733 162 763,,,,,,unpaired
 733,piece-17-09,tab,17.9,18.3,264.5,yes,21,73 133 738 783 138,,piece-24-06,edge,18.0,0.1,ok
 733,piece-24-06,edge,18.0,202.3,103.6,yes,95,738 783 133 788 138,,piece-17-09,tab,17.9,0.1,ok
-734,piece-17-01,edge,41.1,61.9,59.9,yes,0,74 784 134 184 739,,piece-17-09,tab,23.3,17.8,length mismatch
-734,piece-17-09,tab,23.3,13.0,259.8,yes,82,764 134 736 164 766,,piece-17-01,edge,41.1,17.8,length mismatch
+734,piece-17-01,edge,23.3,61.9,59.9,yes,0,74 784 134 184 739,,piece-17-09,tab,23.3,0.1,ok
+734,piece-17-09,tab,23.3,13.0,259.8,yes,82,764 134 736 164 766,,piece-17-01,edge,23.3,0.1,ok
 735,piece-16-06,none,0.0,111.7,92.1,yes,-1,736 725 235 726 236,,piece-17-06,edge,19.0,19.0,line not found
 735,piece-17-06,edge,19.0,95.9,84.4,yes,27,135 736 785 589 586,,piece-16-06,none,0.0,19.0,line not found
 736,piece-16-06,tab,42.0,111.5,109.2,yes,82,738 786 788 136 138,,piece-16-07,edge,41.3,0.7,ok
@@ -1462,18 +1461,17 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 745,piece-12-05,none,0.0,15.6,141.1,yes,85,746 145 146 765 766,,piece-11-04,edge,9.2,9.2,line not found
 746,piece-12-03,edge,30.6,193.0,27.2,yes,100,748 146 716 148 718,yes,piece-12-05,tab,30.5,0.1,ok
 746,piece-12-05,tab,30.5,16.4,56.6,yes,100,748 146 148 766 768,yes,piece-12-03,edge,30.6,0.1,ok
-747,piece-24-03,tab,53.1,99.2,71.4,yes,95,147 741 717 141 959,,piece-24-04,edge,53.3,0.1,ok
-747,piece-24-04,edge,53.3,82.1,71.9,yes,91,147 741 767 141 167,,piece-24-03,tab,53.1,0.1,ok
+747,piece-24-03,tab,53.1,99.2,71.4,yes,95,147 741 717 141 959,,piece-24-04,edge,23.7,29.4,length mismatch
+747,piece-24-04,edge,23.7,82.1,71.9,yes,91,147 741 767 141 167,,piece-24-03,tab,53.1,29.4,length mismatch
 748,piece-11-03,edge,19.7,69.8,50.3,yes,87,746 74 718 716 148,,piece-24-03,tab,18.9,0.8,ok
 748,piece-24-03,tab,18.9,105.5,79.0,yes,21,746 148 146 718 959,,piece-11-03,edge,19.7,0.8,ok
-749,piece-24-03,tab,53.1,100.2,44.9,yes,80,746 149 146 769 76,,piece-24-04,edge,53.3,0.1,ok
-749,piece-24-04,edge,53.3,84.6,45.2,yes,55,748 249 248 656 659,,piece-24-03,tab,53.1,0.1,ok
+749,piece-24-03,tab,53.1,100.2,44.9,yes,80,746 149 146 769 76,,piece-24-04,edge,29.5,23.6,length mismatch
+749,piece-24-04,edge,29.5,84.6,45.2,yes,55,748 249 248 656 659,,piece-24-03,tab,53.1,23.6,length mismatch
 750,piece-24-09,edge,18.1,120.9,177.7,no,88,783 786 756 780 099,,,,,,unpaired
 751,piece-11-06,edge,23.8,134.0,77.6,yes,100,784 761 754 764 151,yes,piece-11-07,tab,23.3,0.5,ok
 751,piece-11-07,tab,23.3,105.1,83.4,no,75,781 761 161 151 764,,piece-11-06,edge,23.8,0.5,ok
-752,piece-10-05,edge,57.5,204.1,186.1,no,90,782 152 182 757 787,,,,,,extra copy: likely misread
 752,piece-11-03,edge,14.9,75.2,10.6,no,-1,152 762 757 162 157,,piece-11-07,tab,14.8,0.1,ok
-752,piece-11-07,tab,14.8,82.4,111.5,no,83,57 762 252 753 262,,piece-11-03,edge,14.9,0.1,ok
+752,piece-11-07,tab,14.8,82.4,111.5,yes,83,57 762 252 753 262,,piece-11-03,edge,14.9,0.1,ok
 753,piece-11-07,tab,29.0,92.5,118.3,yes,93,153 763 758 163 158,,piece-16-04,edge,29.0,0.0,ok
 753,piece-16-04,edge,29.0,80.8,6.7,yes,-1,763 758 768 053 063,,piece-11-07,tab,29.0,0.0,ok
 754,piece-11-05,edge,10.1,147.9,48.7,yes,-1,254 764 264 54 751,,piece-11-06,tab,10.1,0.0,ok
@@ -1492,7 +1490,8 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 760,piece-11-11,edge,38.8,30.1,200.9,no,100,780 766 160 786 180,yes,piece-11-10,tab,38.8,0.0,ok
 761,piece-11-11,tab,50.8,111.8,190.5,yes,100,751 261 763 251 753,yes,piece-13-02,edge,50.7,0.1,ok
 761,piece-13-02,edge,50.7,22.5,188.7,yes,100,784 781 764 161 181,yes,piece-11-11,tab,50.8,0.1,ok
-762,piece-11-11,tab,56.1,61.3,258.6,no,-1,782 162 763 296 182,,,,,,unpaired
+762,piece-10-05,edge,56.0,204.1,186.1,yes,100,782 152 182 757 787,,piece-11-11,tab,56.1,0.1,ok
+762,piece-11-11,tab,56.1,61.3,258.6,no,-1,782 162 763 296 182,,piece-10-05,edge,56.0,0.1,ok
 763,piece-13-01,edge,43.0,133.4,127.6,yes,95,783 263 762 283 782,,piece-13-02,tab,43.1,0.1,ok
 763,piece-13-02,tab,43.1,62.2,72.0,yes,95,783 163 768 183 788,,piece-13-01,edge,43.0,0.1,ok
 764,piece-11-10,edge,60.2,135.4,268.8,yes,0,7 744 768 164 748,,piece-13-02,tab,60.3,0.1,ok
@@ -1534,10 +1533,10 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 781,piece-24-07,tab,32.8,80.3,158.6,yes,91,761 787 181 767 161,,piece-11-05,edge,13.6,19.2,length mismatch
 782,piece-24-07,tab,28.0,99.7,163.3,yes,96,762 182 162 783 763,,piece-24-09,edge,27.5,0.5,ok
 782,piece-24-09,edge,27.5,112.5,165.5,yes,96,762 182 783 162 763,,piece-24-07,tab,28.0,0.5,ok
-784,piece-04-07,edge,55.9,115.9,179.9,no,0,764 184 164 786 686,,,,,,unpaired
-785,piece-24-07,edge,23.2,94.9,173.6,no,100,786 285 755 78 76,yes,,,,,unpaired
-786,piece-11-03,edge,43.6,56.4,67.2,yes,84,766 788 768 286 969,,piece-24-04,tab,24.1,19.5,length mismatch
-786,piece-24-04,tab,24.1,70.2,82.4,yes,100,78 766 780 760 286,yes,piece-11-03,edge,43.6,19.5,length mismatch
+784,piece-04-07,edge,23.4,115.9,179.9,no,0,764 184 164 786 686,,,,,,unpaired
+785,piece-24-07,edge,15.4,94.9,173.6,no,100,786 285 755 78 76,yes,,,,,unpaired
+786,piece-11-03,edge,23.0,56.4,67.2,yes,84,766 788 768 286 969,,piece-24-04,tab,24.1,1.1,length mismatch
+786,piece-24-04,tab,24.1,70.2,82.4,yes,100,78 766 780 760 286,yes,piece-11-03,edge,23.0,1.1,length mismatch
 787,piece-05-07,edge,29.1,29.6,198.0,yes,84,767 781 287 761 267,,piece-24-04,tab,29.2,0.1,ok
 787,piece-24-04,tab,29.2,56.1,46.0,yes,94,767 757 167 761 157,,piece-05-07,edge,29.1,0.1,ok
 788,piece-24-03,edge,27.6,101.9,16.3,yes,64,786 188 768 186 766,,piece-24-04,tab,28.0,0.4,ok
@@ -1549,10 +1548,10 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 794,piece-24-04,edge,15.4,85.1,5.7,no,-1,704 294 796 666 669,,,,,,unpaired
 846,piece-04-06,edge,50.2,36.4,159.6,yes,100,646 845 846 959 859,,piece-12-10,tab,50.4,0.2,ok
 846,piece-12-10,tab,50.4,49.0,202.3,no,76,646 648 848 959 859,,piece-04-06,edge,50.2,0.2,ok
-860,piece-08-02,edge,14.8,15.2,11.1,no,70,684 660 666 680 686,,,,,,unpaired
-869,piece-10-01,edge,100.0,56.7,70.5,no,100,669 899 699 866 666,yes,piece-10-04,tab,99.9,0.1,ok
-869,piece-10-04,tab,99.9,135.4,66.3,no,100,88 699 685 665 889,,piece-10-01,edge,100.0,0.1,ok
-869,piece-16-03,tab,44.6,167.6,142.0,no,-1,369 365 389 385 865,,,,,,extra copy: likely misread
+860,piece-08-02,edge,14.8,15.2,11.1,no,70,684 660 666 680 686,,piece-09-06,tab,14.9,0.1,ok
+860,piece-09-06,tab,14.9,100.0,245.0,yes,100,631 681 661 261 684,,piece-08-02,edge,14.8,0.1,ok
+869,piece-10-01,edge,67.4,56.7,70.5,yes,100,669 899 699 866 666,yes,piece-16-03,tab,44.6,22.8,length mismatch
+869,piece-16-03,tab,44.6,167.6,142.0,no,-1,369 365 389 385 865,,piece-10-01,edge,67.4,22.8,length mismatch
 883,piece-09-03,edge,55.3,68.5,29.3,yes,95,683 863 663 888 688,,piece-16-03,edge,22.5,32.8,no tab
 883,piece-16-03,edge,22.5,186.2,126.7,no,58,283 383 363 388 368,,piece-09-03,edge,55.3,32.8,no tab
 885,piece-09-01,tab,54.1,190.4,98.8,yes,100,686 665 885 666 886,,piece-09-03,edge,53.9,0.2,ok
@@ -1560,6 +1559,7 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 895,piece-17-04,edge,19.5,122.3,146.2,yes,100,468 489 488 695 895,,piece-19-06,tab,19.6,0.1,ok
 895,piece-19-06,tab,19.6,31.6,269.5,no,80,468 466 460 446 440,,piece-17-04,edge,19.5,0.1,ok
 898,piece-19-01,none,0.0,146.7,47.9,no,-1,398 396 388 896 386,,,,,,unpaired
+899,piece-10-04,tab,99.9,135.4,66.3,no,0,88 699 685 665 889,,,,,,unpaired
 925,piece-05-01,tab,26.3,133.6,10.4,no,34,7 411 451 414 454,,piece-11-09,edge,26.2,0.1,ok
 925,piece-11-09,edge,26.2,89.7,146.0,yes,100,48 413 443 418 03,yes,piece-05-01,tab,26.3,0.1,ok
 944,piece-17-06,none,0.0,99.7,100.8,no,-1,444 454 164 144 954,,,,,,unpaired
