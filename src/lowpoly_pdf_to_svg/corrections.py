@@ -29,8 +29,8 @@ class Correction:
 
 
 class Corrections:
-    def __init__(self, rows: list[Correction]):
-        self.rows = rows
+    def __init__(self, rows: list[Correction], by_hand: bool = True):
+        self.rows, self.by_hand = rows, by_hand
 
     @classmethod
     def load(cls, path: Path) -> "Corrections":
@@ -69,7 +69,7 @@ class Corrections:
                 missed.append(row)
                 continue
             label.text, label.confident, label.conf = row.number, True, 100.0
-            label.corrected = True
+            label.corrected = label.corrected or self.by_hand
             applied += 1
         if applied:
             counts = collections.Counter(l.text for layout, _ in layouts for p in layout.pieces for l in p.labels)

@@ -97,7 +97,7 @@ def main() -> int:
         first.add(layout, mm)
     sure = [m for m in first.misreads() if m["sure"] == "yes"]
     Corrections([Correction(m["piece"], float(m["x_mm"]), float(m["y_mm"]), m["read"], m["suggested"])
-                 for m in sure]).apply(measured)
+                 for m in sure], by_hand=False).apply(measured)
     print(f"fixed {len(sure)} clear-cut misreads without asking")
     labels = [label for _, layout, _ in results for piece in layout.pieces for label in piece.labels]
 
