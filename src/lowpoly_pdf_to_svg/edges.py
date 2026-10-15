@@ -39,11 +39,12 @@ class EdgeRow:
 
 class EdgeTable:
     COLUMNS = ["number", "piece", "side", "length_mm", "x_mm", "y_mm", "ocr_trusted", "ocr_conf", "ocr_alternatives", "corrected",
-               "partner_piece", "partner_side", "partner_length_mm", "length_diff_mm", "status", "line_mm"]
+               "partner_piece", "partner_side", "partner_length_mm", "length_diff_mm", "status", "line_mm", "checks"]
 
     def __init__(self):
         self.rows: list[EdgeRow] = []
         self.layouts: list[PageLayout] = []
+        self.checks = None  # TraceChecks: faults in the trace that touch each unsolved number's line
 
     def add(self, layout: PageLayout, mm_per_px: float) -> None:
         self.layouts.append(layout)
@@ -78,6 +79,9 @@ class EdgeTable:
                 "status": ("extra copy: likely misread" if len(others) > 1 and partner is None and
                            any(id(o) in partners for o in others) else self._status(row, partner, len(others))),
             })
+        if self.checks is not None:
+            for r in records:
+                r["checks"] = "; ".join(self.checks.at(r)) if r["status"] != "ok" else ""
         return sorted(records, key=lambda r: (int(r["number"]) if r["number"].isdigit() else 10**6, r["piece"]))
 
     @staticmethod

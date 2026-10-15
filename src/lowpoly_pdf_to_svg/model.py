@@ -66,6 +66,7 @@ class Piece:
     holes: list[list[Point]] = field(default_factory=list)  # closed cut polygons inside it
     folds: list[Fold] = field(default_factory=list)
     labels: list[Label] = field(default_factory=list)
+    ink_past: list[tuple[Point, float]] = field(default_factory=list)  # corners the cut ink runs on past (mm)
 
     @property
     def needs_review(self) -> bool:

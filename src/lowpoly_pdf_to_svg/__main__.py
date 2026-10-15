@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 from .config import Project
+from .checks import TraceChecks
 from .corrections import Correction, Corrections, LineFixes
 from .detect import PageDetector
 from .edges import EdgeTable
@@ -130,6 +131,12 @@ def main() -> int:
     table = EdgeTable()
     for layout, mm in measured:
         table.add(layout, mm)
+    checks = TraceChecks(measured)
+    checks.scale(table.records())
+    table.checks = checks
+    found = checks.write(output / f"{project.name}-checks.csv")
+    print(f"Wrote {output / (project.name + '-checks.csv')}: "
+          + (", ".join(f"{n} {c}" for c, n in found.most_common()) or "no trace faults"))
     edges = output / f"{project.name}-edges.csv"
     statuses = table.write(edges)
     records = table.records()

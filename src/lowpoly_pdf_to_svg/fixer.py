@@ -38,6 +38,7 @@ class CheckData:
         self.pages: dict[str, Image.Image] = {}
         self.lines = {(r["piece"], r["x_mm"], r["y_mm"]): [float(v) for v in r.get("line_mm", "").split()]
                       for r in self.edges}
+        self.checks = {(r["piece"], r["x_mm"], r["y_mm"]): r.get("checks", "") for r in self.edges}
         self.traces = self._traces()
         self.folded = self._folded()
 
@@ -110,7 +111,7 @@ class CheckData:
         line = self.lines.get((piece, x, y), [])
         image, box = self._crop(piece, float(x), float(y), line)
         return {"piece": piece, "x": x, "y": y, "read": number, "side": side, "length": length,
-                "image": image, "box": box, "line": line}
+                "image": image, "box": box, "line": line, "checks": self.checks.get((piece, x, y), "")}
 
     def _crop(self, piece: str, x_mm: float, y_mm: float, line: list[float]) -> tuple[str, list[float]]:
         """Plain scan patch around the number, wide enough to show the whole line it marks,

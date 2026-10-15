@@ -114,6 +114,16 @@ class PageDetector:
             owner[region > 0] = len(pieces) + 1
             pieces.append(piece)
 
+        # Cut ink a traced line already explains (a neighbouring edge, this corner's other edge
+        # where it leaves at a shallow angle, or a fold) is not a clipped corner.
+        traced = np.zeros_like(solid)
+        cv2.polylines(traced, [np.round(np.asarray(p.outline)).astype(np.int32) for p in pieces], True, 1,
+                      max(3, round(px)))
+        # A fold's first dash often merges with the cut ink at its corner.
+        cv2.polylines(traced, [np.round(np.asarray([f.a, f.b])).astype(np.int32) for p in pieces for f in p.folds],
+                      False, 1, max(3, round(px)))
+        for piece in pieces:
+            piece.ink_past = self._ink_past(piece.outline, solid & (1 - traced), px)
         layout = PageLayout(page.number, material, pieces)
         layout.footer = page.rgb[:, footer_x:].copy()
         for label in self._labels(gray, text_core, glyph, px):
@@ -156,6 +166,37 @@ class PageDetector:
                 if best:
                     points.insert(best[1] + 1, best[2])
         return points
+
+    @staticmethod
+    def _ink_past(outline: list[Point], solid: np.ndarray, px: float, start_mm: float = 0.6,
+                  reach_mm: float = 3.0) -> list[tuple[Point, float]]:
+        """Corners the printed cut runs on past: from each corner, follow both of its edges
+        straight on and measure how far the cut ink continues. A clipped corner leaves the
+        true one further out, so both edges ending there read short."""
+        ink = cv2.dilate(solid, _kernel(3))
+        h, w = ink.shape
+        points = np.asarray(outline, np.float64)
+        n = len(points)
+        found = []
+        for i in range(n):
+            best = 0.0
+            for other, onward in ((points[i - 1], points[(i + 1) % n]), (points[(i + 1) % n], points[i - 1])):
+                u = points[i] - other
+                length = float(np.linalg.norm(u))
+                # Running on along the next edge is just that edge (a fold meeting a straight cut).
+                if length < 2 * px or _angle(u, onward - points[i]) < math.radians(25):
+                    continue
+                u /= length
+                run = 0.0
+                for t in np.arange(start_mm, reach_mm, 0.1):
+                    x, y = np.round(points[i] + u * t * px).astype(int)
+                    if not (0 <= x < w and 0 <= y < h) or not ink[y, x]:
+                        break
+                    run = t
+                best = max(best, run)
+            if best >= start_mm + 0.3:
+                found.append((tuple(points[i]), round(best, 1)))
+        return found
 
     @staticmethod
     def _fold_parts(fold: Fold, piece: Piece, px: float, reach_mm: float = 1.0, corner_mm: float = 1.5):

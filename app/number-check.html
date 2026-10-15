@@ -176,6 +176,7 @@ function card(c) {
     const label = c.kind === "doubt" ? (i === 0 ? "your fix" : "other copy") : i === 0 ? "this number" : (c.kind === "open" ? "its pair" : "matching line");
     div.innerHTML = `<div class="slot"></div>
       <div><span class="read">${p.read}</span> <span class="meta">${label}: ${p.piece}, ${p.side === "none" ? "no line found" : `${p.side} ${p.length} mm`}</span></div>
+      ${p.checks ? `<div class="hint">Trace check: ${p.checks}</div>` : ""}
       <div class="row"><button data-a="keep">✓ as read</button><span class="meta">should be</span><input inputmode="numeric"></div>
       <div class="row"><button data-a="draw">Draw line</button><select><option value="cut">cut edge</option><option value="fold">fold (tab side)</option></select>
         <button data-a="undraw">Clear</button><span class="meta drawn-info"></span></div>`;
