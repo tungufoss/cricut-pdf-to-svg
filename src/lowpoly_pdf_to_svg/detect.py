@@ -157,12 +157,29 @@ class PageDetector:
                     points.insert(best[1] + 1, best[2])
         return points
 
+    @staticmethod
+    def _fold_parts(fold: Fold, piece: Piece, px: float, reach_mm: float = 1.0, corner_mm: float = 1.5):
+        """A fold line split where other folds or cut corners touch it. A tab fold that runs
+        on in line with another fold reads as one long line; the number marks only its own part."""
+        a, b = np.asarray(fold.a, np.float64), np.asarray(fold.b, np.float64)
+        length = float(np.linalg.norm(b - a))
+        if length < 1e-6:
+            return [(fold.a, fold.b, True)]
+        u = (b - a) / length
+        normal = np.array([-u[1], u[0]])
+        touches = [p for f in piece.folds if f is not fold for p in (f.a, f.b)] + list(piece.outline)
+        cuts = sorted({round(float((np.asarray(p) - a) @ u), 1) for p in touches
+                       if abs(float((np.asarray(p) - a) @ normal)) <= reach_mm * px
+                       and corner_mm * px < float((np.asarray(p) - a) @ u) < length - corner_mm * px})
+        stops = [0.0, *cuts, length]
+        return [(tuple(a + s * u), tuple(a + t * u), True) for s, t in zip(stops, stops[1:])]
+
     def _mark_edge(self, label: Label, piece: Piece, px: float) -> None:
         """Find the line a number labels: a cut edge (no tab) or a fold it sits on (tab side).
         Numbers run along their line, so lines at an angle to the text are penalised."""
         n = len(piece.outline)
         lines = [(piece.outline[i], piece.outline[(i + 1) % n], False) for i in range(n)]
-        lines += [(fold.a, fold.b, True) for fold in piece.folds]
+        lines += [part for fold in piece.folds for part in self._fold_parts(fold, piece, px)]
         centre = np.asarray(label.center)
         reading = np.array([math.cos(math.radians(label.angle)), math.sin(math.radians(label.angle))])
         best, best_score = None, self.s.label_reach_mm * px
