@@ -161,7 +161,7 @@ class ReviewImage:
     """Side by side PNG: the piece's patch of the PDF page, and the trace drawn on white."""
 
     SCALE = 10.0                 # px per mm
-    HEADER = 40                  # px for the captions
+    HEADER = 70                  # px for the title and captions
     STYLE = {"cut": ((0, 0, 0), None), "mountain": ((31, 95, 191), (25, 8, 4, 8)), "valley": ((46, 139, 87), (15, 10))}
 
     def __init__(self, group: ET.Element, box: tuple[float, float, float, float], scan, scale: float = SCALE):
@@ -174,11 +174,12 @@ class ReviewImage:
         """PDF patch left, trace right; each mark (a number's position, in mm) circled on both."""
         x0, y0, x1, y1 = self.box
         w, h = round((x1 - x0) * self.SCALE), round((y1 - y0) * self.SCALE)
-        sheet = Image.new("RGB", (2 * w + 30, h + self.HEADER), "white")
-        draw = ImageDraw.Draw(sheet)
         font = _font(22)
-        draw.text((10, 8), f"{title}: PDF", fill="black", font=font)
-        draw.text((w + 40, 8), f"{title}: traced", fill="black", font=font)
+        sheet = Image.new("RGB", (max(2 * w + 30, round(font.getlength(title)) + 20), h + self.HEADER), "white")
+        draw = ImageDraw.Draw(sheet)
+        draw.text((10, 6), title, fill="black", font=font)
+        draw.text((10, 38), "PDF", fill=(90, 90, 90), font=font)
+        draw.text((w + 40, 38), "traced", fill=(90, 90, 90), font=font)
         if self.scan is not None:
             crop, (cx0, cy0, cx1, cy1) = self.scan
             size = (round((cx1 - cx0) * self.SCALE), round((cy1 - cy0) * self.SCALE))
