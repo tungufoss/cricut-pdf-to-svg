@@ -7,17 +7,17 @@
 #   generated/sheets.csv                     one row per sheet, read by sheets.qmd
 #   generated/edges.csv, summary.md          the pipeline's edge table and summary, as is
 #
-# Inputs come from REPORT_OUT (default ../output/bowser); `make report` sets it.
+# Inputs come from REPORT_OUT (default ../data/bowser); `make report` sets it.
 
 suppressPackageStartupMessages(library(xml2))
 source("R/edges.R")
 
-out <- Sys.getenv("REPORT_OUT", "../output/bowser")
+out <- Sys.getenv("REPORT_OUT", "../data/bowser")
 project <- Sys.getenv("REPORT_PROJECT", basename(out))
 gen <- "generated"
 svg_path <- file.path(out, paste0(project, ".svg"))
 edges_path <- file.path(out, paste0(project, "-edges.csv"))
-summary_md <- file.path(out, paste0(project, "-report.md"))
+summary_md <- file.path(out, "README.md")
 if (!file.exists(edges_path)) {
   edges_path <- file.path("data", project, paste0(project, "-edges.csv"))
   summary_md <- file.path("data", project, paste0(project, "-report.md"))

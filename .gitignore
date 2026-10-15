@@ -1,7 +1,14 @@
 # Source PDFs are user-supplied and not redistributed.
-data/*.pdf
-data/*.png
-# Generated output is reproducible with `make`.
+data/**/*.pdf
+data/**/*.png
+# The traced pattern and page renders stay local: the template is for personal use only.
+data/*/*.svg
+data/*/previews/
+data/*/pieces/
+# Scratch output (make page) is reproducible with `make`.
 output/
 __pycache__/
 *.pyc
+data/*/review.png
+data/*/cache/
+data/*/*-check.json

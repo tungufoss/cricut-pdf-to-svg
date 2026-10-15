@@ -3,11 +3,13 @@ title: "lowpoly-pdf-to-svg"
 ---
 
 ```{r}
+#| label: setup-index
 #| include: false
 source("R/edges.R")
 edges <- if (file.exists("generated/edges.csv")) read_edges("generated/edges.csv")
 # Cardstock per PDF page, from the project manifest
-manifest <- yaml::read_yaml(file.path("..", "data", paste0(Sys.getenv("REPORT_PROJECT", "bowser"), ".yaml")))
+project <- Sys.getenv("REPORT_PROJECT", "bowser")
+manifest <- yaml::read_yaml(file.path("..", "data", project, paste0(project, ".yaml")))
 cardstock <- map_dfr(manifest$materials, \(m) tibble(page = as.integer(m$pages), Cardstock = m$name))
 ```
 
@@ -15,7 +17,7 @@ Turns low poly papercraft PDF templates into one Inkscape SVG, ready for review 
 
 ```bash
 make install
-make            # data/bowser.pdf -> output/bowser/bowser.svg
+make            # data/bowser/bowser.pdf -> data/bowser/bowser.svg
 ```
 
 The first template is the Bowser mask. The [Results](sheets.qmd) pages show each PDF page next to the traced SVG, and whether the printed edge numbers pair up into [glue edges](glue-pairs.qmd) of the same length.
@@ -36,6 +38,7 @@ The Bowser papercraft mask is by [Sweets The Cat](https://sweetsthecat.itch.io/)
 ## Where it stands
 
 ```{r}
+#| label: status-summary
 #| results: asis
 if (file.exists("generated/summary.md")) {
   # The pipeline's summary: its first paragraph here; the tables are drawn below from the CSV.

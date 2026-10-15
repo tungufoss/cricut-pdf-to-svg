@@ -1,8 +1,33 @@
-# Bowser: edge number report
+# Bowser
 
 1570 printed numbers on 178 pieces. 328 numbers form a clean pair (one plain edge, one tab, lengths within 1 mm); 914 labels need a look.
 
+Conversion status (2026-10-15), written by `make`. Edit the YAML, not this file.
+
+## Files
+
+| file | what | in git |
+|---|---|---|
+| `bowser.pdf` | source template | no, personal use only |
+| `bowser.yaml` | pages per cardstock, fold styles, sheet size | yes |
+| `bowser.svg` | Inkscape review file, one row of pages per cardstock | no, traced pattern |
+| `previews/` | rendered PDF pages, the SVG's faint Source layer | no |
+| `bowser-edges.csv` | every printed edge number with its line and partner | yes |
+| `README.md` | this status page | yes |
+
 ## Status
+
+| stage | result |
+|---|---|
+| pages | 21 converted |
+| pieces | 178 cut outlines, corners joined by straight edges |
+| folds | 1496, 13 stretched far to reach the cut |
+| numbers | 1570 read, 685 uncertain (orange in the SVG) |
+| pieces to check | 174 marked ⚠ in Inkscape |
+| paper colour | footers disagree with the YAML: pages 14–23 say beige (YAML: yellow); page 24 says white (YAML: black) |
+| nesting on sheets | not started |
+
+## Edge numbers
 
 | status | labels | meaning |
 |---|---:|---|

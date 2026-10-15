@@ -3,6 +3,7 @@ title: "Sheets: before and after"
 ---
 
 ```{r}
+#| label: setup-sheets
 #| include: false
 source("R/edges.R")
 sheets <- read_csv("generated/sheets.csv", show_col_types = FALSE)
@@ -12,6 +13,7 @@ has_counts <- "matching" %in% names(sheets)
 Left is the PDF page as rendered for tracing; right is the same page of `bowser.svg` with only the traced pieces: cut outlines in black, mountain folds blue dash-dot, valley folds green dashed and edge numbers in purple (orange where the reader was unsure). Each edge number is ringed <span style="color:#1a9e8f">teal</span> when its glue pair checks out and <span style="color:#d61f69">pink</span> when it needs work; hover a ring to see why. See [glue pairs](glue-pairs.qmd) for the full list.
 
 ```{r}
+#| label: sheet-pages
 #| results: asis
 if (nrow(sheets) == 0) {
   cat("::: {.callout-note}\nThe traced sheets are the creator's pattern, which is free for personal use only, so they are not published here. Run `make preview` in a local checkout with the template PDF to see them.\n:::\n")

@@ -37,6 +37,8 @@ class Label:
     ink: np.ndarray = field(repr=False)   # white-on-black crop used for reading
     text: str = ""
     confident: bool = False              # both readers agreed, or Tesseract was sure
+    conf: float = -1.0                   # Tesseract confidence 0-100, -1 when it read nothing
+    alternatives: list[str] = field(default_factory=list)  # other likely readings, best first
     paired: bool = False                 # the same number is printed exactly twice
     edge: tuple[Point, Point] | None = None  # the cut edge or tab fold this number marks
     tab: bool = False                    # edge is a glue-tab fold, so this side carries the tab
