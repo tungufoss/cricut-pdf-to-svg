@@ -3,8 +3,9 @@ colour each edge number by how its glue pair checked out.
 
     python -m src.lowpoly_pdf_to_svg.piece --config data/bowser/bowser.yaml piece-05-08
 
-writes data/bowser/pieces/piece-05-08.svg (open it in a browser or Inkscape) and
-piece-05-08.md (the piece's rows of the edge table, with each partner).
+writes data/bowser/pieces/piece-05-08.svg (open it in a browser or Inkscape),
+piece-05-08.md (the piece's rows of the edge table, with each partner), and
+data/bowser/review.png (the PDF patch and the trace side by side).
 """
 
 from __future__ import annotations
@@ -13,12 +14,13 @@ import argparse
 import base64
 import csv
 import io
+import math
 import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 SVG, XLINK, INKSCAPE = "http://www.w3.org/2000/svg", "http://www.w3.org/1999/xlink", "http://www.inkscape.org/namespaces/inkscape"
 for prefix, uri in (("", SVG), ("xlink", XLINK), ("inkscape", INKSCAPE),
@@ -53,21 +55,21 @@ class PieceView:
                                            "viewBox": f"{x0:.3f} {y0:.3f} {x1 - x0:.3f} {y1 - y0:.3f}"})
         ET.SubElement(out, f"{{{SVG}}}rect", {"x": f"{x0:.3f}", "y": f"{y0:.3f}", "width": f"{x1 - x0:.3f}",
                                               "height": f"{y1 - y0:.3f}", "fill": "#ffffff"})
-        if image is not None:
-            self._scan(out, image, (x0, y0, x1, y1))
+        scan = self._scan(out, image, (x0, y0, x1, y1)) if image is not None else None
         out.append(group)
         svg_out = directory / f"{piece_id}.svg"
         ET.ElementTree(out).write(svg_out, encoding="utf-8", xml_declaration=True)
 
+        ReviewImage(group, (x0, y0, x1, y1), scan).write(directory.parent / "review.png", piece_id)
         md_out = directory / f"{piece_id}.md"
         md_out.write_text(self._table(piece_id, rows), encoding="utf-8")
         return svg_out, md_out
 
-    def _scan(self, out: ET.Element, image: ET.Element, box: tuple[float, float, float, float]) -> None:
+    def _scan(self, out: ET.Element, image: ET.Element, box: tuple[float, float, float, float]):
         """Embed the piece's patch of the page scan, so the file opens anywhere on its own."""
         png = self.svg_path.parent / image.get(f"{{{XLINK}}}href", "")
         if not png.is_file():
-            return
+            return None
         ix, iy, iw, ih = (float(image.get(k)) for k in ("x", "y", "width", "height"))
         with Image.open(png) as page:
             sx, sy = page.width / iw, page.height / ih
@@ -80,6 +82,7 @@ class PieceView:
             f"{{{XLINK}}}href": "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("ascii"),
             "x": f"{x0:.3f}", "y": f"{y0:.3f}", "width": f"{x1 - x0:.3f}", "height": f"{y1 - y0:.3f}",
             "preserveAspectRatio": "none", "opacity": "0.5"})
+        return crop, (x0, y0, x1, y1)
 
     @staticmethod
     def _bounds(group: ET.Element) -> tuple[float, float, float, float]:
@@ -107,6 +110,90 @@ class PieceView:
         return "\n".join(lines) + "\n"
 
 
+class ReviewImage:
+    """Side by side PNG: the piece's patch of the PDF page, and the trace drawn on white."""
+
+    SCALE = 10.0                 # px per mm
+    HEADER = 40                  # px for the captions
+    STYLE = {"cut": ((0, 0, 0), None), "mountain": ((31, 95, 191), (25, 8, 4, 8)), "valley": ((46, 139, 87), (15, 10))}
+
+    def __init__(self, group: ET.Element, box: tuple[float, float, float, float], scan):
+        self.group, self.box, self.scan = group, box, scan
+
+    def write(self, path: Path, title: str) -> None:
+        x0, y0, x1, y1 = self.box
+        w, h = round((x1 - x0) * self.SCALE), round((y1 - y0) * self.SCALE)
+        sheet = Image.new("RGB", (2 * w + 30, h + self.HEADER), "white")
+        draw = ImageDraw.Draw(sheet)
+        font = _font(22)
+        draw.text((10, 8), f"{title}: PDF", fill="black", font=font)
+        draw.text((w + 40, 8), f"{title}: traced", fill="black", font=font)
+        if self.scan is not None:
+            crop, (cx0, cy0, cx1, cy1) = self.scan
+            size = (round((cx1 - cx0) * self.SCALE), round((cy1 - cy0) * self.SCALE))
+            sheet.paste(crop.convert("RGB").resize(size, Image.LANCZOS),
+                        (round((cx0 - x0) * self.SCALE), self.HEADER + round((cy0 - y0) * self.SCALE)))
+        trace = Image.new("RGB", (w, h), "white")
+        self._draw(trace, x0, y0)
+        sheet.paste(trace, (w + 30, self.HEADER))
+        draw.line([(w + 15, self.HEADER), (w + 15, h + self.HEADER)], fill=(200, 200, 200), width=2)
+        sheet.save(path)
+
+    def _draw(self, image, x0: float, y0: float) -> None:
+        draw = ImageDraw.Draw(image)
+        to_px = lambda x, y: ((x - x0) * self.SCALE, (y - y0) * self.SCALE)
+        for sub in self.group.iter(f"{{{SVG}}}g"):
+            kind = sub.get("data-fold") or sub.get("data-operation")
+            if kind not in self.STYLE:
+                continue
+            colour, dash = self.STYLE[kind]
+            for path in sub.findall(f"{{{SVG}}}path"):
+                values = [float(v) for v in re.findall(r"-?\d+(?:\.\d+)?", path.get("d", ""))]
+                points = [to_px(x, y) for x, y in zip(values[0::2], values[1::2])]
+                if path.get("d", "").rstrip().endswith("Z"):
+                    points.append(points[0])
+                for a, b in zip(points, points[1:]):
+                    _dashed(draw, a, b, colour, dash, 3 if kind == "cut" else 2)
+        for text in self.group.iter(f"{{{SVG}}}text"):
+            cx, cy = to_px(float(text.get("x")), float(text.get("y")))
+            angle = float(re.search(r"rotate\(([-\d.]+)", text.get("transform", "rotate(0")).group(1))
+            size = max(10, round(float(text.get("font-size", "2")) * self.SCALE))
+            font = _font(size)
+            label = text.text or ""
+            left, top, right, bottom = font.getbbox(label)
+            stamp = Image.new("RGBA", (right - left + 4, bottom - top + 4), (0, 0, 0, 0))
+            ImageDraw.Draw(stamp).text((2 - left, 2 - top), label, fill=text.get("fill", "#8e24aa"), font=font)
+            stamp = stamp.rotate(-angle, expand=True, resample=Image.BICUBIC)
+            image.paste(stamp, (round(cx - stamp.width / 2), round(cy - stamp.height / 2)), stamp)
+
+
+def _dashed(draw, a, b, colour, dash, width) -> None:
+    if not dash:
+        draw.line([a, b], fill=colour, width=width)
+        return
+    length = math.dist(a, b)
+    if length == 0:
+        return
+    ux, uy = (b[0] - a[0]) / length, (b[1] - a[1]) / length
+    at, k = 0.0, 0
+    while at < length:
+        run = dash[k % len(dash)]
+        if k % 2 == 0:
+            end = min(at + run, length)
+            draw.line([(a[0] + ux * at, a[1] + uy * at), (a[0] + ux * end, a[1] + uy * end)], fill=colour, width=width)
+        at += run
+        k += 1
+
+
+def _font(size: int):
+    for name in ("arialbd.ttf", "DejaVuSans-Bold.ttf", "Arial Bold.ttf"):
+        try:
+            return ImageFont.truetype(name, size)
+        except OSError:
+            continue
+    return ImageFont.load_default()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Write a debug SVG and table for one piece.")
     parser.add_argument("piece", help="piece id, such as piece-05-08")
@@ -117,7 +204,7 @@ def main() -> int:
         svg, md = PieceView(folder / f"{project}.svg", folder / f"{project}-edges.csv").write(args.piece, folder / "pieces")
     except (OSError, ValueError) as error:
         parser.error(str(error))
-    print(f"Wrote {svg} and {md}")
+    print(f"Wrote {svg}, {md} and {folder / 'review.png'}")
     return 0
 
 
