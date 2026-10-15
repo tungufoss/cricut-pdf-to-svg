@@ -7,10 +7,6 @@ writes data/bowser/pieces/piece-05-08.svg (open it in a browser or Inkscape),
 piece-05-08.md (the piece's rows of the edge table, with each partner), and
 data/bowser/review.png (the PDF patch and the trace side by side).
 
-    python -m src.lowpoly_pdf_to_svg.piece --config data/bowser/bowser.yaml --all
-
-writes data/bowser/review-all.png: every piece with a number to check, traced,
-numbers coloured by check, most numbers to check first.
 """
 
 from __future__ import annotations
@@ -96,21 +92,6 @@ class PieceView:
             y += 20
         sheet.save(path)
         return len(images)
-
-    def overview(self, path: Path) -> int:
-        """Every piece that needs a look in one PNG, worst first, so you can pick which to open with `make piece`."""
-        root = self.tree.getroot()
-        groups = [g for g in root.iter(f"{{{SVG}}}g") if (g.get("id") or "").startswith("piece-")]
-        tiles = []
-        for group in groups:
-            rows = [r for r in self.rows if r["piece"] == group.get("id")]
-            self._colour_numbers(group, rows)
-            check = sum(r["status"] != "ok" for r in rows)
-            if check:  # clean pieces need no look
-                tiles.append((check, len(rows) - check, group))
-        tiles.sort(key=lambda t: (-t[0], t[2].get("id")))
-        Overview(tiles).write(path)
-        return len(tiles)
 
     def _scan(self, out: ET.Element, image: ET.Element, box: tuple[float, float, float, float]):
         """Embed the piece's patch of the page scan, so the file opens anywhere on its own."""
@@ -224,49 +205,6 @@ class ReviewImage:
             image.paste(stamp, (round(cx - stamp.width / 2), round(cy - stamp.height / 2)), stamp)
 
 
-class Overview:
-    """Contact sheet of traced pieces, packed in rows, each captioned with its id and counts."""
-
-    SCALE = 4.0                  # px per mm
-    WIDTH = 3600                 # px
-    CAPTION = 30                 # px
-    GAP = 20                     # px
-
-    def __init__(self, tiles: list[tuple[int, int, ET.Element]]):
-        self.tiles = tiles
-
-    def write(self, path: Path) -> None:
-        images = [self._tile(check, ok, group) for check, ok, group in self.tiles]
-        placed, x, y, row = [], self.GAP, self.GAP + 50, 0
-        for image in images:
-            if x + image.width > self.WIDTH and x > self.GAP:
-                x, y, row = self.GAP, y + row + self.GAP, 0
-            placed.append((image, x, y))
-            x, row = x + image.width + self.GAP, max(row, image.height)
-        sheet = Image.new("RGB", (self.WIDTH, y + row + self.GAP), "white")
-        draw = ImageDraw.Draw(sheet)
-        draw.text((self.GAP, 12), f"{len(self.tiles)} pieces to check, most numbers first. Numbers: green = clean pair, "
-                  "orange = length mismatch, red = other. Open one with make piece PIECE=<id>.",
-                  fill="black", font=_font(24))
-        for image, x, y in placed:
-            sheet.paste(image, (x, y))
-        sheet.save(path)
-
-    def _tile(self, check: int, ok: int, group: ET.Element) -> Image.Image:
-        x0, y0, x1, y1 = PieceView._bounds(group)
-        x0, y0, x1, y1 = x0 - 2, y0 - 2, x1 + 2, y1 + 2
-        w, h = round((x1 - x0) * self.SCALE), round((y1 - y0) * self.SCALE)
-        font = _font(20)
-        caption = f"{group.get('id')}  {check} check, {ok} ok"
-        width = max(w, round(font.getlength(caption)) + 10)
-        tile = Image.new("RGB", (width, h + self.CAPTION), (255, 235, 235) if check else (235, 248, 238))
-        ImageDraw.Draw(tile).text((5, 4), caption, fill=(198, 40, 40) if check else (27, 138, 58), font=font)
-        trace = Image.new("RGB", (w, h), "white")
-        ReviewImage(group, (x0, y0, x1, y1), None, self.SCALE)._draw(trace, x0, y0)
-        tile.paste(trace, (0, self.CAPTION))
-        return tile
-
-
 def _dashed(draw, a, b, colour, dash, width) -> None:
     if not dash:
         draw.line([a, b], fill=colour, width=width)
@@ -298,21 +236,16 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Write a debug SVG and table for one piece.")
     parser.add_argument("piece", nargs="?", help="piece id, such as piece-05-08")
     parser.add_argument("--number", help="write review.png with every piece carrying this number instead")
-    parser.add_argument("--all", action="store_true", help="write review-all.png with every piece instead")
     parser.add_argument("--config", type=Path, default=Path("data/bowser/bowser.yaml"), help="project YAML manifest")
     args = parser.parse_args()
     folder, project = args.config.parent, args.config.stem
-    if not (args.all or args.piece or args.number):
-        parser.error("give a piece id, --number or --all")
+    if not (args.piece or args.number):
+        parser.error("give a piece id or --number")
     try:
         view = PieceView(folder / f"{project}.svg", folder / f"{project}-edges.csv")
         if args.number:
             count = view.number(args.number, folder / "review.png")
             print(f"Wrote {folder / 'review.png'} with the {count} pieces carrying {args.number}")
-            return 0
-        if args.all:
-            count = view.overview(folder / "review-all.png")
-            print(f"Wrote {folder / 'review-all.png'} with {count} pieces")
             return 0
         svg, md = view.write(args.piece, folder / "pieces")
     except (OSError, ValueError) as error:

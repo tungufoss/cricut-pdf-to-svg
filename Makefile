@@ -7,7 +7,6 @@
 #   make redo PAGES="5 11"  trace only those pages again, reuse the saved trace of the rest;
 #                    make redo with no PAGES only redraws the SVG and redoes the edge check (seconds)
 #   make number NUMBER=20  every piece carrying that number, PDF beside trace, in data/<project>/review.png
-#   make review      every piece to check in one picture, most numbers to check first: data/<project>/review-all.png
 #   make install    install Python dependencies (Poppler's pdftoppm comes from the OS)
 #   make clean      remove generated files (keeps the PDF and YAML)
 
@@ -19,7 +18,7 @@ DPI     ?= 180
 SOURCES := $(wildcard src/lowpoly_pdf_to_svg/*.py)
 CONVERT  = $(PYTHON) -m src.lowpoly_pdf_to_svg --config $(CONFIG) --output $(OUT) --dpi $(DPI)
 
-.PHONY: all page redo piece number review install clean
+.PHONY: all page redo piece number install clean
 
 all: $(OUT)/$(PROJECT).svg
 
@@ -44,15 +43,11 @@ number:
 	@test -f $(OUT)/$(PROJECT).svg || { echo "run make first"; exit 2; }
 	$(PYTHON) -m src.lowpoly_pdf_to_svg.piece --config $(CONFIG) --number $(NUMBER)
 
-review:
-	@test -f $(OUT)/$(PROJECT).svg || { echo "run make first"; exit 2; }
-	$(PYTHON) -m src.lowpoly_pdf_to_svg.piece --config $(CONFIG) --all
-
 install:
 	$(PYTHON) -m pip install -r requirements.txt
 
 clean:
-	rm -rf $(OUT)/previews $(OUT)/$(PROJECT).svg $(OUT)/$(PROJECT)-edges.csv $(OUT)/README.md $(OUT)/pieces $(OUT)/cache $(OUT)/review.png $(OUT)/review-all.png output/$(PROJECT)
+	rm -rf $(OUT)/previews $(OUT)/$(PROJECT).svg $(OUT)/$(PROJECT)-edges.csv $(OUT)/README.md $(OUT)/pieces $(OUT)/cache $(OUT)/review.png output/$(PROJECT)
 
 # Results site (Quarto website in report/, R with tidyverse, xml2 and DT).
 #   make report     render report/_site/index.html from the current output
