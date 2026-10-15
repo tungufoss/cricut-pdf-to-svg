@@ -4,3 +4,6 @@ Pillow>=10.0
 pypdf>=5.0
 PyYAML>=6.0
 pytesseract>=0.3.10
+shapely>=2.0
+scipy>=1.11
+potracer>=0.0.4

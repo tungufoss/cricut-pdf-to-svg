@@ -71,3 +71,18 @@ report-data: $(OUT)/$(PROJECT).svg
 	mkdir -p report/data/$(PROJECT)
 	cp $(OUT)/$(PROJECT)-edges.csv report/data/$(PROJECT)/
 	cp $(OUT)/README.md report/data/$(PROJECT)/$(PROJECT)-report.md
+
+# Paper 1 benchmark (bench/): synthetic templates with exact ground truth, existing
+# vectorizers, shared cut/fold classifier, conventional and fabrication-aware metrics.
+#   make bench-data   synthetic templates and degraded rasters in bench/out/
+#   make bench        every method on every page and condition -> bench/results.csv
+#   make bench-report summary tables and correlations (R, tidyverse) -> bench/summary/
+BENCH_TEMPLATES ?= 12
+BENCH_SEED      ?= 1
+.PHONY: bench-data bench bench-report
+bench-data:
+	$(PYTHON) -m bench.synth --out bench/out --templates $(BENCH_TEMPLATES) --seed $(BENCH_SEED)
+bench: bench-data
+	$(PYTHON) -m bench --data bench/out --out bench/results.csv
+bench-report:
+	Rscript bench/analysis.R bench/results.csv bench/summary
