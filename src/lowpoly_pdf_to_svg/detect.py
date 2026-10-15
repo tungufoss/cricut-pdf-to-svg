@@ -110,6 +110,7 @@ class PageDetector:
             piece.holes = holes[index]
             inside = cv2.erode(region, _kernel(5))
             piece.folds = self._folds(dash & inside, (dash | glyph) & inside, outline, px)
+            piece.outline = self._split_at_folds(outline, piece.folds, px)
             owner[region > 0] = len(pieces) + 1
             pieces.append(piece)
 
@@ -129,6 +130,32 @@ class PageDetector:
         stray[:, footer_x:] = False
         layout.stray_lines = self._centerlines(stray, min_length=int(px))
         return layout
+
+    @staticmethod
+    def _split_at_folds(outline: list[Point], folds: list[Fold], px: float, reach_mm: float = 1.0,
+                        corner_mm: float = 1.5) -> list[Point]:
+        """Put back corners where a fold meets the cut line. When the two cut edges either
+        side of such a corner are nearly in line, simplification drops the corner and the
+        two edges read as one, too long for the number that marks either of them."""
+        points = [tuple(map(float, p)) for p in outline]
+        for fold in folds:
+            for end in (np.asarray(fold.a, np.float64), np.asarray(fold.b, np.float64)):
+                n = len(points)
+                best = None
+                for i in range(n):
+                    a, b = np.asarray(points[i]), np.asarray(points[(i + 1) % n])
+                    length = float(np.linalg.norm(b - a))
+                    if length < 2 * corner_mm * px:
+                        continue
+                    u = (b - a) / length
+                    along = float((end - a) @ u)
+                    across = abs(float((end - a) @ np.array([-u[1], u[0]])))
+                    if corner_mm * px < along < length - corner_mm * px and across <= reach_mm * px:
+                        if best is None or across < best[0]:
+                            best = (across, i, tuple(a + along * u))
+                if best:
+                    points.insert(best[1] + 1, best[2])
+        return points
 
     def _mark_edge(self, label: Label, piece: Piece, px: float) -> None:
         """Find the line a number labels: a cut edge (no tab) or a fold it sits on (tab side).
