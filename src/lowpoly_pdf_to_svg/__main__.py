@@ -16,6 +16,7 @@ from .edges import EdgeTable
 from .ocr import EdgeNumberReader, read_paper
 from .render import PageRenderer
 from .svg import InkscapeSvgWriter
+from .symmetry import Symmetry
 
 
 def main() -> int:
@@ -99,6 +100,17 @@ def main() -> int:
     Corrections([Correction(m["piece"], float(m["x_mm"]), float(m["y_mm"]), m["read"], m["suggested"])
                  for m in sure], by_hand=False).apply(measured)
     print(f"fixed {len(sure)} clear-cut misreads without asking")
+    # Mirror twins predict numbers from the clean pairs on the other side of the model.
+    symmetry = Symmetry(measured)
+    second = EdgeTable()
+    for layout, mm in measured:
+        second.add(layout, mm)
+    predicted = symmetry.predictions(second.records())
+    mirrored = [m for m in predicted if m["sure"] == "yes"]
+    Corrections([Correction(m["piece"], float(m["x_mm"]), float(m["y_mm"]), m["read"], m["suggested"])
+                 for m in mirrored], by_hand=False).apply(measured)
+    print(f"{len(symmetry.twins)} mirror twins; fixed {len(mirrored)} numbers from their twins without asking")
+    sure += mirrored
     labels = [label for _, layout, _ in results for piece in layout.pieces for label in piece.labels]
 
     writer = InkscapeSvgWriter(f"{project.name.title()} papercraft")
@@ -116,10 +128,16 @@ def main() -> int:
         table.add(layout, mm)
     edges = output / f"{project.name}-edges.csv"
     statuses = table.write(edges)
+    records = table.records()
+    asked = symmetry.predictions(records)
     misreads = table.write_misreads(output / f"{project.name}-misreads.csv",
-                                    applied=[dict(m, sure="applied") for m in sure])
+                                    applied=[dict(m, sure="applied") for m in sure], extra=asked)
+    mirrors = output / f"{project.name}-mirrors.csv"
+    off = symmetry.write(mirrors, records)
+    print(f"Wrote {mirrors}: {off} lines differ in length from their mirror line")
     print(f"Wrote {output / (project.name + '-misreads.csv')}: {len(misreads)} likely misreads left to check")
-    table.write_report(output / "README.md", project.name, datetime.date.today().isoformat(), applied=len(sure))
+    table.write_report(output / "README.md", project.name, datetime.date.today().isoformat(), applied=len(sure),
+                       symmetry=(symmetry, off))
     print(f"Wrote {edges}: " + ", ".join(f"{n} {s}" for s, n in statuses.most_common()))
     target = output / f"{project.name}.svg"
     writer.write(target)

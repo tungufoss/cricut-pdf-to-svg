@@ -163,16 +163,19 @@ class EdgeTable:
         return (rank == 0 and diff <= SURE_MM and options_a == options_b == 1 and right["number"] not in clean and
                 (wrong["number"] in clean or wrong["_row"].label.conf < SURE_CONF <= right["_row"].label.conf))
 
-    def write_misreads(self, path: Path, applied: list[dict] = ()) -> list[dict]:
-        """Open suggestions, after the ones already applied (sure = "applied")."""
+    def write_misreads(self, path: Path, applied: list[dict] = (), extra: list[dict] = ()) -> list[dict]:
+        """Open suggestions, after the ones already applied (sure = "applied"). `extra` adds
+        suggestions from other evidence (mirror twins) for numbers not already suggested."""
         found = self.misreads()
+        listed = {(f["piece"], f["x_mm"], f["y_mm"]) for f in found}
+        found += [f for f in extra if (f["piece"], f["x_mm"], f["y_mm"]) not in listed]
         with path.open("w", newline="", encoding="utf-8") as handle:
             writer = csv.DictWriter(handle, MISREAD_COLUMNS, extrasaction="ignore")
             writer.writeheader()
             writer.writerows([*applied, *found])
         return found
 
-    def write_report(self, path: Path, project: str, generated: str = "", applied: int = 0) -> None:
+    def write_report(self, path: Path, project: str, generated: str = "", applied: int = 0, symmetry=None) -> None:
         """The model folder's README: what is in it, how far the conversion got, and
         which edge pairs agree and which need a look."""
         records = self.records()
@@ -248,6 +251,16 @@ class EdgeTable:
         for r in doubtful:
             lines.append(f"| {r['piece']} | {r['number']} | {r['side']} | {r['length_mm']} | {r['status']} | "
                          f"{r['partner_piece']} {r['partner_side']} | {r['partner_length_mm']} |")
+        if symmetry:
+            mirror, off = symmetry
+            paired = sum(len(t.lines) for t in mirror.twins)
+            lines += ["", "## Mirror twins", "",
+                      f"The model is symmetric: {len(mirror.twins)} pairs of pieces are mirror images "
+                      f"({2 * len(mirror.twins)} of {sum(len(l.pieces) for l in self.layouts)} pieces), found by the "
+                      f"lengths of their numbered lines. Of their {paired} mirrored lines, {off} differ in length from "
+                      f"their mirror line by more than 1 mm, so one of the two was traced off (`{project}-mirrors.csv`). "
+                      "A twin's clean glue pair also predicts the number on the mirror line; those predictions are "
+                      "applied when clear-cut, and otherwise go to the check page with `mirror` as the reason.", ""]
         found = self.misreads(records)
         lines += ["", "## Likely misreads", "",
                   f"{applied} clear-cut misreads were fixed without asking (marked `applied` in "
