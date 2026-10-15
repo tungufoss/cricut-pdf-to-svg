@@ -1,4 +1,4 @@
-# Shared helpers for reading the pipeline's edge table (output/<project>/<project>-edges.csv).
+# Shared helpers for reading the pipeline's edge table (data/<project>/<project>-edges.csv).
 # One row per printed edge number; `status` is decided by the pipeline, the report only groups it.
 
 suppressPackageStartupMessages({

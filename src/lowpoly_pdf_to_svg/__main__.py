@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime
 import shutil
 import sys
 from pathlib import Path
@@ -17,8 +18,8 @@ from .svg import InkscapeSvgWriter
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Trace papercraft PDF pages into Cricut-oriented SVGs.")
-    parser.add_argument("--config", type=Path, default=Path("data/bowser.yaml"), help="project YAML manifest")
-    parser.add_argument("--output", type=Path, help="output directory (default: output/<project>)")
+    parser.add_argument("--config", type=Path, default=Path("data/bowser/bowser.yaml"), help="project YAML manifest")
+    parser.add_argument("--output", type=Path, help="output directory (default: the YAML's folder)")
     parser.add_argument("--dpi", type=int, default=180, help="PDF render resolution (default: 180)")
     parser.add_argument("--page", type=int, action="append", help="convert only this 1-based page; repeatable")
     parser.add_argument("--pdftoppm", default="pdftoppm", help="Poppler pdftoppm executable")
@@ -40,7 +41,7 @@ def main() -> int:
             parser.error(f"page(s) not assigned to a material: {', '.join(map(str, sorted(missing)))}")
         pages = [(page, material) for page, material in pages if page in args.page]
 
-    output = args.output or Path("output") / project.name
+    output = args.output or args.config.parent
     renderer = PageRenderer(project.pdf, args.dpi, renderer_path)
     detector = PageDetector(folds=project.folds)
     results = []
@@ -77,7 +78,7 @@ def main() -> int:
         table.add(layout, page.mm_per_px)
     edges = output / f"{project.name}-edges.csv"
     statuses = table.write(edges)
-    table.write_report(output / f"{project.name}-report.md", project.name.title())
+    table.write_report(output / "README.md", project.name, datetime.date.today().isoformat())
     print(f"Wrote {edges}: " + ", ".join(f"{n} {s}" for s, n in statuses.most_common()))
     target = output / f"{project.name}.svg"
     writer.write(target)

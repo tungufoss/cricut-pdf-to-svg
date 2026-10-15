@@ -2,10 +2,10 @@
 title: "Quickstart"
 ---
 
-Put the template PDF in `data/` (it is not committed) and describe it in a YAML manifest, such as `data/bowser.yaml`, which maps PDF pages to cardstock colours. Then:
+Each model gets its own folder, such as `data/bowser/`. Put the template PDF there (it is not committed) next to a YAML manifest, `data/bowser/bowser.yaml`, which maps PDF pages to cardstock colours. The conversion writes the SVG, the edge table and a status `README.md` into the same folder. Then:
 
 ```bash
-make                 # all pages -> output/bowser/bowser.svg
+make                 # all pages -> data/bowser/bowser.svg
 make page PAGE=4     # one page  -> output/bowser/page-4/bowser.svg
 make report          # check the result on the Results pages
 ```
@@ -13,8 +13,8 @@ make report          # check the result on the Results pages
 Without `make`:
 
 ```bash
-python -m src.lowpoly_pdf_to_svg --config data/bowser.yaml
-python -m src.lowpoly_pdf_to_svg --config data/bowser.yaml --page 4 --output output/bowser/page-4
+python -m src.lowpoly_pdf_to_svg --config data/bowser/bowser.yaml
+python -m src.lowpoly_pdf_to_svg --config data/bowser/bowser.yaml --page 4 --output output/bowser/page-4
 ```
 
-Open `output/bowser/bowser.svg` in Inkscape 1.2 or newer and work through the [guide](usage.qmd).
+Open `data/bowser/bowser.svg` in Inkscape 1.2 or newer and work through the [guide](usage.qmd).

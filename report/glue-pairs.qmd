@@ -13,7 +13,7 @@ Every edge number is printed twice in the template: once on the edge and once on
 
 ```{r}
 if (is.null(edges)) {
-  cat("The edge-number check (output/bowser/bowser-edges.csv) has not been run yet.\n")
+  cat("The edge-number check (data/bowser/bowser-edges.csv) has not been run yet.\n")
 } else {
   edges |>
     filter(!is.na(length_diff_mm), side != "none", partner_side != "none") |>

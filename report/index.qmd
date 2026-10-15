@@ -15,7 +15,7 @@ Turns low poly papercraft PDF templates into one Inkscape SVG, ready for review 
 
 ```bash
 make install
-make            # data/bowser.pdf -> output/bowser/bowser.svg
+make            # data/bowser/bowser.pdf -> data/bowser/bowser.svg
 ```
 
 The first template is the Bowser mask. The [Results](sheets.qmd) pages show each PDF page next to the traced SVG, and whether the printed edge numbers pair up into [glue edges](glue-pairs.qmd) of the same length.

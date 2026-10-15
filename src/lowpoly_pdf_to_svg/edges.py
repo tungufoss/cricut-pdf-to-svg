@@ -92,19 +92,46 @@ class EdgeTable:
             writer.writerows(records)
         return collections.Counter(r["status"] for r in records)
 
-    def write_report(self, path: Path, title: str) -> None:
-        """A short Markdown summary: which edge pairs agree and which need a look."""
+    def write_report(self, path: Path, project: str, generated: str = "") -> None:
+        """The model folder's README: what is in it, how far the conversion got, and
+        which edge pairs agree and which need a look."""
         records = self.records()
         statuses = collections.Counter(r["status"] for r in records)
         pairs = {r["number"] for r in records if r["status"] == "ok"}
         by_page = collections.defaultdict(collections.Counter)
         for r in records:
             by_page[r["piece"][6:8]]["ok" if r["status"] == "ok" else "check"] += 1
-        lines = [f"# {title}: edge number report", "",
+        layouts = self.layouts
+        pieces = [p for l in layouts for p in l.pieces]
+        folds = [f for p in pieces for f in p.folds]
+        labels = [label for p in pieces for label in p.labels]
+        mismatched = [l for l in layouts if l.paper and l.paper != l.material]
+        lines = [f"# {project.title()}", "",
                  f"{len(records)} printed numbers on {sum(len(l.pieces) for l in self.layouts)} pieces. "
                  f"{len(pairs)} numbers form a clean pair (one plain edge, one tab, lengths within "
                  f"{LENGTH_TOLERANCE_MM:g} mm); {sum(n for s, n in statuses.items() if s != 'ok')} labels need a look.", "",
-                 "## Status", "", "| status | labels | meaning |", "|---|---:|---|"]
+                 f"Conversion status{f' ({generated})' if generated else ''}, written by `make`. "
+                 "Edit the YAML, not this file.", "",
+                 "## Files", "",
+                 "| file | what | in git |", "|---|---|---|",
+                 f"| `{project}.pdf` | source template | no, personal use only |",
+                 f"| `{project}.yaml` | pages per cardstock, fold styles, sheet size | yes |",
+                 f"| `{project}.svg` | Inkscape review file, one row of pages per cardstock | no, traced pattern |",
+                 "| `previews/` | rendered PDF pages, the SVG's faint Source layer | no |",
+                 f"| `{project}-edges.csv` | every printed edge number with its line and partner | yes |",
+                 "| `README.md` | this status page | yes |", "",
+                 "## Status", "",
+                 "| stage | result |", "|---|---|",
+                 f"| pages | {len(layouts)} converted |",
+                 f"| pieces | {len(pieces)} cut outlines, corners joined by straight edges |",
+                 f"| folds | {len(folds)}, {sum(not f.snapped for f in folds)} stretched far to reach the cut |",
+                 f"| numbers | {len(labels)} read, {sum(not l.trusted for l in labels)} uncertain (orange in the SVG) |",
+                 f"| pieces to check | {sum(p.needs_review for p in pieces)} marked ⚠ in Inkscape |",
+                 "| paper colour | " + ("footers agree with the YAML" if not mismatched else
+                                       "footers disagree with the YAML: " + _paper_note(mismatched)) + " |",
+                 "| nesting on sheets | not started |", "",
+                 "## Edge numbers", "",
+                 "| status | labels | meaning |", "|---|---:|---|"]
         meaning = {"ok": "partner found, one tab and one plain edge, same length",
                    "length mismatch": "partner found but the marked lines differ in length: misread number or traced line",
                    "both tabs": "both copies sit on a tab fold", "no tab": "neither copy sits on a tab fold",
@@ -130,5 +157,18 @@ class EdgeTable:
             if bad:
                 listed = ", ".join(f"{r['number']} ({r['status']})" for r in bad)
                 lines.append(f"| {piece} | {len(rows) - len(bad)} | {len(bad)} | {listed} |")
-        lines += ["", f"Full table: `{path.stem.replace('-report', '')}-edges.csv`.", ""]
+        lines += ["", f"Full table: `{project}-edges.csv`.", ""]
         path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _paper_note(layouts: list[PageLayout]) -> str:
+    """'pages 14-23 say beige (YAML: yellow); page 24 says white (YAML: black)'"""
+    groups: dict[tuple[str, str], list[int]] = {}
+    for layout in layouts:
+        groups.setdefault((layout.paper, layout.material), []).append(layout.page)
+    notes = []
+    for (paper, material), pages in groups.items():
+        where = f"page {pages[0]}" if len(pages) == 1 else (
+            f"pages {pages[0]}–{pages[-1]}" if pages[-1] - pages[0] == len(pages) - 1 else "pages " + ", ".join(map(str, pages)))
+        notes.append(f"{where} say{'s' if len(pages) == 1 else ''} {paper} (YAML: {material})")
+    return "; ".join(notes)
