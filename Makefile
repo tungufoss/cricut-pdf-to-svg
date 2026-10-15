@@ -4,6 +4,7 @@
 #   make page PAGE=4  convert one page into output/<project>/page-4/ (quick check while tuning)
 #   make piece PIECE=piece-05-08  one piece over its scan, numbers coloured by pair check,
 #                   in data/<project>/pieces/ (needs a full `make` first)
+#   make review      every piece in one picture, most numbers to check first: data/<project>/review-all.png
 #   make install    install Python dependencies (Poppler's pdftoppm comes from the OS)
 #   make clean      remove generated files (keeps the PDF and YAML)
 
@@ -15,7 +16,7 @@ DPI     ?= 180
 SOURCES := $(wildcard src/lowpoly_pdf_to_svg/*.py)
 CONVERT  = $(PYTHON) -m src.lowpoly_pdf_to_svg --config $(CONFIG) --output $(OUT) --dpi $(DPI)
 
-.PHONY: all page piece install clean
+.PHONY: all page piece review install clean
 
 all: $(OUT)/$(PROJECT).svg
 
@@ -31,11 +32,15 @@ piece:
 	@test -f $(OUT)/$(PROJECT).svg || { echo "run make first"; exit 2; }
 	$(PYTHON) -m src.lowpoly_pdf_to_svg.piece --config $(CONFIG) $(PIECE)
 
+review:
+	@test -f $(OUT)/$(PROJECT).svg || { echo "run make first"; exit 2; }
+	$(PYTHON) -m src.lowpoly_pdf_to_svg.piece --config $(CONFIG) --all
+
 install:
 	$(PYTHON) -m pip install -r requirements.txt
 
 clean:
-	rm -rf $(OUT)/previews $(OUT)/$(PROJECT).svg $(OUT)/$(PROJECT)-edges.csv $(OUT)/README.md $(OUT)/pieces output/$(PROJECT)
+	rm -rf $(OUT)/previews $(OUT)/$(PROJECT).svg $(OUT)/$(PROJECT)-edges.csv $(OUT)/README.md $(OUT)/pieces $(OUT)/review.png $(OUT)/review-all.png output/$(PROJECT)
 
 # Results site (Quarto website in report/, R with tidyverse, xml2 and DT).
 #   make report     render report/_site/index.html from the current output

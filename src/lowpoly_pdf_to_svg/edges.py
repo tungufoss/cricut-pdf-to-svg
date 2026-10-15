@@ -51,10 +51,11 @@ class EdgeTable:
         by_number = collections.defaultdict(list)
         for row in self.rows:
             by_number[row.label.text].append(row)
+        partners = self._partners(by_number)
         records = []
         for row in self.rows:
             others = [o for o in by_number[row.label.text] if o is not row]
-            partner = others[0] if len(others) == 1 else None
+            partner = others[0] if len(others) == 1 else partners.get(id(row))
             records.append({
                 "number": row.label.text,
                 "piece": row.piece,
@@ -67,9 +68,26 @@ class EdgeTable:
                 "partner_side": partner.side if partner else "",
                 "partner_length_mm": f"{partner.length_mm:.1f}" if partner else "",
                 "length_diff_mm": f"{abs(row.length_mm - partner.length_mm):.1f}" if partner else "",
-                "status": self._status(row, partner, len(others)),
+                "status": ("extra copy: likely misread" if len(others) > 1 and partner is None and
+                           any(id(o) in partners for o in others) else self._status(row, partner, len(others))),
             })
         return sorted(records, key=lambda r: (int(r["number"]) if r["number"].isdigit() else 10**6, r["piece"]))
+
+    @staticmethod
+    def _partners(by_number: dict[str, list[EdgeRow]]) -> dict[int, EdgeRow]:
+        """For a number read more than twice, the plain edge and tab whose lengths agree
+        best are the real pair; the other copies are misreads of some other number."""
+        partners: dict[int, EdgeRow] = {}
+        for rows in by_number.values():
+            if len(rows) < 3:
+                continue
+            pairs = [(abs(a.length_mm - b.length_mm), a, b) for a in rows for b in rows
+                     if a.side == "edge" and b.side == "tab"]
+            if pairs:
+                diff, a, b = min(pairs, key=lambda p: p[0])
+                if diff <= LENGTH_TOLERANCE_MM:
+                    partners[id(a)], partners[id(b)] = b, a
+        return partners
 
     @staticmethod
     def _status(row: EdgeRow, partner: EdgeRow | None, others: int) -> str:
@@ -136,7 +154,8 @@ class EdgeTable:
                    "length mismatch": "partner found but the marked lines differ in length: misread number or traced line",
                    "both tabs": "both copies sit on a tab fold", "no tab": "neither copy sits on a tab fold",
                    "unpaired": "no other copy of this number: likely misread",
-                   "line not found": "no cut edge or fold next to the number"}
+                   "line not found": "no cut edge or fold next to the number",
+                   "extra copy: likely misread": "number read more than twice; the other copies already form a clean pair"}
         for status, count in statuses.most_common():
             lines.append(f"| {status} | {count} | {meaning.get(status, 'number read more than twice: some are misread')} |")
         lines += ["", "## Pages", "", "| page | config material | footer says | pieces | ok | check |", "|---|---|---|---:|---:|---:|"]

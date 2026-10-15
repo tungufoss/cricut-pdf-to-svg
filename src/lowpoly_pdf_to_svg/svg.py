@@ -74,6 +74,11 @@ class InkscapeSvgWriter:
             width = max(width, x - PAGE_GAP_MM)
             y += max(p.image.size_mm[1] for p in row) + PAGE_GAP_MM
         height = max(y - PAGE_GAP_MM, 1.0)
+        # The template prints every number at one size; OCR boxes vary with rotation and
+        # fit, so all labels take the median height instead of their own box.
+        heights = sorted(label.height * page.image.mm_per_px for page in self.pages
+                         for piece in page.layout.pieces for label in piece.labels)
+        label_mm = heights[len(heights) // 2] if heights else 1.5
 
         inkscape_pages, sources, reviews = [], [], []
         by_material: dict[str, tuple[Material, list[str]]] = {}
@@ -86,7 +91,7 @@ class InkscapeSvgWriter:
             href = Path(os.path.relpath(page.image.path, directory)).as_posix()
             sources.append(f'<image id="source-{number:02d}" xlink:href={quoteattr(href)} x="{ox:.3f}" y="{oy:.3f}" '
                            f'width="{w:.3f}" height="{h:.3f}" preserveAspectRatio="none"/>')
-            pen = _Pen(page.image.mm_per_px, ox, oy)
+            pen = _Pen(page.image.mm_per_px, ox, oy, label_mm)
             group = by_material.setdefault(page.material.id, (page.material, []))[1]
             group.extend(self._piece(piece, pen) for piece in page.layout.pieces)
             stray = [pen.path(points) for points in page.layout.stray_lines]
@@ -147,8 +152,9 @@ class InkscapeSvgWriter:
 class _Pen:
     """Converts page pixels to document millimetres, shifted onto the page's slot."""
 
-    def __init__(self, mm_per_px: float, offset_mm: float, top_mm: float = 0.0):
+    def __init__(self, mm_per_px: float, offset_mm: float, top_mm: float = 0.0, label_mm: float = 1.5):
         self.scale = mm_per_px
+        self.label_mm = label_mm
         self.offset = offset_mm
         self.top = top_mm
 
@@ -159,7 +165,7 @@ class _Pen:
     def text(self, label: Label) -> str:
         s = self.scale
         cx, cy = label.center[0] * s + self.offset, label.center[1] * s + self.top
-        size = label.height * s / 0.72  # digit height is about 0.72 em
+        size = self.label_mm / 0.72  # digit height is about 0.72 em
         unsure = "" if label.trusted else f' fill="{UNSURE_FILL}" data-review="ocr"'
         return (f'<text x="{cx:.3f}" y="{cy:.3f}" font-size="{size:.2f}" dominant-baseline="central" '
                 f'transform="rotate({label.angle:.1f} {cx:.3f} {cy:.3f})"{unsure}>{escape(label.text)}</text>')
