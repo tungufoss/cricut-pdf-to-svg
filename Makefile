@@ -72,8 +72,8 @@ report-data: $(OUT)/$(PROJECT).svg
 	cp $(OUT)/$(PROJECT)-edges.csv report/data/$(PROJECT)/
 	cp $(OUT)/README.md report/data/$(PROJECT)/$(PROJECT)-report.md
 
-# Paper 1 manuscript (Quarto manuscript project in paper/). Not part of the public site.
-#   make paper      render paper/_manuscript/index.html (and a .docx)
+# Paper 1 (Quarto article in paper/, quarto-hi template). Not part of the public site.
+#   make paper      render paper/_output/index.html and index.pdf (quarto-hi article look)
 .PHONY: paper
 paper:
-	LC_ALL=C.UTF-8 quarto render paper
+	cd paper && LC_ALL=C.UTF-8 quarto render   # from paper/ so font-paths: fonts resolves

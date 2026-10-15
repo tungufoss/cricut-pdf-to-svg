@@ -1,11 +1,19 @@
 ---
 title: "Beyond Visual Fidelity: A Benchmark for Fabrication-Aware Vectorization of Papercraft Templates"
 # Alternative: "From Raster Templates to Fabrication-Ready Vectors: Benchmarking Semantic Vectorization for Papercraft"
+categories:
+  - Digital fabrication
+  - Vectorization
+  - Benchmark
 author:
   - name: Helga
-    affiliations:
-      - name: University of Iceland
+    # orcid: "0000-0000-0000-0000"
+    affiliation: "University of Iceland"
 date: last-modified
+date-format: long
+citation:
+  type: article-journal
+  container-title: "Target venue (to be decided)"
 abstract: |
   Raster-to-vector conversion is commonly evaluated by how closely the vectors reproduce the
   appearance of the source image. For digital fabrication this is not sufficient: a papercraft
@@ -209,7 +217,7 @@ $H(A, B)$; mean geometric deviation; number of vector primitives; SVG file size.
 ## Fabrication-aware metrics {#sec-fab-metrics}
 
 | | Metric | Definition |
-|---|---|---|
+|:--|:--|:--|
 | F1 | Closed contour validity | $F_{closed} = \text{correctly closed pieces} / \text{total pieces}$ |
 | F2 | Dimensional error | $E_{dim} = \lvert L_{pred} - L_{GT} \rvert / L_{GT}$, in % and mm |
 | F3 | Cut/fold semantic accuracy | precision, recall, F1 |
@@ -217,7 +225,7 @@ $H(A, B)$; mean geometric deviation; number of vector primitives; SVG file size.
 | F5 | Matching-edge consistency | $E_{match} = \lvert L(e_i) - L(e_j) \rvert$ for edges that should join |
 | F6 | Vector complexity | paths, nodes, Bézier control points, SVG size |
 
-: Fabrication-aware metrics. {#tbl-fab-metrics}
+: Fabrication-aware metrics. {#tbl-fab-metrics tbl-colwidths="[6,28,66]"}
 
 ## Experimental procedure
 
