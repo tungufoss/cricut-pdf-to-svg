@@ -36,7 +36,7 @@ class EdgeRow:
 
 
 class EdgeTable:
-    COLUMNS = ["number", "piece", "side", "length_mm", "x_mm", "y_mm", "ocr_trusted",
+    COLUMNS = ["number", "piece", "side", "length_mm", "x_mm", "y_mm", "ocr_trusted", "ocr_conf", "ocr_alternatives",
                "partner_piece", "partner_side", "partner_length_mm", "length_diff_mm", "status"]
 
     def __init__(self):
@@ -57,6 +57,7 @@ class EdgeTable:
             others = [o for o in by_number[row.label.text] if o is not row]
             partner = others[0] if len(others) == 1 else partners.get(id(row))
             records.append({
+                "_row": row,
                 "number": row.label.text,
                 "piece": row.piece,
                 "side": row.side,
@@ -64,6 +65,8 @@ class EdgeTable:
                 "x_mm": f"{row.label.center[0] * row.mm_per_px:.1f}",
                 "y_mm": f"{row.label.center[1] * row.mm_per_px:.1f}",
                 "ocr_trusted": "yes" if row.label.trusted else "no",
+                "ocr_conf": f"{row.label.conf:.0f}",
+                "ocr_alternatives": " ".join(row.label.alternatives),
                 "partner_piece": partner.piece if partner else "",
                 "partner_side": partner.side if partner else "",
                 "partner_length_mm": f"{partner.length_mm:.1f}" if partner else "",
@@ -105,10 +108,52 @@ class EdgeTable:
         records = self.records()
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, self.COLUMNS)
+            writer = csv.DictWriter(handle, self.COLUMNS, extrasaction="ignore")
             writer.writeheader()
             writer.writerows(records)
         return collections.Counter(r["status"] for r in records)
+
+    def misreads(self, records: list[dict] | None = None) -> list[dict]:
+        """Numbers that did not pair up, matched to an unpaired line of the same length on
+        the other side (edge against tab) whose number is a likely misreading of it."""
+        records = records if records is not None else self.records()
+        clean = {r["number"] for r in records if r["status"] == "ok"}
+        open_rows = [r for r in records if r["status"] != "ok" and r["side"] in ("edge", "tab")]
+        found, used = [], set()
+        pairs = []
+        for i, a in enumerate(open_rows):
+            for b in open_rows[i + 1:]:
+                if a["side"] == b["side"] or a["number"] == b["number"]:
+                    continue
+                diff = abs(a["_row"].length_mm - b["_row"].length_mm)
+                if diff > LENGTH_TOLERANCE_MM:
+                    continue
+                evidence = _similar(a, b)
+                if evidence:
+                    pairs.append((evidence[0], diff, a, b, evidence[1]))
+        for rank, diff, a, b, why in sorted(pairs, key=lambda p: (p[0], p[1])):
+            if id(a) in used or id(b) in used:
+                continue
+            used.update((id(a), id(b)))
+            # Fix the copy whose number already has a clean pair elsewhere, else the less certain read.
+            if (a["number"] in clean) != (b["number"] in clean):
+                wrong, right = (a, b) if a["number"] in clean else (b, a)
+            else:
+                wrong, right = (a, b) if a["_row"].label.conf <= b["_row"].label.conf else (b, a)
+            found.append({"piece": wrong["piece"], "side": wrong["side"], "length_mm": wrong["length_mm"],
+                          "read": wrong["number"], "ocr_conf": wrong["ocr_conf"], "suggested": right["number"],
+                          "partner_piece": right["piece"], "partner_side": right["side"],
+                          "partner_length_mm": right["length_mm"], "length_diff_mm": f"{diff:.1f}",
+                          "why": why + ("; the read number already pairs elsewhere" if wrong["number"] in clean else "")})
+        return sorted(found, key=lambda f: (float(f["length_diff_mm"]), f["piece"]))
+
+    def write_misreads(self, path: Path) -> list[dict]:
+        found = self.misreads()
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, MISREAD_COLUMNS)
+            writer.writeheader()
+            writer.writerows(found)
+        return found
 
     def write_report(self, path: Path, project: str, generated: str = "") -> None:
         """The model folder's README: what is in it, how far the conversion got, and
@@ -137,6 +182,7 @@ class EdgeTable:
                  f"| `{project}.svg` | Inkscape review file, one row of pages per cardstock | no, traced pattern |",
                  "| `previews/` | rendered PDF pages, the SVG's faint Source layer | no |",
                  f"| `{project}-edges.csv` | every printed edge number with its line and partner | yes |",
+                 f"| `{project}-misreads.csv` | unpaired numbers matched by length to a look-alike number | yes |",
                  "| `README.md` | this status page | yes |", "",
                  "## Status", "",
                  "| stage | result |", "|---|---|",
@@ -176,8 +222,33 @@ class EdgeTable:
             if bad:
                 listed = ", ".join(f"{r['number']} ({r['status']})" for r in bad)
                 lines.append(f"| {piece} | {len(rows) - len(bad)} | {len(bad)} | {listed} |")
-        lines += ["", f"Full table: `{project}-edges.csv`.", ""]
+        found = self.misreads(records)
+        lines += ["", "## Likely misreads", "",
+                  f"{len(found)} numbers that did not pair up sit on a line of the same length as another unpaired "
+                  "number on the other side (edge against tab), and the two numbers look alike. "
+                  "Check them with `make number NUMBER=<n>`.", "",
+                  "| piece | side | mm | read | suggested | partner | partner mm | why |", "|---|---|---:|---|---|---|---:|---|"]
+        for f in found:
+            lines.append(f"| {f['piece']} | {f['side']} | {f['length_mm']} | {f['read']} | {f['suggested']} | "
+                         f"{f['partner_piece']} {f['partner_side']} | {f['partner_length_mm']} | {f['why']} |")
+        lines += ["", f"Full tables: `{project}-edges.csv`, `{project}-misreads.csv`.", ""]
         path.write_text("\n".join(lines), encoding="utf-8")
+
+
+MISREAD_COLUMNS = ["piece", "side", "length_mm", "read", "ocr_conf", "suggested", "partner_piece",
+                   "partner_side", "partner_length_mm", "length_diff_mm", "why"]
+
+
+def _similar(a: dict, b: dict) -> tuple[int, str] | None:
+    """How alike two read numbers are, as (rank, reason), lower rank is stronger; None if unalike."""
+    x, y = a["number"], b["number"]
+    if y in a["_row"].label.alternatives or x in b["_row"].label.alternatives:
+        return 0, "OCR's other reading"
+    if len(x) == len(y) and sum(c != d for c, d in zip(x, y)) == 1:
+        return 1, "one digit differs"
+    if abs(len(x) - len(y)) == 1 and (x in y or y in x):
+        return 2, "a digit dropped or added"
+    return None
 
 
 def _paper_note(layouts: list[PageLayout]) -> str:

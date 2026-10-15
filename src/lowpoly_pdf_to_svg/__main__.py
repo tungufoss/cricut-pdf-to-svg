@@ -100,6 +100,8 @@ def main() -> int:
         table.add(layout, page.mm_per_px)
     edges = output / f"{project.name}-edges.csv"
     statuses = table.write(edges)
+    misreads = table.write_misreads(output / f"{project.name}-misreads.csv")
+    print(f"Wrote {output / (project.name + '-misreads.csv')}: {len(misreads)} likely misreads")
     table.write_report(output / "README.md", project.name, datetime.date.today().isoformat())
     print(f"Wrote {edges}: " + ", ".join(f"{n} {s}" for s, n in statuses.most_common()))
     target = output / f"{project.name}.svg"

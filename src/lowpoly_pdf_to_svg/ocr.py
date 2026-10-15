@@ -121,6 +121,10 @@ class EdgeNumberReader:
                 label.angle = (label.angle + t_flip) % 360
                 decided.append(i)
         self._pair_up(labels, candidates, [t for t, _, _ in tesseract], decided)
+        for label, (t_text, t_conf, _), options in zip(labels, tesseract, candidates):
+            label.conf = t_conf
+            others = [t_text] + [text for text, _, _ in options]
+            label.alternatives = [t for t in dict.fromkeys(others) if t and t != label.text][:5]
 
     @staticmethod
     def _pair_up(labels: list[Label], candidates, tesseract: list[str], decided: list[int]) -> None:

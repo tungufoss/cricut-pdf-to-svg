@@ -47,7 +47,7 @@ install:
 	$(PYTHON) -m pip install -r requirements.txt
 
 clean:
-	rm -rf $(OUT)/previews $(OUT)/$(PROJECT).svg $(OUT)/$(PROJECT)-edges.csv $(OUT)/README.md $(OUT)/pieces $(OUT)/cache $(OUT)/review.png output/$(PROJECT)
+	rm -rf $(OUT)/previews $(OUT)/$(PROJECT).svg $(OUT)/$(PROJECT)-edges.csv $(OUT)/$(PROJECT)-misreads.csv $(OUT)/README.md $(OUT)/pieces $(OUT)/cache $(OUT)/review.png output/$(PROJECT)
 
 # Results site (Quarto website in report/, R with tidyverse, xml2 and DT).
 #   make report     render report/_site/index.html from the current output
