@@ -25,6 +25,7 @@ from PIL import Image
 CROP_MM = 30.0        # smallest patch; grows to hold the whole line the number marks
 MARGIN_MM = 5.0
 MAX_MM = 120.0
+FOLDED_MM = 0.6       # a 3D-model pair matches a card when its line length agrees this closely
 SIZE_PX = 360         # patches are scaled to this so long lines do not bloat the JSON
 
 
@@ -38,6 +39,26 @@ class CheckData:
         self.lines = {(r["piece"], r["x_mm"], r["y_mm"]): [float(v) for v in r.get("line_mm", "").split()]
                       for r in self.edges}
         self.traces = self._traces()
+        self.folded = self._folded()
+
+    def _folded(self) -> dict[frozenset, list[tuple[float, str]]]:
+        """Second opinion from the folded 3D model (<project>-3d-glue.csv, written by the 3D
+        reconstruction): pairs of an open edge and an open tab of the same length that meet once
+        folded. Keyed by the two pieces; reads can differ between builds, so a pair is matched
+        to a card by its pieces and line length."""
+        found: dict[frozenset, list[tuple[float, str]]] = {}
+        for path in (self.folder / f"{self.project}-3d-glue.csv", self.folder / "3d" / f"{self.project}-3d-glue.csv"):
+            if path.is_file():
+                for r in csv.DictReader(path.open(encoding="utf-8")):
+                    if r["status"].startswith("proposed"):
+                        found.setdefault(frozenset({r["piece"], r["tab_piece"]}), []).append((float(r["length_mm"]), r["status"]))
+                break
+        return found
+
+    def _folded_status(self, m: dict) -> str:
+        length = (float(m["length_mm"]) + float(m["partner_length_mm"])) / 2
+        return next((status for mm, status in self.folded.get(frozenset({m["piece"], m["partner_piece"]}), [])
+                     if abs(mm - length) <= FOLDED_MM), "")
 
     def _traces(self) -> dict[str, dict]:
         """Traced outline corners and folds per piece, in page mm, from the build cache."""
@@ -70,7 +91,9 @@ class CheckData:
                                 m["partner_side"], m["partner_length_mm"])
             covered.update({(m["piece"], m["x_mm"], m["y_mm"]), (m["partner_piece"], m["partner_x_mm"], m["partner_y_mm"])})
             kind = "auto" if m.get("sure") == "applied" else "suggested"
-            cards.append({"kind": kind, "suggested": m["suggested"], "why": m["why"], "panels": [this, other]})
+            folded = self._folded_status(m)
+            cards.append({"kind": kind, "suggested": m["suggested"], "why": m["why"], "panels": [this, other],
+                          "folded": folded})
         for r in self.edges:
             if r["status"] == "ok" or (r["piece"], r["x_mm"], r["y_mm"]) in covered:
                 continue

@@ -14,6 +14,7 @@ main{padding:16px;display:grid;gap:14px;max-width:1100px;margin:auto}
 .card.done{border-color:var(--ok);box-shadow:inset 4px 0 0 var(--ok)}
 .head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .why{color:var(--muted)}
+.folded{color:var(--ok)}
 .panels{display:flex;gap:14px;flex-wrap:wrap}
 .panel{display:grid;gap:6px;width:320px}
 .scan{position:relative;width:320px;height:320px;border:1px solid var(--line);border-radius:6px;overflow:hidden}
@@ -167,7 +168,7 @@ function card(c) {
   const title = c.kind === "doubt" ? `You set ${a.read}, but it still does not pair: ${c.why}. Check every copy below.`
     : c.kind === "auto" ? `Read ${a.read}, fixed to ${c.suggested} without asking (type to override)`
     : c.kind === "suggested" ? `Read ${a.read}, probably ${c.suggested}` : `${a.read}: ${c.why}`;
-  el.innerHTML = `<div class="head"><b>${title}</b><span class="why">${["suggested", "auto"].includes(c.kind) ? c.why : ""}</span></div><div class="panels"></div>`;
+  el.innerHTML = `<div class="head"><b>${title}</b><span class="why">${["suggested", "auto"].includes(c.kind) ? c.why : ""}${c.folded ? ` · <b class="folded" title="the folded 3D model: ${c.folded}">${c.folded.includes("closes") ? "3D fold agrees, the pieces meet" : "3D model agrees by shape"}</b>` : ""}</span></div><div class="panels"></div>`;
   const panels = el.querySelector(".panels");
   c.panels.forEach((p, i) => {
     const div = document.createElement("div");
