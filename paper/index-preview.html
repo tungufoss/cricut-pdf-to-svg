@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  lang="en"
+  xml:lang="en"
+  >
+  <head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="quarto-1.6.42" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    <meta name="author" content="Helga" />
+    <meta name="dcterms.date" content="2026-10-15" />
+    <meta name="keywords" content="fabrication-aware vectorization, raster-to-vector conversion, digital fabrication, papercraft, benchmark, SVG" />
+
+    <title>Beyond Visual Fidelity: A Benchmark for Fabrication-Aware Vectorization of Papercraft Templates</title>
+    <style>
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      div.columns{display: flex; gap: min(4vw, 1.5em);}
+      div.column{flex: auto; overflow-x: auto;}
+      div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+      ul.task-list{list-style: none;}
+      ul.task-list li input[type="checkbox"] {
+        width: 0.8em;
+        margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+        vertical-align: middle;
+      }
+      /* CSS for citations */
+      div.csl-bib-body { }
+      div.csl-entry {
+        clear: both;
+        margin-bottom: 0em;
+      }
+      .hanging-indent div.csl-entry {
+        margin-left:2em;
+        text-indent:-2em;
+      }
+      div.csl-left-margin {
+        min-width:2em;
+        float:left;
+      }
+      div.csl-right-inline {
+        margin-left:2em;
+        padding-left:1em;
+      }
+      div.csl-indent {
+        margin-left: 2em;
+      }    </style>
+
+    <style>
+      body.hypothesis-enabled #quarto-embed-header {
+        padding-right: 36px;
+      }
+
+      #quarto-embed-header {
+        height: 3em;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: solid 1px;
+      }
+
+      #quarto-embed-header h6 {
+        font-size: 1.1em;
+        padding-top: 0.6em;
+        margin-left: 1em;
+        margin-right: 1em;
+        font-weight: 400;
+      }
+
+      #quarto-embed-header a.quarto-back-link,
+      #quarto-embed-header a.quarto-download-embed {
+        font-size: 0.8em;
+        margin-top: 1em;
+        margin-bottom: 1em;
+        margin-left: 1em;
+        margin-right: 1em;
+      }
+
+      .quarto-back-container {
+        padding-left: 0.5em;
+        display: flex;
+      }
+
+      .headroom {
+          will-change: transform;
+          transition: transform 200ms linear;
+      }
+
+      .headroom--pinned {
+          transform: translateY(0%);
+      }
+
+      .headroom--unpinned {
+          transform: translateY(-100%);
+      }      
+    </style>
+
+    <script>
+    window.document.addEventListener("DOMContentLoaded", function () {
+
+      var header = window.document.querySelector("#quarto-embed-header");
+      const titleBannerEl = window.document.querySelector("body > #title-block-header");
+      if (titleBannerEl) {
+        titleBannerEl.style.paddingTop = header.clientHeight + "px";
+      }
+      const contentEl = window.document.getElementById('quarto-content');
+      for (const child of contentEl.children) {
+        child.style.paddingTop = header.clientHeight + "px";
+        child.style.marginTop = "1em";
+      }
+
+      // Use the article root if the `back` call doesn't work. This isn't perfect
+      // but should typically work
+      window.quartoBackToArticle = () => {
+        var currentUrl = window.location.href;
+        window.history.back();
+        setTimeout(() => {
+            // if location was not changed in 100 ms, then there is no history back
+            if(currentUrl === window.location.href){              
+                // redirect to site root
+                window.location.href = "index.html";
+            }
+        }, 100);
+      }
+
+      const headroom = new window.Headroom(header, {
+        tolerance: 5,
+        onPin: function () {
+        },
+        onUnpin: function () {
+        },
+      });
+      headroom.init();
+    });
+    </script>
+
+    <!-- htmldependencies:E3FAD763 -->
+     <script  src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script  src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link  href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet" />  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script> 
+      </head>
+
+  <body>
+    <div id="quarto-embed-header" class="headroom fixed-top bg-primary">
+      
+      <a onclick="window.quartoBackToArticle(); return false;" class="btn btn-primary quarto-back-link"><i class="bi bi-caret-left"></i> Back to Article</a>
+      <h6><i class="bi bi-journal-code"></i> Article Notebook</h6>
+
+            <a
+        href="index.qmd"
+        class="btn btn-primary quarto-download-embed"
+        data-noresolveinput="true"
+        download="index.qmd"
+        >Download Source</a
+      >
+          </div>
+
+     <div id="quarto-content" class="page-columns page-rows-contents page-layout-article toc-left">
+<div id="quarto-sidebar-toc-left" class="sidebar toc-left">
+  <div id="quarto-toc-target"></div>
+</div>
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+</div>
+<main class="content" id="quarto-document-content">      <header id="title-block-header" class="quarto-title-block default toc-left">
+  <div class="quarto-title-banner">
+    <div class="quarto-title column-body">
+      <h1 class="title">Beyond Visual Fidelity: A Benchmark for Fabrication-Aware Vectorization of Papercraft Templates</h1>
+          </div>
+
+    
+    <div class="quarto-title-meta-container">
+      <div class="quarto-title-meta-column-start">
+            <div class="quarto-title-meta-author">
+          <div class="quarto-title-meta-heading">Author</div>
+          <div class="quarto-title-meta-heading">Affiliation</div>
+          
+                <div class="quarto-title-meta-contents">
+            <p class="author">Helga </p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        University of Iceland
+                      </p>
+                  </div>
+                    </div>
+        
+        <div class="quarto-title-meta">
+
+                      
+                <div>
+            <div class="quarto-title-meta-heading">Published</div>
+            <div class="quarto-title-meta-contents">
+              <p class="date">October 15, 2026</p>
+            </div>
+          </div>
+          
+                
+              </div>
+      </div>
+      <div class="quarto-title-meta-column-end quarto-other-formats-target">
+      </div>
+    </div>
+
+    <div>
+      <div class="abstract">
+        <div class="block-title">Abstract</div>
+        <p>Raster-to-vector conversion is commonly evaluated by how closely the vectors reproduce the appearance of the source image. For digital fabrication this is not sufficient: a papercraft template also encodes cut boundaries, fold lines, pieces, physical dimensions, edge labels and the relationships between matching edges, and a vectorization can look almost identical to the source while still being unsuitable for cutting. This work makes three contributions. First, we introduce a benchmark for evaluating raster-to-vector conversion of papercraft templates, including fabrication-relevant ground-truth annotations. Second, we propose a fabrication-aware evaluation framework that complements conventional visual and geometric similarity measures with measures of topology, semantics, dimensional accuracy and structural consistency. Third, we empirically investigate the relationship between conventional vectorization quality and fabrication correctness, examining whether visually accurate vector representations are necessarily suitable for downstream physical fabrication.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="keywords">
+        <div class="block-title">Keywords</div>
+        <p>fabrication-aware vectorization, raster-to-vector conversion, digital fabrication, papercraft, benchmark, SVG</p>
+      </div>
+    </div>
+
+    <div class="quarto-other-links-text-target">
+    </div>  </div>
+</header>
+
+     <nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction"><span class="header-section-number">1</span> Introduction</a>
+  <ul>
+  <li><a href="#motivation" id="toc-motivation"><span class="header-section-number">1.1</span> Motivation</a></li>
+  <li><a href="#research-gap" id="toc-research-gap"><span class="header-section-number">1.2</span> Research gap</a></li>
+  <li><a href="#research-questions-and-hypotheses" id="toc-research-questions-and-hypotheses"><span class="header-section-number">1.3</span> Research questions and hypotheses</a></li>
+  <li><a href="#contributions" id="toc-contributions"><span class="header-section-number">1.4</span> Contributions</a></li>
+  </ul></li>
+  <li><a href="#related-work" id="toc-related-work"><span class="header-section-number">2</span> Related work</a>
+  <ul>
+  <li><a href="#raster-to-vector-conversion" id="toc-raster-to-vector-conversion"><span class="header-section-number">2.1</span> Raster-to-vector conversion</a></li>
+  <li><a href="#technical-drawing-vectorization" id="toc-technical-drawing-vectorization"><span class="header-section-number">2.2</span> Technical drawing vectorization</a></li>
+  <li><a href="#modern-image-vectorization" id="toc-modern-image-vectorization"><span class="header-section-number">2.3</span> Modern image vectorization</a></li>
+  <li><a href="#vectorization-evaluation" id="toc-vectorization-evaluation"><span class="header-section-number">2.4</span> Vectorization evaluation</a></li>
+  <li><a href="#digital-fabrication-requirements" id="toc-digital-fabrication-requirements"><span class="header-section-number">2.5</span> Digital fabrication requirements</a></li>
+  </ul></li>
+  <li><a href="#fabrication-aware-vectorization-framework" id="toc-fabrication-aware-vectorization-framework"><span class="header-section-number">3</span> Fabrication-aware vectorization framework</a>
+  <ul>
+  <li><a href="#visual-fidelity" id="toc-visual-fidelity"><span class="header-section-number">3.1</span> Visual fidelity</a></li>
+  <li><a href="#fabrication-correctness" id="toc-fabrication-correctness"><span class="header-section-number">3.2</span> Fabrication correctness</a></li>
+  <li><a href="#proposed-metrics" id="toc-proposed-metrics"><span class="header-section-number">3.3</span> Proposed metrics</a></li>
+  </ul></li>
+  <li><a href="#benchmark-and-method" id="toc-benchmark-and-method"><span class="header-section-number">4</span> Benchmark and method</a>
+  <ul>
+  <li><a href="#papercraft-dataset" id="toc-papercraft-dataset"><span class="header-section-number">4.1</span> Papercraft dataset</a></li>
+  <li><a href="#ground-truth-annotation" id="toc-ground-truth-annotation"><span class="header-section-number">4.2</span> Ground-truth annotation</a></li>
+  <li><a href="#vectorization-baselines" id="toc-vectorization-baselines"><span class="header-section-number">4.3</span> Vectorization baselines</a></li>
+  <li><a href="#conventional-metrics" id="toc-conventional-metrics"><span class="header-section-number">4.4</span> Conventional metrics</a></li>
+  <li><a href="#sec-fab-metrics" id="toc-sec-fab-metrics"><span class="header-section-number">4.5</span> Fabrication-aware metrics</a></li>
+  <li><a href="#experimental-procedure" id="toc-experimental-procedure"><span class="header-section-number">4.6</span> Experimental procedure</a></li>
+  </ul></li>
+  <li><a href="#results" id="toc-results"><span class="header-section-number">5</span> Results</a>
+  <ul>
+  <li><a href="#conventional-vectorization-performance" id="toc-conventional-vectorization-performance"><span class="header-section-number">5.1</span> Conventional vectorization performance</a></li>
+  <li><a href="#fabrication-aware-performance" id="toc-fabrication-aware-performance"><span class="header-section-number">5.2</span> Fabrication-aware performance</a></li>
+  <li><a href="#metric-relationships" id="toc-metric-relationships"><span class="header-section-number">5.3</span> Metric relationships</a></li>
+  <li><a href="#failure-cases" id="toc-failure-cases"><span class="header-section-number">5.4</span> Failure cases</a></li>
+  <li><a href="#physical-validation-optional" id="toc-physical-validation-optional"><span class="header-section-number">5.5</span> Physical validation (optional)</a></li>
+  </ul></li>
+  <li><a href="#discussion" id="toc-discussion"><span class="header-section-number">6</span> Discussion</a>
+  <ul>
+  <li><a href="#visual-fidelity-versus-fabrication-correctness" id="toc-visual-fidelity-versus-fabrication-correctness"><span class="header-section-number">6.1</span> Visual fidelity versus fabrication correctness</a></li>
+  <li><a href="#implications-for-vectorization" id="toc-implications-for-vectorization"><span class="header-section-number">6.2</span> Implications for vectorization</a></li>
+  <li><a href="#implications-for-digital-fabrication" id="toc-implications-for-digital-fabrication"><span class="header-section-number">6.3</span> Implications for digital fabrication</a></li>
+  <li><a href="#limitations" id="toc-limitations"><span class="header-section-number">6.4</span> Limitations</a></li>
+  <li><a href="#future-work" id="toc-future-work"><span class="header-section-number">6.5</span> Future work</a></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion"><span class="header-section-number">7</span> Conclusion</a></li>
+  <li><a href="#references" id="toc-references">References</a></li>
+  </ul>
+</nav>  <div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class='callout-icon'></i>
+</div>
+<div class="callout-title-container flex-fill">
+About this draft
+</div>
+<div class='callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end'><i class='callout-toggle'></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Seeded from Helga’s paper-1 skeleton, draft abstracts and the research plan (2026-10-15). Headings follow the skeleton’s recommended structure. Notes in callouts like this one are to-dos and come out before submission. Results tables are empty on purpose: nothing is measured yet. Work items are tracked in issues #7, #10 and #11 (label <code>paper-1</code>).</p>
+</div>
+</div>
+</div>
+<section id="introduction" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Introduction</h1>
+<section id="motivation" class="level2" data-number="1.1">
+<h2 data-number="1.1"><span class="header-section-number">1.1</span> Motivation</h2>
+<p>Raster-to-vector conversion is commonly evaluated according to how accurately a vector representation reproduces the appearance of the source image. For digital fabrication, however, visual similarity is not sufficient. A papercraft template contains fabrication information such as cut boundaries, fold or score lines, individual pieces, physical dimensions, edge labels and relationships between matching edges.</p>
+<p>A vectorization can therefore look almost identical to the source while still being unsuitable for fabrication: a cut contour is not completely closed, a fold line is classified as a cut line, two matching edges have different lengths, the physical scale changes, or a label is associated with the wrong edge.</p>
+</section>
+<section id="research-gap" class="level2" data-number="1.2">
+<h2 data-number="1.2"><span class="header-section-number">1.2</span> Research gap</h2>
+<p>Existing vectorization research primarily evaluates raster similarity, geometric distance, contour accuracy and primitive complexity. These measures do not explicitly capture whether the resulting vector representation is <em>fabrication-ready</em>. Papercraft provides a useful experimental domain because the source documents contain both graphical information and explicit fabrication semantics.</p>
+<blockquote>
+<p>There is a lack of benchmark datasets and evaluation methods for assessing raster-to-vector conversion when the objective is physical fabrication rather than visual reproduction.</p>
+</blockquote>
+<p>The aim of this study is to develop and evaluate a benchmark framework for fabrication-aware vectorization using papercraft templates as the application domain. It investigates whether conventional vectorization metrics adequately represent the properties required for successful digital fabrication.</p>
+</section>
+<section id="research-questions-and-hypotheses" class="level2" data-number="1.3">
+<h2 data-number="1.3"><span class="header-section-number">1.3</span> Research questions and hypotheses</h2>
+<ul>
+<li><p><strong>RQ1 (reconstruction).</strong> How accurately can existing raster-to-vector methods reconstruct the geometry of papercraft templates?</p></li>
+<li><p><strong>RQ2 (fabrication semantics).</strong> To what extent do conventional vectorization metrics capture fabrication-relevant errors in reconstructed papercraft templates?</p></li>
+<li><p><strong>RQ3 (fabrication-aware evaluation).</strong> Do fabrication-aware metrics provide additional information about vectorization quality beyond conventional visual and geometric metrics?</p></li>
+<li><p><strong>H1.</strong> Vectorization methods with similar visual reconstruction accuracy will differ in fabrication-relevant correctness; visual fidelity <span class="math inline">\(\neq\)</span> fabrication correctness.</p></li>
+<li><p><strong>H2.</strong> Conventional raster-based similarity metrics will not fully capture topological, semantic and dimensional errors relevant to fabrication.</p></li>
+<li><p><strong>H3.</strong> A composite fabrication-aware evaluation will distinguish fabrication-ready vectorizations more effectively than visual similarity metrics alone.</p></li>
+</ul>
+</section>
+<section id="contributions" class="level2" data-number="1.4">
+<h2 data-number="1.4"><span class="header-section-number">1.4</span> Contributions</h2>
+<ul>
+<li><strong>C1, benchmark.</strong> A curated dataset of papercraft templates with raster inputs and manually validated vector ground truth: piece boundaries, cut geometry, fold geometry, physical dimensions and edge labels.</li>
+<li><strong>C2, evaluation framework.</strong> Metrics for properties required for digital fabrication: contour closure, topology, dimensional accuracy, cut/fold classification and matching-edge consistency.</li>
+<li><strong>C3, empirical comparison.</strong> A comparison of existing raster-to-vector approaches on the benchmark. The purpose is not a new state-of-the-art vectorizer but to ask how differently existing methods behave when evaluated for fabrication rather than visual reproduction.</li>
+<li><strong>C4, visual versus fabrication quality.</strong> An analysis of whether IoU or Hausdorff distance predicts closed contours, matching-edge consistency and dimensional correctness.</li>
+</ul>
+</section>
+</section>
+<section id="related-work" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Related work</h1>
+<section id="raster-to-vector-conversion" class="level2" data-number="2.1">
+<h2 data-number="2.1"><span class="header-section-number">2.1</span> Raster-to-vector conversion</h2>
+<p>Contour extraction <span class="citation" data-cites="suzuki1985">(<a href="#ref-suzuki1985" role="doc-biblioref">Suzuki and Abe 1985</a>)</span>, line simplification <span class="citation" data-cites="douglas1973">(<a href="#ref-douglas1973" role="doc-biblioref">Douglas and Peucker 1973</a>)</span>, curve fitting and general-purpose tracing <span class="citation" data-cites="selinger2003potrace">(<a href="#ref-selinger2003potrace" role="doc-biblioref">Selinger 2003</a>)</span>.</p>
+</section>
+<section id="technical-drawing-vectorization" class="level2" data-number="2.2">
+<h2 data-number="2.2"><span class="header-section-number">2.2</span> Technical drawing vectorization</h2>
+<p><span class="citation" data-cites="hilaire2006">Hilaire and Tombre (<a href="#ref-hilaire2006" role="doc-biblioref">2006</a>)</span>, <span class="citation" data-cites="noris2013">Noris et al. (<a href="#ref-noris2013" role="doc-biblioref">2013</a>)</span>, <span class="citation" data-cites="bessmeltsev2019">Bessmeltsev and Solomon (<a href="#ref-bessmeltsev2019" role="doc-biblioref">2019</a>)</span> and <span class="citation" data-cites="egiazarian2020">Egiazarian et al. (<a href="#ref-egiazarian2020" role="doc-biblioref">2020</a>)</span>. Papercraft resembles technical drawings, but differs because graphical elements encode fabrication operations.</p>
+</section>
+<section id="modern-image-vectorization" class="level2" data-number="2.3">
+<h2 data-number="2.3"><span class="header-section-number">2.3</span> Modern image vectorization</h2>
+<p>DiffVG <span class="citation" data-cites="li2020diffvg">(<a href="#ref-li2020diffvg" role="doc-biblioref">Li et al. 2020</a>)</span>, LIVE <span class="citation" data-cites="ma2022live">(<a href="#ref-ma2022live" role="doc-biblioref">Ma et al. 2022</a>)</span> and StarVector <span class="citation" data-cites="rodriguez2023starvector">(<a href="#ref-rodriguez2023starvector" role="doc-biblioref">Rodriguez et al. 2023</a>)</span> establish the broader state of image-to-vector research.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class='callout-icon'></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Keep this subsection short.</p>
+</div>
+</div>
+</section>
+<section id="vectorization-evaluation" class="level2" data-number="2.4">
+<h2 data-number="2.4"><span class="header-section-number">2.4</span> Vectorization evaluation</h2>
+<p>Conventional metrics are IoU, Hausdorff distance, raster reconstruction error, primitive count and path complexity. These metrics primarily measure graphical reconstruction rather than fabrication validity.</p>
+</section>
+<section id="digital-fabrication-requirements" class="level2" data-number="2.5">
+<h2 data-number="2.5"><span class="header-section-number">2.5</span> Digital fabrication requirements</h2>
+<p>The properties that matter for fabrication are closed geometry, scale, topology, operation semantics and dimensional consistency, which leads directly into the proposed framework.</p>
+</section>
+</section>
+<section id="fabrication-aware-vectorization-framework" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Fabrication-aware vectorization framework</h1>
+<p>The theoretical proposition is that vector quality has two components, <span class="math inline">\(Q_{vector} = (Q_{visual}, Q_{fabrication})\)</span>, rather than <span class="math inline">\(Q_{vector} = Q_{visual}\)</span> (<a href="#fig-framework" class="quarto-xref">Figure 1</a>).</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-framework" class="quarto-float quarto-figure quarto-figure-center">
+<figure class="quarto-float quarto-float-fig">
+<div aria-describedby="fig-framework-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-framework">flowchart TD
+  S[Source template] --&gt; V[Vectorization] --&gt; R[Vector representation]
+  R --&gt; Qv[&quot;Visual quality&lt;br/&gt;IoU, distance, pixel error, complexity&quot;]
+  R --&gt; Qf[&quot;Fabrication quality&lt;br/&gt;topology, semantics, dimensions, validity&quot;]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-framework-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure 1: Visual and fabrication quality are assessed separately on the same vector representation.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<section id="visual-fidelity" class="level2" data-number="3.1">
+<h2 data-number="3.1"><span class="header-section-number">3.1</span> Visual fidelity</h2>
+</section>
+<section id="fabrication-correctness" class="level2" data-number="3.2">
+<h2 data-number="3.2"><span class="header-section-number">3.2</span> Fabrication correctness</h2>
+</section>
+<section id="proposed-metrics" class="level2" data-number="3.3">
+<h2 data-number="3.3"><span class="header-section-number">3.3</span> Proposed metrics</h2>
+<p>See <a href="#sec-fab-metrics" class="quarto-xref">Section 4.5</a>.</p>
+</section>
+</section>
+<section id="benchmark-and-method" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Benchmark and method</h1>
+<section id="papercraft-dataset" class="level2" data-number="4.1">
+<h2 data-number="4.1"><span class="header-section-number">4.1</span> Papercraft dataset</h2>
+<p>Between 30 and 100 papercraft pages, varying in number of pieces, geometric complexity, fold density, line styles, labels, page size and raster quality.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class='callout-icon'></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Today there are 21 Bowser pages from one designer, under a personal-use licence and without ground truth. Synthetic templates (unfolded low-poly meshes rendered with chosen line styles, then rasterized with controlled degradation) give exact ground truth; real templates serve as the realism check. The paper must state how the licence allows the real pages to be used.</p>
+</div>
+</div>
+</section>
+<section id="ground-truth-annotation" class="level2" data-number="4.2">
+<h2 data-number="4.2"><span class="header-section-number">4.2</span> Ground-truth annotation</h2>
+<p>Each template has a manually validated SVG with one group per piece, holding <code>cut</code>, <code>fold</code> and <code>labels</code> groups, plus JSON metadata for piece dimensions, edge labels and edge matches. The paper must say how ground truth was made: bootstrapping real pages from the pipeline output biases the comparison towards baseline D, so every gold page gets an independent full check.</p>
+</section>
+<section id="vectorization-baselines" class="level2" data-number="4.3">
+<h2 data-number="4.3"><span class="header-section-number">4.3</span> Vectorization baselines</h2>
+<ul>
+<li><strong>A, simple contour pipeline.</strong> Threshold, contour detection <span class="citation" data-cites="suzuki1985">(<a href="#ref-suzuki1985" role="doc-biblioref">Suzuki and Abe 1985</a>)</span>, Douglas–Peucker <span class="citation" data-cites="douglas1973">(<a href="#ref-douglas1973" role="doc-biblioref">Douglas and Peucker 1973</a>)</span>, SVG. A transparent classical baseline.</li>
+<li><strong>B, general-purpose vectorizer.</strong> Potrace <span class="citation" data-cites="selinger2003potrace">(<a href="#ref-selinger2003potrace" role="doc-biblioref">Selinger 2003</a>)</span>.</li>
+<li><strong>C, technical-drawing vectorization.</strong> An existing method with runnable code, for example <span class="citation" data-cites="egiazarian2020">Egiazarian et al. (<a href="#ref-egiazarian2020" role="doc-biblioref">2020</a>)</span>; a classical line-extraction method if that is not practical.</li>
+<li><strong>D, fabrication-aware pipeline.</strong> <code>lowpoly-pdf-to-svg</code>, if far enough along. The paper still works without D.</li>
+</ul>
+<p>Baselines A to C produce untyped paths, so one shared post-classifier labels each path as cut or fold from the dash pattern of the source under it. It is part of the evaluation protocol, not of any method, so F3 and F5 are scored the same way for every method.</p>
+</section>
+<section id="conventional-metrics" class="level2" data-number="4.4">
+<h2 data-number="4.4"><span class="header-section-number">4.4</span> Conventional metrics</h2>
+<p>Raster IoU, <span class="math inline">\(IoU = |R_{GT} \cap R_{pred}| / |R_{GT} \cup R_{pred}|\)</span>; Hausdorff distance <span class="math inline">\(H(A, B)\)</span>; mean geometric deviation; number of vector primitives; SVG file size.</p>
+</section>
+<section id="sec-fab-metrics" class="level2" data-number="4.5">
+<h2 data-number="4.5"><span class="header-section-number">4.5</span> Fabrication-aware metrics</h2>
+<div id="tbl-fab-metrics" class="quarto-float quarto-figure quarto-figure-center">
+<figure class="quarto-float quarto-float-tbl">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-fab-metrics-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table 1: Fabrication-aware metrics.
+</figcaption>
+<div aria-describedby="tbl-fab-metrics-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top">
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>Metric</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>F1</td>
+<td>Closed contour validity</td>
+<td><span class="math inline">\(F_{closed} = \text{correctly closed pieces} / \text{total pieces}\)</span></td>
+</tr>
+<tr class="even">
+<td>F2</td>
+<td>Dimensional error</td>
+<td><span class="math inline">\(E_{dim} = \lvert L_{pred} - L_{GT} \rvert / L_{GT}\)</span>, in % and mm</td>
+</tr>
+<tr class="odd">
+<td>F3</td>
+<td>Cut/fold semantic accuracy</td>
+<td>precision, recall, F1</td>
+</tr>
+<tr class="even">
+<td>F4</td>
+<td>Topological correctness</td>
+<td>missing or extra connections, wrong junctions or holes, disconnected paths</td>
+</tr>
+<tr class="odd">
+<td>F5</td>
+<td>Matching-edge consistency</td>
+<td><span class="math inline">\(E_{match} = \lvert L(e_i) - L(e_j) \rvert\)</span> for edges that should join</td>
+</tr>
+<tr class="even">
+<td>F6</td>
+<td>Vector complexity</td>
+<td>paths, nodes, Bézier control points, SVG size</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</section>
+<section id="experimental-procedure" class="level2" data-number="4.6">
+<h2 data-number="4.6"><span class="header-section-number">4.6</span> Experimental procedure</h2>
+<p>Each predicted piece is matched to a ground-truth piece by overlap before per-piece metrics are computed. All metrics are written as one tidy table (<code>template, page, method, piece, metric, value</code>), and the analysis asks whether conventional metrics agree with fabrication-aware ones, for example <span class="math inline">\(r(IoU, F_{closed})\)</span>, <span class="math inline">\(r(IoU, E_{match})\)</span> and <span class="math inline">\(r(Hausdorff, E_{dim})\)</span>.</p>
+</section>
+</section>
+<section id="results" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Results</h1>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class='callout-icon'></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Expected pattern, not a claim: two vectorizations with similar visual quality can differ sharply in fabrication quality. A vectorization with IoU 0.97 and one open contour is unusable for cutting; one with IoU 0.94, closed contours, correct scale and correct folds is fabrication-ready. Conventional evaluation prefers the first, fabrication-aware evaluation the second.</p>
+</div>
+</div>
+<section id="conventional-vectorization-performance" class="level2" data-number="5.1">
+<h2 data-number="5.1"><span class="header-section-number">5.1</span> Conventional vectorization performance</h2>
+<div id="tbl-conventional" class="quarto-float quarto-figure quarto-figure-center">
+<figure class="quarto-float quarto-float-tbl">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-conventional-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table 2: Geometric reconstruction performance.
+</figcaption>
+<div aria-describedby="tbl-conventional-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Method</th>
+<th style="text-align: right;">IoU</th>
+<th style="text-align: right;">Hausdorff</th>
+<th style="text-align: right;">Mean error</th>
+<th style="text-align: right;">Paths</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>A</td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+</tr>
+<tr class="even">
+<td>B</td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+</tr>
+<tr class="odd">
+<td>C</td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</section>
+<section id="fabrication-aware-performance" class="level2" data-number="5.2">
+<h2 data-number="5.2"><span class="header-section-number">5.2</span> Fabrication-aware performance</h2>
+<div id="tbl-fabrication" class="quarto-float quarto-figure quarto-figure-center">
+<figure class="quarto-float quarto-float-tbl">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-fabrication-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table 3: Fabrication-aware performance.
+</figcaption>
+<div aria-describedby="tbl-fabrication-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 21%" />
+<col style="width: 21%" />
+<col style="width: 21%" />
+<col style="width: 21%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th style="text-align: right;">Closed pieces</th>
+<th style="text-align: right;">Cut/fold F1</th>
+<th style="text-align: right;">Dimensional error</th>
+<th style="text-align: right;">Edge consistency</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>A</td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+</tr>
+<tr class="even">
+<td>B</td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+</tr>
+<tr class="odd">
+<td>C</td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</section>
+<section id="metric-relationships" class="level2" data-number="5.3">
+<h2 data-number="5.3"><span class="header-section-number">5.3</span> Metric relationships</h2>
+<p>Main results section: correlations, scatterplots and disagreement cases.</p>
+</section>
+<section id="failure-cases" class="level2" data-number="5.4">
+<h2 data-number="5.4"><span class="header-section-number">5.4</span> Failure cases</h2>
+<p>High IoU but an open contour; low geometric error but a fold classified as a cut; visually identical but at the wrong physical scale.</p>
+</section>
+<section id="physical-validation-optional" class="level2" data-number="5.5">
+<h2 data-number="5.5"><span class="header-section-number">5.5</span> Physical validation (optional)</h2>
+<p>Five templates, two or three methods, the same machine and cardstock. Recorded: successful cut, successful fold, assembly completion, edge gaps and alignment errors.</p>
+<div id="tbl-physical" class="quarto-float quarto-figure quarto-figure-center">
+<figure class="quarto-float quarto-float-tbl">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-physical-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table 4: Physical validation.
+</figcaption>
+<div aria-describedby="tbl-physical-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Template</th>
+<th>Method</th>
+<th style="text-align: right;">Digital score</th>
+<th style="text-align: right;">Assembly success</th>
+<th style="text-align: right;">Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>P1</td>
+<td>A</td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+</tr>
+<tr class="even">
+<td>P1</td>
+<td>B</td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</section>
+</section>
+<section id="discussion" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Discussion</h1>
+<section id="visual-fidelity-versus-fabrication-correctness" class="level2" data-number="6.1">
+<h2 data-number="6.1"><span class="header-section-number">6.1</span> Visual fidelity versus fabrication correctness</h2>
+<p>Return to the central proposition, visual fidelity <span class="math inline">\(\neq\)</span> fabrication correctness, and explain which errors conventional metrics miss.</p>
+</section>
+<section id="implications-for-vectorization" class="level2" data-number="6.2">
+<h2 data-number="6.2"><span class="header-section-number">6.2</span> Implications for vectorization</h2>
+<p>Evaluation should depend on the intended downstream use. For display, <span class="math inline">\(Q \approx \text{visual fidelity}\)</span>; for fabrication, <span class="math inline">\(Q = f(\text{geometry}, \text{topology}, \text{semantics}, \text{dimensions})\)</span>.</p>
+</section>
+<section id="implications-for-digital-fabrication" class="level2" data-number="6.3">
+<h2 data-number="6.3"><span class="header-section-number">6.3</span> Implications for digital fabrication</h2>
+<p>Automatic PDF conversion, Cricut, laser cutting, plotters, CNC workflows and technical drawings.</p>
+</section>
+<section id="limitations" class="level2" data-number="6.4">
+<h2 data-number="6.4"><span class="header-section-number">6.4</span> Limitations</h2>
+<p>A relatively small dataset; a papercraft-specific domain; few vectorization baselines; limited physical fabrication experiments; possible dependence on template conventions; manual ground-truth annotation.</p>
+</section>
+<section id="future-work" class="level2" data-number="6.5">
+<h2 data-number="6.5"><span class="header-section-number">6.5</span> Future work</h2>
+<p>Semantic reconstruction (cut/fold classification, piece detection, OCR); joint reasoning over geometry, OCR, topology and edge matching; uncertainty-guided human-in-the-loop correction; learned vectorization; material-aware nesting; larger physical experiments testing whether fabrication-aware metrics predict assembly success.</p>
+</section>
+</section>
+<section id="conclusion" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> Conclusion</h1>
+<p>Assuming the results support them: papercraft is a useful benchmark domain for fabrication-aware vectorization; conventional visual and geometric metrics do not completely characterize fabrication correctness; and vectorization intended for physical manufacture should explicitly evaluate geometry, topology, semantics and dimensions.</p>
+</section>
+<section id="references" class="level1 unnumbered">
+<h1 class="unnumbered">References</h1>
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-bessmeltsev2019" class="csl-entry" role="listitem">
+Bessmeltsev, Mikhail, and Justin Solomon. 2019. <span>“Vectorization of Line Drawings via Polyvector Fields.”</span> <em>ACM Transactions on Graphics</em> 38 (1): 9:1–12.
+</div>
+<div id="ref-douglas1973" class="csl-entry" role="listitem">
+Douglas, David H., and Thomas K. Peucker. 1973. <span>“Algorithms for the Reduction of the Number of Points Required to Represent a Digitized Line or Its Caricature.”</span> <em>Cartographica</em> 10 (2): 112–22.
+</div>
+<div id="ref-egiazarian2020" class="csl-entry" role="listitem">
+Egiazarian, Vage, Oleg Voynov, Alexey Artemov, Denis Volkhonskiy, Aleksandr Safin, Maria Taktasheva, Denis Zorin, and Evgeny Burnaev. 2020. <span>“Deep Vectorization of Technical Drawings.”</span> In <em>Computer Vision – ECCV 2020</em>, 12358:582–98. Lecture Notes in Computer Science.
+</div>
+<div id="ref-hilaire2006" class="csl-entry" role="listitem">
+Hilaire, Xavier, and Karl Tombre. 2006. <span>“Robust and Accurate Vectorization of Line Drawings.”</span> <em>IEEE Transactions on Pattern Analysis and Machine Intelligence</em> 28 (6): 890–904.
+</div>
+<div id="ref-li2020diffvg" class="csl-entry" role="listitem">
+Li, Tzu-Mao, Michal Lukáč, Michaël Gharbi, and Jonathan Ragan-Kelley. 2020. <span>“Differentiable Vector Graphics Rasterization for Editing and Learning.”</span> <em>ACM Transactions on Graphics</em> 39 (6): 193:1–15.
+</div>
+<div id="ref-ma2022live" class="csl-entry" role="listitem">
+Ma, Xu, Yuqian Zhou, Xingqian Xu, Bin Sun, Valerii Filev, Nikita Orlov, Yun Fu, and Humphrey Shi. 2022. <span>“Towards Layer-Wise Image Vectorization.”</span> In <em>Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)</em>, 16314–23.
+</div>
+<div id="ref-noris2013" class="csl-entry" role="listitem">
+Noris, Gioacchino, Alexander Hornung, Robert W. Sumner, Maryann Simmons, and Markus Gross. 2013. <span>“Topology-Driven Vectorization of Clean Line Drawings.”</span> <em>ACM Transactions on Graphics</em> 32 (1): 4:1–11.
+</div>
+<div id="ref-rodriguez2023starvector" class="csl-entry" role="listitem">
+Rodriguez, Juan A., Shubham Agarwal, Issam H. Laradji, Pau Rodriguez, David Vazquez, Christopher Pal, and Marco Pedersoli. 2023. <span>“<span>StarVector</span>: Generating Scalable Vector Graphics Code from Images.”</span> <a href="https://arxiv.org/abs/2312.11556">https://arxiv.org/abs/2312.11556</a>.
+</div>
+<div id="ref-selinger2003potrace" class="csl-entry" role="listitem">
+Selinger, Peter. 2003. <span>“Potrace: A Polygon-Based Tracing Algorithm.”</span>
+</div>
+<div id="ref-suzuki1985" class="csl-entry" role="listitem">
+Suzuki, Satoshi, and Keiichi Abe. 1985. <span>“Topological Structural Analysis of Digitized Binary Images by Border Following.”</span> <em>Computer Vision, Graphics, and Image Processing</em> 30 (1): 32–46.
+</div>
+</div>
+</section>
+     </main>
+<!-- /main column -->  <script id = "quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>  </div> <!-- /content --> 
+  </body>
+</html>

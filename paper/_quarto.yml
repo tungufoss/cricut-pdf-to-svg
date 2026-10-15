@@ -1,0 +1,35 @@
+# Paper 1 manuscript (Quarto manuscript project). Build with `make paper` from the repository
+# root; output goes to paper/_manuscript/. Kept out of the public GitHub Pages site, which
+# renders report/ only. Seeded from Helga's paper-1 skeleton and abstracts (2026-10-15).
+project:
+  type: manuscript
+  output-dir: _manuscript
+
+manuscript:
+  article: index.qmd
+
+lang: en
+bibliography: references.bib    # add `csl:` for the target venue
+number-sections: true
+
+execute:
+  echo: false
+  warning: false
+  message: false
+  freeze: auto
+
+format:
+  html:
+    theme:
+      - cosmo
+      - ../report/styles/hi-site.scss
+    include-in-header:
+      - text: |
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+    toc: true
+    comments:
+      hypothesis: false
+  docx: default
+  # pdf needs a TeX install (`quarto install tinytex`); enable it and pick the venue template then.
+  # pdf: default

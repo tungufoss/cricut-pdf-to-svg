@@ -71,3 +71,9 @@ report-data: $(OUT)/$(PROJECT).svg
 	mkdir -p report/data/$(PROJECT)
 	cp $(OUT)/$(PROJECT)-edges.csv report/data/$(PROJECT)/
 	cp $(OUT)/README.md report/data/$(PROJECT)/$(PROJECT)-report.md
+
+# Paper 1 manuscript (Quarto manuscript project in paper/). Not part of the public site.
+#   make paper      render paper/_manuscript/index.html (and a .docx)
+.PHONY: paper
+paper:
+	LC_ALL=C.UTF-8 quarto render paper
