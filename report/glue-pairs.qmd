@@ -3,6 +3,7 @@ title: "Glue pairs"
 ---
 
 ```{r}
+#| label: setup-glue-pairs
 #| include: false
 source("R/edges.R")
 library(DT)
@@ -12,6 +13,7 @@ edges <- if (file.exists("generated/edges.csv")) read_edges("generated/edges.csv
 Every edge number is printed twice in the template: once on the edge and once on the tab that is glued to it. The converter measures the edge each number sits on and pairs the two. A pair is *matching* when it found exactly one edge and one tab of the same length (status `ok`); anything else needs a look. `A` is the first piece of the pair, `B` its partner, lengths in mm.
 
 ```{r}
+#| label: glue-pairs-missing
 if (is.null(edges)) {
   cat("The edge-number check (data/bowser/bowser-edges.csv) has not been run yet.\n")
 } else {
@@ -27,6 +29,7 @@ if (is.null(edges)) {
 ```
 
 ```{r}
+#| label: glue-pairs-table
 #| column: page
 if (!is.null(edges)) {
   glue_pairs(edges) |>
