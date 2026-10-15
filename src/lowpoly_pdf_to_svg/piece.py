@@ -9,8 +9,8 @@ data/bowser/review.png (the PDF patch and the trace side by side).
 
     python -m src.lowpoly_pdf_to_svg.piece --config data/bowser/bowser.yaml --all
 
-writes data/bowser/review-all.png: every piece traced, numbers coloured by check,
-pieces with the most numbers to check first.
+writes data/bowser/review-all.png: every piece with a number to check, traced,
+numbers coloured by check, most numbers to check first.
 """
 
 from __future__ import annotations
@@ -71,7 +71,7 @@ class PieceView:
         return svg_out, md_out
 
     def overview(self, path: Path) -> int:
-        """Every piece in one PNG, worst first, so you can pick which to open with `make piece`."""
+        """Every piece that needs a look in one PNG, worst first, so you can pick which to open with `make piece`."""
         root = self.tree.getroot()
         groups = [g for g in root.iter(f"{{{SVG}}}g") if (g.get("id") or "").startswith("piece-")]
         tiles = []
@@ -79,7 +79,8 @@ class PieceView:
             rows = [r for r in self.rows if r["piece"] == group.get("id")]
             self._colour_numbers(group, rows)
             check = sum(r["status"] != "ok" for r in rows)
-            tiles.append((check, len(rows) - check, group))
+            if check:  # clean pieces need no look
+                tiles.append((check, len(rows) - check, group))
         tiles.sort(key=lambda t: (-t[0], t[2].get("id")))
         Overview(tiles).write(path)
         return len(tiles)
@@ -207,7 +208,7 @@ class Overview:
             x, row = x + image.width + self.GAP, max(row, image.height)
         sheet = Image.new("RGB", (self.WIDTH, y + row + self.GAP), "white")
         draw = ImageDraw.Draw(sheet)
-        draw.text((self.GAP, 12), "All pieces, most numbers to check first. Numbers: green = clean pair, "
+        draw.text((self.GAP, 12), f"{len(self.tiles)} pieces to check, most numbers first. Numbers: green = clean pair, "
                   "orange = length mismatch, red = other. Open one with make piece PIECE=<id>.",
                   fill="black", font=_font(24))
         for image, x, y in placed:
