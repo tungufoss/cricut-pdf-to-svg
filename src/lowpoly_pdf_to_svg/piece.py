@@ -70,6 +70,33 @@ class PieceView:
         md_out.write_text(self._table(piece_id, rows), encoding="utf-8")
         return svg_out, md_out
 
+    def number(self, number: str, path: Path) -> int:
+        """Every piece carrying this number, PDF beside trace, the number circled, stacked in one PNG."""
+        root = self.tree.getroot()
+        rows = [r for r in self.rows if r["number"] == number]
+        if not rows:
+            raise ValueError(f"number {number} is not in the edge table")
+        images = []
+        for piece_id in dict.fromkeys(r["piece"] for r in rows):
+            group = root.find(f".//{{{SVG}}}g[@id='{piece_id}']")
+            image = root.find(f".//{{{SVG}}}image[@id='source-{piece_id.split('-')[1]}']")
+            x0, y0, x1, y1 = self._bounds(group)
+            box = (x0 - MARGIN_MM, y0 - MARGIN_MM, x1 + MARGIN_MM, y1 + MARGIN_MM)
+            self._colour_numbers(group, [r for r in self.rows if r["piece"] == piece_id])
+            scan = self._scan(ET.Element("scratch"), image, box) if image is not None else None
+            marks = [(float(t.get("x")), float(t.get("y"))) for t in group.iter(f"{{{SVG}}}text") if t.text == number]
+            notes = "; ".join(f"{r['side']} {r['length_mm']} mm, {r['status']}" for r in rows if r["piece"] == piece_id)
+            images.append(ReviewImage(group, box, scan).render(f"{piece_id} ({notes})", marks))
+        sheet = Image.new("RGB", (max(i.width for i in images), sum(i.height + 20 for i in images)), "white")
+        y = 0
+        for image in images:
+            sheet.paste(image, (0, y))
+            y += image.height
+            ImageDraw.Draw(sheet).line([(0, y + 10), (sheet.width, y + 10)], fill=(120, 120, 120), width=3)
+            y += 20
+        sheet.save(path)
+        return len(images)
+
     def overview(self, path: Path) -> int:
         """Every piece that needs a look in one PNG, worst first, so you can pick which to open with `make piece`."""
         root = self.tree.getroot()
@@ -141,6 +168,10 @@ class ReviewImage:
         self.group, self.box, self.scan, self.SCALE = group, box, scan, scale
 
     def write(self, path: Path, title: str) -> None:
+        self.render(title).save(path)
+
+    def render(self, title: str, marks: list[tuple[float, float]] = ()) -> Image.Image:
+        """PDF patch left, trace right; each mark (a number's position, in mm) circled on both."""
         x0, y0, x1, y1 = self.box
         w, h = round((x1 - x0) * self.SCALE), round((y1 - y0) * self.SCALE)
         sheet = Image.new("RGB", (2 * w + 30, h + self.HEADER), "white")
@@ -157,7 +188,12 @@ class ReviewImage:
         self._draw(trace, x0, y0)
         sheet.paste(trace, (w + 30, self.HEADER))
         draw.line([(w + 15, self.HEADER), (w + 15, h + self.HEADER)], fill=(200, 200, 200), width=2)
-        sheet.save(path)
+        r = 4 * self.SCALE
+        for mx, my in marks:
+            cx, cy = (mx - x0) * self.SCALE, self.HEADER + (my - y0) * self.SCALE
+            for left in (0, w + 30):
+                draw.ellipse([left + cx - r, cy - r, left + cx + r, cy + r], outline=(230, 0, 180), width=4)
+        return sheet
 
     def _draw(self, image, x0: float, y0: float) -> None:
         draw = ImageDraw.Draw(image)
@@ -260,14 +296,19 @@ def _font(size: int):
 def main() -> int:
     parser = argparse.ArgumentParser(description="Write a debug SVG and table for one piece.")
     parser.add_argument("piece", nargs="?", help="piece id, such as piece-05-08")
+    parser.add_argument("--number", help="write review.png with every piece carrying this number instead")
     parser.add_argument("--all", action="store_true", help="write review-all.png with every piece instead")
     parser.add_argument("--config", type=Path, default=Path("data/bowser/bowser.yaml"), help="project YAML manifest")
     args = parser.parse_args()
     folder, project = args.config.parent, args.config.stem
-    if not args.all and not args.piece:
-        parser.error("give a piece id or --all")
+    if not (args.all or args.piece or args.number):
+        parser.error("give a piece id, --number or --all")
     try:
         view = PieceView(folder / f"{project}.svg", folder / f"{project}-edges.csv")
+        if args.number:
+            count = view.number(args.number, folder / "review.png")
+            print(f"Wrote {folder / 'review.png'} with the {count} pieces carrying {args.number}")
+            return 0
         if args.all:
             count = view.overview(folder / "review-all.png")
             print(f"Wrote {folder / 'review-all.png'} with {count} pieces")

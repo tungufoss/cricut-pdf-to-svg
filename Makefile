@@ -6,6 +6,7 @@
 #                   in data/<project>/pieces/ (needs a full `make` first)
 #   make redo PAGES="5 11"  trace only those pages again, reuse the saved trace of the rest;
 #                    make redo with no PAGES only redraws the SVG and redoes the edge check (seconds)
+#   make number NUMBER=20  every piece carrying that number, PDF beside trace, in data/<project>/review.png
 #   make review      every piece to check in one picture, most numbers to check first: data/<project>/review-all.png
 #   make install    install Python dependencies (Poppler's pdftoppm comes from the OS)
 #   make clean      remove generated files (keeps the PDF and YAML)
@@ -18,7 +19,7 @@ DPI     ?= 180
 SOURCES := $(wildcard src/lowpoly_pdf_to_svg/*.py)
 CONVERT  = $(PYTHON) -m src.lowpoly_pdf_to_svg --config $(CONFIG) --output $(OUT) --dpi $(DPI)
 
-.PHONY: all page redo piece review install clean
+.PHONY: all page redo piece number review install clean
 
 all: $(OUT)/$(PROJECT).svg
 
@@ -37,6 +38,11 @@ piece:
 	@test -n "$(PIECE)" || { echo "usage: make piece PIECE=piece-05-08"; exit 2; }
 	@test -f $(OUT)/$(PROJECT).svg || { echo "run make first"; exit 2; }
 	$(PYTHON) -m src.lowpoly_pdf_to_svg.piece --config $(CONFIG) $(PIECE)
+
+number:
+	@test -n "$(NUMBER)" || { echo "usage: make number NUMBER=20"; exit 2; }
+	@test -f $(OUT)/$(PROJECT).svg || { echo "run make first"; exit 2; }
+	$(PYTHON) -m src.lowpoly_pdf_to_svg.piece --config $(CONFIG) --number $(NUMBER)
 
 review:
 	@test -f $(OUT)/$(PROJECT).svg || { echo "run make first"; exit 2; }
