@@ -1,8 +1,10 @@
 """Stage 2d: use the model's left-right symmetry to check numbers and traced lines.
 
-Most pieces have a mirror twin, cut from the same cardstock. Twins are found by their numbered lines: walking
-round one piece, the lengths of its marked lines (cut edges and tab folds) read the
-same as its twin's walked the other way. That pairs every numbered line with its
+Most pieces have a mirror twin, cut from the same cardstock. Twins are found by their
+numbered lines: walking round one piece, the lengths of its marked lines (cut edges and
+tab folds) read the same as its twin's walked the other way, with gaps where a number
+found no line. An exact mirror also matches outline for outline, tabs included; a mirror
+variation has the same body with its glue tabs on other edges. That pairs every numbered line with its
 mirror line, which gives two checks:
 
 * a line and its mirror line should be the same length; when not, one was traced off;
@@ -22,28 +24,33 @@ import numpy as np
 from .model import Label, PageLayout
 
 LENGTH_MM = 1.0       # mirror lines agree within this
-MAX_OFF = 0.2         # share of lines allowed to disagree for two pieces to count as twins
+NEAR_MM = 3.0         # a line this close to its mirror line is still the same line, traced off
+MIN_SHARE = 0.7       # share of lines that must agree for two pieces to count as twins
+EXACT_MM = 1.0        # outlines this close (RMS, tabs included) make an exact mirror
+SAMPLES = 96          # outline points compared for exact mirrors
 
 
 @dataclass
 class Twin:
     a: str
     b: str
-    lines: list[tuple[Label, Label]]   # each numbered line of a with its mirror line on b
-    off: int                           # lines whose lengths disagree
+    lines: list[tuple[Label, Label]]   # numbered lines of a with their mirror lines on b
+    off: int                           # paired lines whose lengths disagree
+    exact: bool                        # whole outline mirrors, tabs included; else tabs differ
 
 
 class Symmetry:
     def __init__(self, layouts: list[tuple[PageLayout, float]]):
-        self.mm, self.material = {}, {}
+        self.mm, self.material, self.outline = {}, {}, {}
         self.lines: dict[str, list[Label]] = {}
         for layout, mm in layouts:
             for piece in layout.pieces:
-                centre = np.array(piece.outline, float).mean(axis=0)
+                outline = np.array(piece.outline, float)
                 marked = [l for l in piece.labels if l.edge is not None]
-                marked.sort(key=lambda l: np.arctan2(l.center[1] - centre[1], l.center[0] - centre[0]))
+                marked.sort(key=lambda l: _along(outline, np.mean(l.edge, axis=0)))
                 self.lines[piece.id], self.mm[piece.id] = marked, mm
                 self.material[piece.id] = piece.material
+                self.outline[piece.id] = outline * mm
         self.twins = self._pair()
         self.twin_of = {t.a: t.b for t in self.twins} | {t.b: t.a for t in self.twins}
         self.mirror_line = {id(x): (t.b, y) for t in self.twins for x, y in t.lines}
@@ -52,32 +59,52 @@ class Symmetry:
     def _lengths(self, piece: str) -> np.ndarray:
         return np.array([l.edge_length * self.mm[piece] for l in self.lines[piece]])
 
-    def _align(self, a: str, b: str) -> tuple[int, float, int] | None:
-        """Best turn of b walked backwards against a: (lines off, mean difference, shift)."""
+    def _align(self, a: str, b: str) -> tuple[float, list[tuple[int, int]]] | None:
+        """Walk a forwards and b backwards round the outline and line up their numbered
+        lines, allowing gaps where a number found no line. Returns (share of lines that
+        agree, index pairs) for the best starting point."""
         la, lb = self._lengths(a), self._lengths(b)[::-1]
-        if len(la) != len(lb) or len(la) < 3:
+        if min(len(la), len(lb)) < 3:
             return None
-        return min((int((np.abs(la - np.roll(lb, k)) > LENGTH_MM).sum()), float(np.abs(la - np.roll(lb, k)).mean()), k)
-                   for k in range(len(lb)))
+        best = None
+        for k in range(len(lb)):
+            score, pairs = _sequence(la, np.roll(lb, k))
+            agree = sum(abs(la[i] - np.roll(lb, k)[j]) <= LENGTH_MM for i, j in pairs)
+            share = agree / max(len(la), len(lb))
+            if best is None or (share, score) > best[:2]:
+                best = (share, score, [(i, (len(lb) - 1 - (j - k) % len(lb))) for i, j in pairs])
+        return best[0], best[2]
+
+    def _exact(self, a: str, b: str) -> bool:
+        """Do the outlines, tabs included, mirror each other?"""
+        pa, pb = _resample(self.outline[a]), _resample(self.outline[b])[::-1] * [-1, 1]
+        for k in range(SAMPLES):
+            u, _, vt = np.linalg.svd(np.roll(pb, k, axis=0).T @ pa)
+            rotation = u @ np.diag([1, np.sign(np.linalg.det(u @ vt))]) @ vt
+            if np.sqrt(((np.roll(pb, k, axis=0) @ rotation - pa) ** 2).sum(1).mean()) <= EXACT_MM:
+                return True
+        return False
 
     def _pair(self) -> list[Twin]:
         ids = sorted(self.lines)
+        size = {i: _perimeter(self.outline[i]) for i in ids}
         found = []
         for i, a in enumerate(ids):
             for b in ids[i + 1:]:
-                if self.material[a] != self.material[b]:  # a twin is cut from the same cardstock
+                # A twin is cut from the same cardstock and is about the same size.
+                if self.material[a] != self.material[b] or abs(size[a] - size[b]) > 0.25 * size[a]:
                     continue
                 fit = self._align(a, b)
-                if fit and fit[0] <= max(1, int(MAX_OFF * len(self.lines[a]))):
-                    found.append((fit[0] / len(self.lines[a]), fit[1], a, b, fit))
+                if fit and fit[0] >= MIN_SHARE:
+                    found.append((fit[0], a, b, fit[1]))
         twins, taken = [], set()
-        for _, _, a, b, (off, _, shift) in sorted(found):
+        for share, a, b, pairs in sorted(found, key=lambda f: -f[0]):
             if a in taken or b in taken:
                 continue
             taken |= {a, b}
-            backwards = self.lines[b][::-1]
-            turned = backwards[-shift:] + backwards[:-shift] if shift else backwards
-            twins.append(Twin(a, b, list(zip(self.lines[a], turned)), off))
+            lines = [(self.lines[a][i], self.lines[b][j]) for i, j in pairs]
+            off = sum(abs(x.edge_length * self.mm[a] - y.edge_length * self.mm[b]) > LENGTH_MM for x, y in lines)
+            twins.append(Twin(a, b, lines, off, self._exact(a, b)))
         return twins
 
     def predictions(self, records: list[dict]) -> list[dict]:
@@ -127,7 +154,7 @@ class Symmetry:
         off = 0
         with path.open("w", newline="", encoding="utf-8") as handle:
             writer = csv.writer(handle)
-            writer.writerow(["piece", "number", "side", "length_mm", "twin", "twin_number", "twin_side",
+            writer.writerow(["piece", "twin", "mirror", "number", "side", "length_mm", "twin_number", "twin_side",
                              "twin_length_mm", "length_diff_mm", "check"])
             for t in self.twins:
                 for x, y in t.lines:
@@ -136,6 +163,56 @@ class Symmetry:
                         continue
                     diff = abs(rx["_row"].length_mm - ry["_row"].length_mm)
                     off += diff > LENGTH_MM
-                    writer.writerow([t.a, rx["number"], rx["side"], rx["length_mm"], t.b, ry["number"], ry["side"],
+                    writer.writerow([t.a, t.b, "exact" if t.exact else "variation", rx["number"], rx["side"],
+                                     rx["length_mm"], ry["number"], ry["side"],
                                      ry["length_mm"], f"{diff:.1f}", "traced line differs" if diff > LENGTH_MM else "ok"])
         return off
+
+
+def _sequence(a: np.ndarray, b: np.ndarray) -> tuple[float, list[tuple[int, int]]]:
+    """Line up two runs of line lengths in order, skipping lines on either side.
+    Agreeing lengths score 2, lengths within NEAR_MM score 1 (same line, traced off)."""
+    n, m = len(a), len(b)
+    score = np.zeros((n + 1, m + 1))
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            d = abs(a[i - 1] - b[j - 1])
+            gain = 2 if d <= LENGTH_MM else 1 if d <= NEAR_MM else -np.inf
+            score[i, j] = max(score[i - 1, j], score[i, j - 1], score[i - 1, j - 1] + gain)
+    pairs, i, j = [], n, m
+    while i and j:
+        if score[i, j] == score[i - 1, j]:
+            i -= 1
+        elif score[i, j] == score[i, j - 1]:
+            j -= 1
+        else:
+            pairs.append((i - 1, j - 1))
+            i, j = i - 1, j - 1
+    return float(score[n, m]), pairs[::-1]
+
+
+def _along(outline: np.ndarray, point: np.ndarray) -> float:
+    """Distance along the outline to the spot nearest `point`."""
+    closed = np.vstack([outline, outline[:1]])
+    best, walked, at = np.inf, 0.0, 0.0
+    for p, q in zip(closed, closed[1:]):
+        seg = q - p
+        length = float(np.hypot(*seg))
+        t = 0.0 if length == 0 else float(np.clip(np.dot(point - p, seg) / length ** 2, 0, 1))
+        d = float(np.hypot(*(p + t * seg - point)))
+        if d < best:
+            best, at = d, walked + t * length
+        walked += length
+    return at
+
+
+def _perimeter(outline: np.ndarray) -> float:
+    return float(np.hypot(*np.diff(np.vstack([outline, outline[:1]]), axis=0).T).sum())
+
+
+def _resample(outline: np.ndarray) -> np.ndarray:
+    closed = np.vstack([outline, outline[:1]])
+    walked = np.r_[0, np.cumsum(np.hypot(*np.diff(closed, axis=0).T))]
+    t = np.linspace(0, walked[-1], SAMPLES, endpoint=False)
+    points = np.c_[np.interp(t, walked, closed[:, 0]), np.interp(t, walked, closed[:, 1])]
+    return points - points.mean(axis=0)

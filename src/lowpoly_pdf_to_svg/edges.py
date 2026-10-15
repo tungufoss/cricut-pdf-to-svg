@@ -257,7 +257,9 @@ class EdgeTable:
             lines += ["", "## Mirror twins", "",
                       f"The model is symmetric: {len(mirror.twins)} pairs of pieces are mirror images "
                       f"({2 * len(mirror.twins)} of {sum(len(l.pieces) for l in self.layouts)} pieces), found by the "
-                      f"lengths of their numbered lines. Of their {paired} mirrored lines, {off} differ in length from "
+                      f"lengths of their numbered lines: {sum(t.exact for t in mirror.twins)} exact mirrors (outline and "
+                      f"tabs match) and {sum(not t.exact for t in mirror.twins)} mirror variations (same body, tabs on "
+                      "other edges). Of their {paired} mirrored lines, {off} differ in length from "
                       f"their mirror line by more than 1 mm, so one of the two was traced off (`{project}-mirrors.csv`). "
                       "A twin's clean glue pair also predicts the number on the mirror line; those predictions are "
                       "applied when clear-cut, and otherwise go to the check page with `mirror` as the reason.", ""]
