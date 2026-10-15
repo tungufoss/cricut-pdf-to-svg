@@ -12,3 +12,6 @@ __pycache__/
 data/*/review.png
 data/*/cache/
 data/*/*-check.json
+# The folded model is traced from the pattern too: keep it local.
+data/*/*-3d.obj
+data/*/*-3d.mtl
