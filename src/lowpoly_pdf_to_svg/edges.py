@@ -39,7 +39,7 @@ class EdgeRow:
 
 class EdgeTable:
     COLUMNS = ["number", "piece", "side", "length_mm", "x_mm", "y_mm", "ocr_trusted", "ocr_conf", "ocr_alternatives", "corrected",
-               "partner_piece", "partner_side", "partner_length_mm", "length_diff_mm", "status"]
+               "partner_piece", "partner_side", "partner_length_mm", "length_diff_mm", "status", "line_mm"]
 
     def __init__(self):
         self.rows: list[EdgeRow] = []
@@ -74,6 +74,7 @@ class EdgeTable:
                 "partner_side": partner.side if partner else "",
                 "partner_length_mm": f"{partner.length_mm:.1f}" if partner else "",
                 "length_diff_mm": f"{abs(row.length_mm - partner.length_mm):.1f}" if partner else "",
+                "line_mm": " ".join(f"{v * row.mm_per_px:.1f}" for p in row.label.edge for v in p) if row.label.edge else "",
                 "status": ("extra copy: likely misread" if len(others) > 1 and partner is None and
                            any(id(o) in partners for o in others) else self._status(row, partner, len(others))),
             })

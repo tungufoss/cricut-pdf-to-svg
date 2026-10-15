@@ -15,8 +15,8 @@ main{padding:16px;display:grid;gap:14px;max-width:1100px;margin:auto}
 .head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .why{color:var(--muted)}
 .panels{display:flex;gap:14px;flex-wrap:wrap}
-.panel{display:grid;gap:6px;width:260px}
-.panel img{width:260px;height:260px;border:1px solid var(--line);border-radius:6px;image-rendering:auto}
+.panel{display:grid;gap:6px;width:320px}
+.panel img{width:320px;height:320px;border:1px solid var(--line);border-radius:6px;image-rendering:auto}
 .meta{font-size:13px;color:var(--muted)}
 .read{font-size:20px;font-weight:600}
 .row{display:flex;gap:6px;align-items:center}
@@ -24,13 +24,14 @@ input{font:inherit;width:70px;padding:4px 6px;border:1px solid var(--line);borde
 input.set{border-color:var(--ok);background:#eef8f0}
 </style></head><body>
 <header><h1 id="title">Number check</h1>
-<button id="open">Open model folder</button><label class="meta">or load <input type="file" id="file" accept=".json" style="width:auto"></label>
+<button id="open">Open data folder</button><select id="model" hidden></select><button id="change" class="meta">Other folder…</button><label class="meta">or load <input type="file" id="file" accept=".json" style="width:auto"></label>
 <span id="count"></span>
 <button data-f="todo" class="on">To do</button><button data-f="doubt">Doubtful fixes</button><button data-f="suggested">Suggested</button>
 <button data-f="open">Open</button><button data-f="auto">Fixed for you</button><button data-f="all">All</button>
 <button class="save" id="save">Save corrections</button></header>
-<main id="list"><p>Run <code>make fix</code>, then open the model folder (such as <code>data/bowser</code>).
-It needs the <code>&lt;project&gt;-check.json</code> that <code>make fix</code> writes there. Save writes
+<main id="list"><p>Run <code>make fix</code>, then open this repository's <code>data</code> folder and pick a model
+(any folder holding a <code>&lt;project&gt;-check.json</code> from <code>make fix</code>). The page remembers the folder,
+so next time Open only asks to allow it again. Save writes
 <code>&lt;project&gt;-corrections.csv</code> into the same folder, and the next build applies it.
 Without folder access (Firefox), load the JSON file instead and Save downloads the CSV.</p></main>
 <script>
@@ -47,24 +48,48 @@ function start(data, corrections) {
   D = data; saved = corrections; store = "fix-" + D.project; answers = {};
   for (const s of saved) answers[`${s.piece}@${s.x_mm},${s.y_mm}`] = s.number;
   try { Object.assign(answers, JSON.parse(localStorage.getItem(store) || "{}")); } catch (e) {}
-  document.getElementById("title").textContent = D.project[0].toUpperCase() + D.project.slice(1) + " number check";
+  document.getElementById("title").textContent = "Number check: " + D.project;
   document.title = document.getElementById("title").textContent;
   render();
 }
-document.getElementById("open").addEventListener("click", async () => {
-  if (!window.showDirectoryPicker) { alert("This browser cannot open folders; load the -check.json file instead."); return; }
-  folder = await showDirectoryPicker({mode: "readwrite"});
-  let check = null, corrections = [];
-  for await (const [name, handle] of folder.entries()) {
-    if (name.endsWith("-check.json")) check = JSON.parse(await (await handle.getFile()).text());
-  }
-  if (!check) { alert("No -check.json in that folder. Run make fix first."); return; }
-  try {
-    const h = await folder.getFileHandle(check.project + "-corrections.csv");
-    corrections = parseCsv(await (await h.getFile()).text());
-  } catch (e) {}
+// The chosen data folder is remembered (IndexedDB holds the handle) so the picker is a one-time step.
+const db = () => new Promise((ok, fail) => { const r = indexedDB.open("number-check", 1);
+  r.onupgradeneeded = () => r.result.createObjectStore("handles"); r.onsuccess = () => ok(r.result); r.onerror = fail; });
+const recall = async () => { try { const d = await db(); return await new Promise(ok => {
+  const r = d.transaction("handles").objectStore("handles").get("data"); r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); }); } catch (e) { return null; } };
+const keep = async h => { try { (await db()).transaction("handles", "readwrite").objectStore("handles").put(h, "data"); } catch (e) {} };
+const checkIn = async dir => { for await (const [name, h] of dir.entries()) if (h.kind === "file" && name.endsWith("-check.json")) return h; return null; };
+let models = {};
+async function loadModel(dir) {
+  const h = await checkIn(dir);
+  const check = JSON.parse(await (await h.getFile()).text());
+  let corrections = [];
+  try { corrections = parseCsv(await (await (await dir.getFileHandle(check.project + "-corrections.csv")).getFile()).text()); } catch (e) {}
+  folder = dir;
   start(check, corrections);
-});
+}
+async function openData(root) {
+  models = {};
+  if (await checkIn(root)) models[root.name] = root;
+  else for await (const [name, h] of root.entries()) if (h.kind === "directory" && await checkIn(h)) models[name] = h;
+  const names = Object.keys(models).sort();
+  if (!names.length) { alert(`No model with a -check.json in ${root.name}. Run make fix first.`); return; }
+  const pick = document.getElementById("model");
+  pick.innerHTML = names.map(n => `<option>${n}</option>`).join("");
+  pick.hidden = names.length < 2;
+  await loadModel(models[names[0]]);
+}
+document.getElementById("model").addEventListener("change", e => loadModel(models[e.target.value]));
+async function choose(reuse) {
+  if (!window.showDirectoryPicker) { alert("This browser cannot open folders; load the -check.json file instead."); return; }
+  const last = await recall();
+  if (reuse && last && await last.requestPermission({mode: "readwrite"}) === "granted") { await openData(last); return; }
+  const root = await showDirectoryPicker({mode: "readwrite", id: "number-check-data", ...(last ? {startIn: last} : {})});
+  await keep(root);
+  await openData(root);
+}
+document.getElementById("open").addEventListener("click", () => choose(true));
+document.getElementById("change").addEventListener("click", () => choose(false));
 document.getElementById("file").addEventListener("change", async e => {
   const f = e.target.files[0];
   if (f) { folder = null; start(JSON.parse(await f.text()), []); }
@@ -97,7 +122,7 @@ function card(c) {
     div.className = "panel";
     const label = c.kind === "doubt" ? (i === 0 ? "your fix" : "other copy") : i === 0 ? "this number" : (c.kind === "open" ? "its pair" : "matching line");
     div.innerHTML = `<img src="${p.image}" alt="scan around ${p.read}">
-      <div><span class="read">${p.read}</span> <span class="meta">${label}: ${p.piece}, ${p.side} ${p.length} mm</span></div>
+      <div><span class="read">${p.read}</span> <span class="meta">${label}: ${p.piece}, ${p.side === "none" ? "no line found" : `${p.side} ${p.length} mm`}</span></div>
       <div class="row"><button data-a="keep">✓ as read</button><span class="meta">should be</span><input inputmode="numeric"></div>`;
     const input = div.querySelector("input");
     const value = answers[key(p)];

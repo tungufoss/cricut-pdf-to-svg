@@ -21,7 +21,10 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-CROP_MM = 30.0
+CROP_MM = 30.0        # smallest patch; grows to hold the whole line the number marks
+MARGIN_MM = 5.0
+MAX_MM = 120.0
+SIZE_PX = 360         # patches are scaled to this so long lines do not bloat the JSON
 
 
 class CheckData:
@@ -31,6 +34,8 @@ class CheckData:
         self.edges = list(csv.DictReader((folder / f"{project}-edges.csv").open(encoding="utf-8")))
         self.misreads = list(csv.DictReader((folder / f"{project}-misreads.csv").open(encoding="utf-8")))
         self.pages: dict[str, Image.Image] = {}
+        self.lines = {(r["piece"], r["x_mm"], r["y_mm"]): [float(v) for v in r.get("line_mm", "").split()]
+                      for r in self.edges}
 
     def cards(self) -> list[dict]:
         cards, covered = [], set()
@@ -64,18 +69,33 @@ class CheckData:
 
     def _panel(self, piece: str, x: str, y: str, number: str, side: str, length: str) -> dict:
         return {"piece": piece, "x": x, "y": y, "read": number, "side": side, "length": length,
-                "image": self._crop(piece, float(x), float(y))}
+                "image": self._crop(piece, float(x), float(y), self.lines.get((piece, x, y), []))}
 
-    def _crop(self, piece: str, x_mm: float, y_mm: float) -> str:
+    def _crop(self, piece: str, x_mm: float, y_mm: float, line: list[float]) -> str:
+        """Scan patch around the number, wide enough to show the whole line it marks:
+        the number circled in magenta, its traced line drawn over in orange."""
         page = piece.split("-")[1]
         if page not in self.pages:
             found = sorted((self.folder / "previews").glob(f"{self.project}-page-{page}-*.png"))
             self.pages[page] = Image.open(found[0]).convert("L") if found else Image.new("L", (10, 10), 255)
-        image = self.pages[page]
-        cx, cy, half = x_mm / self.mm_per_px, y_mm / self.mm_per_px, CROP_MM / 2 / self.mm_per_px
-        crop = image.crop((round(cx - half), round(cy - half), round(cx + half), round(cy + half))).convert("RGB")
-        r = 3.5 / self.mm_per_px
-        ImageDraw.Draw(crop).ellipse([half - r, half - r, half + r, half + r], outline=(220, 0, 160), width=3)
+        xs, ys = [x_mm] + line[0::2], [y_mm] + line[1::2]
+        cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+        side = min(MAX_MM, max(CROP_MM, max(xs) - min(xs) + 2 * MARGIN_MM, max(ys) - min(ys) + 2 * MARGIN_MM))
+        px = lambda mm: mm / self.mm_per_px
+        left, top = px(cx - side / 2), px(cy - side / 2)
+        crop = self.pages[page].crop((round(left), round(top), round(left + px(side)), round(top + px(side)))).convert("RGB")
+        scale = SIZE_PX / crop.width
+        crop = crop.resize((SIZE_PX, SIZE_PX), Image.LANCZOS)
+        at = lambda xm, ym: ((px(xm) - left) * scale, (px(ym) - top) * scale)
+        draw = ImageDraw.Draw(crop)
+        if len(line) == 4:
+            a, b = at(*line[:2]), at(*line[2:])
+            draw.line([a, b], fill=(255, 120, 0), width=4)
+            for x, y in (a, b):
+                draw.ellipse([x - 5, y - 5, x + 5, y + 5], fill=(255, 120, 0))
+        x, y = at(x_mm, y_mm)
+        r = max(px(3.5) * scale, 10)
+        draw.ellipse([x - r, y - r, x + r, y + r], outline=(220, 0, 160), width=3)
         buffer = io.BytesIO()
         crop.save(buffer, "JPEG", quality=80)
         return "data:image/jpeg;base64," + base64.b64encode(buffer.getvalue()).decode("ascii")
