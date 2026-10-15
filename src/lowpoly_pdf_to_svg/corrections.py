@@ -78,3 +78,49 @@ class Corrections:
                     for label in p.labels:
                         label.paired = counts[label.text] == 2
         return applied, missed
+
+
+LINE_COLUMNS = ["piece", "x_mm", "y_mm", "number", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm"]
+
+
+@dataclass
+class LineFix:
+    """The line a number marks, drawn by hand on the number check page: two points on the page (mm),
+    and whether it is a cut edge or a fold (a fold means this side carries the glue tab)."""
+    piece: str
+    x_mm: float
+    y_mm: float
+    kind: str
+    a: tuple[float, float]
+    b: tuple[float, float]
+
+
+class LineFixes:
+    """data/<project>/<project>-lines.csv: hand-drawn lines that replace what tracing found for a number."""
+
+    def __init__(self, rows: list[LineFix]):
+        self.rows = rows
+
+    @classmethod
+    def load(cls, path: Path) -> "LineFixes":
+        if not path.is_file():
+            return cls([])
+        with path.open(encoding="utf-8", newline="") as handle:
+            return cls([LineFix(r["piece"], float(r["x_mm"]), float(r["y_mm"]), r["kind"],
+                                (float(r["ax_mm"]), float(r["ay_mm"])), (float(r["bx_mm"]), float(r["by_mm"])))
+                        for r in csv.DictReader(handle) if r.get("kind") in ("cut", "fold")])
+
+    def apply(self, layouts: list[tuple[PageLayout, float]]) -> tuple[int, list[LineFix]]:
+        """Set each matched label's line; returns (applied, rows that matched no label)."""
+        pieces = {piece.id: (piece, mm) for layout, mm in layouts for piece in layout.pieces}
+        applied, missed = 0, []
+        for row in self.rows:
+            label = Corrections._nearest(pieces, row)
+            if label is None:
+                missed.append(row)
+                continue
+            mm = pieces[row.piece][1]
+            label.edge = ((row.a[0] / mm, row.a[1] / mm), (row.b[0] / mm, row.b[1] / mm))
+            label.tab = row.kind == "fold"
+            applied += 1
+        return applied, missed

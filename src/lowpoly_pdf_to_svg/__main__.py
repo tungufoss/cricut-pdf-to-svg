@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 from .config import Project
-from .corrections import Correction, Corrections
+from .corrections import Correction, Corrections, LineFixes
 from .detect import PageDetector
 from .edges import EdgeTable
 from .ocr import EdgeNumberReader, read_paper
@@ -91,6 +91,10 @@ def main() -> int:
         applied, missed = corrections.apply([(layout, page.mm_per_px) for page, layout, _ in results])
         print(f"applied {applied} hand corrections" + (f", {len(missed)} matched no number: "
               + ", ".join(f"{c.piece} {c.read}->{c.number}" for c in missed) if missed else ""))
+    lines = LineFixes.load(output / f"{project.name}-lines.csv")
+    if lines.rows:
+        applied, missed = lines.apply([(layout, page.mm_per_px) for page, layout, _ in results])
+        print(f"applied {applied} hand-drawn lines" + (f", {len(missed)} matched no number" if missed else ""))
     # Clear-cut misreads are fixed without asking; the rest wait for the number check page.
     measured = [(layout, page.mm_per_px) for page, layout, _ in results]
     first = EdgeTable()

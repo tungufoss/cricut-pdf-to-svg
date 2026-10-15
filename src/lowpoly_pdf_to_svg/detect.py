@@ -193,7 +193,9 @@ class PageDetector:
             if not 0 <= along <= length:
                 continue
             across = abs(float((centre - a) @ np.array([-u[1], u[0]])))
-            score = across + (0 if abs(float(reading @ u)) > math.cos(math.radians(25)) else 2 * px)
+            # A lone digit's box says nothing about which way it reads, so its angle is not trusted.
+            turned = label.glyphs != 1 and abs(float(reading @ u)) <= math.cos(math.radians(25))
+            score = across + (2 * px if turned else 0)
             if score < best_score:
                 best, best_score = (tuple(a), tuple(b), tab), score
         if best:
@@ -263,6 +265,8 @@ class PageDetector:
             polygon = self._merge_close(polygon, self.s.min_edge_mm * self.px)
             # Fitted edges are reliable, so a clipped acute tip can be restored from further away.
             polygon = self._sharpen(polygon, self.s.fitted_corner_mm)
+            # Fitting can leave a vertex where the cut barely turns; corners where a fold meets the cut come back later.
+            polygon = self._drop_flat(polygon)
             polygons.append(polygon.astype(np.float32).reshape(-1, 1, 2))
         outlines: list[list[Point] | None] = []
         holes: list[list[list[Point]]] = [[] for _ in regions]
@@ -632,7 +636,9 @@ class PageDetector:
             if rw < rh:  # make the long side the reading direction
                 angle, rw, rh = angle + 90, rh, rw
             ink = np.where(mask, 255 - gray[y:y + h, x:x + w], 0).clip(0, 255).astype(np.uint8)
-            yield Label((int(x), int(y), int(w), int(h)), (float(cx + x), float(cy + y)), float(angle), float(rh), ink)
+            _, _, parts, _ = cv2.connectedComponentsWithStats((mask & text_core[y:y + h, x:x + w]).astype(np.uint8))
+            yield Label((int(x), int(y), int(w), int(h)), (float(cx + x), float(cy + y)), float(angle), float(rh), ink,
+                        glyphs=int((parts[1:, cv2.CC_STAT_AREA] >= 5).sum()))
 
     @staticmethod
     def _centerlines(mask: np.ndarray, min_length: int, offset: tuple[int, int] = (0, 0)) -> list[list[Point]]:

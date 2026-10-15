@@ -16,10 +16,11 @@ import base64
 import csv
 import io
 import json
+import pickle
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image
 
 CROP_MM = 30.0        # smallest patch; grows to hold the whole line the number marks
 MARGIN_MM = 5.0
@@ -36,6 +37,21 @@ class CheckData:
         self.pages: dict[str, Image.Image] = {}
         self.lines = {(r["piece"], r["x_mm"], r["y_mm"]): [float(v) for v in r.get("line_mm", "").split()]
                       for r in self.edges}
+        self.traces = self._traces()
+
+    def _traces(self) -> dict[str, dict]:
+        """Traced outline corners and folds per piece, in page mm, from the build cache."""
+        traces = {}
+        for path in sorted((self.folder / "cache").glob("page-*.pickle")):
+            with path.open("rb") as handle:
+                page, layout = pickle.load(handle)
+            mm = page.mm_per_px
+            for piece in layout.pieces:
+                traces[piece.id] = {
+                    "outline": [[round(x * mm, 2), round(y * mm, 2)] for x, y in piece.outline],
+                    "folds": [[round(f.a[0] * mm, 2), round(f.a[1] * mm, 2), round(f.b[0] * mm, 2), round(f.b[1] * mm, 2)]
+                              for f in piece.folds]}
+        return traces
 
     def cards(self) -> list[dict]:
         cards, covered = [], set()
@@ -68,12 +84,14 @@ class CheckData:
         return cards
 
     def _panel(self, piece: str, x: str, y: str, number: str, side: str, length: str) -> dict:
+        line = self.lines.get((piece, x, y), [])
+        image, box = self._crop(piece, float(x), float(y), line)
         return {"piece": piece, "x": x, "y": y, "read": number, "side": side, "length": length,
-                "image": self._crop(piece, float(x), float(y), self.lines.get((piece, x, y), []))}
+                "image": image, "box": box, "line": line}
 
-    def _crop(self, piece: str, x_mm: float, y_mm: float, line: list[float]) -> str:
-        """Scan patch around the number, wide enough to show the whole line it marks:
-        the number circled in magenta, its traced line drawn over in orange."""
+    def _crop(self, piece: str, x_mm: float, y_mm: float, line: list[float]) -> tuple[str, list[float]]:
+        """Plain scan patch around the number, wide enough to show the whole line it marks,
+        and its box on the page [left, top, side] in mm; the page draws the trace on top."""
         page = piece.split("-")[1]
         if page not in self.pages:
             found = sorted((self.folder / "previews").glob(f"{self.project}-page-{page}-*.png"))
@@ -81,28 +99,20 @@ class CheckData:
         xs, ys = [x_mm] + line[0::2], [y_mm] + line[1::2]
         cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
         side = min(MAX_MM, max(CROP_MM, max(xs) - min(xs) + 2 * MARGIN_MM, max(ys) - min(ys) + 2 * MARGIN_MM))
-        px = lambda mm: mm / self.mm_per_px
-        left, top = px(cx - side / 2), px(cy - side / 2)
-        crop = self.pages[page].crop((round(left), round(top), round(left + px(side)), round(top + px(side)))).convert("RGB")
-        scale = SIZE_PX / crop.width
+        left, top = cx - side / 2, cy - side / 2
+        px = lambda mm: round(mm / self.mm_per_px)
+        crop = self.pages[page].crop((px(left), px(top), px(left) + px(side), px(top) + px(side)))
         crop = crop.resize((SIZE_PX, SIZE_PX), Image.LANCZOS)
-        at = lambda xm, ym: ((px(xm) - left) * scale, (px(ym) - top) * scale)
-        draw = ImageDraw.Draw(crop)
-        if len(line) == 4:
-            a, b = at(*line[:2]), at(*line[2:])
-            draw.line([a, b], fill=(255, 120, 0), width=4)
-            for x, y in (a, b):
-                draw.ellipse([x - 5, y - 5, x + 5, y + 5], fill=(255, 120, 0))
-        x, y = at(x_mm, y_mm)
-        r = max(px(3.5) * scale, 10)
-        draw.ellipse([x - r, y - r, x + r, y + r], outline=(220, 0, 160), width=3)
         buffer = io.BytesIO()
         crop.save(buffer, "JPEG", quality=80)
-        return "data:image/jpeg;base64," + base64.b64encode(buffer.getvalue()).decode("ascii")
+        box = [round(px(left) * self.mm_per_px, 3), round(px(top) * self.mm_per_px, 3), round(px(side) * self.mm_per_px, 3)]
+        return "data:image/jpeg;base64," + base64.b64encode(buffer.getvalue()).decode("ascii"), box
 
     def write(self, path: Path) -> int:
         cards = self.cards()
-        path.write_text(json.dumps({"project": self.project, "cards": cards}), encoding="utf-8")
+        used = {p["piece"] for c in cards for p in c["panels"]}
+        traces = {k: v for k, v in self.traces.items() if k in used}
+        path.write_text(json.dumps({"project": self.project, "cards": cards, "traces": traces}), encoding="utf-8")
         return len(cards)
 
 

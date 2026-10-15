@@ -16,7 +16,16 @@ main{padding:16px;display:grid;gap:14px;max-width:1100px;margin:auto}
 .why{color:var(--muted)}
 .panels{display:flex;gap:14px;flex-wrap:wrap}
 .panel{display:grid;gap:6px;width:320px}
-.panel img{width:320px;height:320px;border:1px solid var(--line);border-radius:6px;image-rendering:auto}
+.scan{position:relative;width:320px;height:320px;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.scan img,.scan svg{position:absolute;inset:0;width:100%;height:100%}
+.scan.drawing{cursor:crosshair;outline:3px solid #ff7800}
+.trace{fill:none;stroke:#0096ff;stroke-width:.25}
+.corner{fill:#fff;stroke:#0050ff;stroke-width:.2}
+.fold{stroke:#00a032;stroke-width:.25}
+.found{stroke:#ff7800;stroke-width:.5;opacity:.85}
+.drawn{stroke:#c000ff;stroke-width:.55}
+.hint{font-size:12px;color:#ff7800}
+select{font:inherit;padding:3px;border:1px solid var(--line);border-radius:6px}
 .meta{font-size:13px;color:var(--muted)}
 .read{font-size:20px;font-weight:600}
 .row{display:flex;gap:6px;align-items:center}
@@ -35,7 +44,7 @@ so next time Open only asks to allow it again. Save writes
 <code>&lt;project&gt;-corrections.csv</code> into the same folder, and the next build applies it.
 Without folder access (Firefox), load the JSON file instead and Save downloads the CSV.</p></main>
 <script>
-let D = null, folder = null, store = "", answers = {}, saved = [];
+let D = null, folder = null, store = "", answers = {}, saved = [], lines = {};
 const key = p => `${p.piece}@${p.x},${p.y}`;
 let filter = "todo";
 
@@ -44,10 +53,13 @@ function parseCsv(text) {
   const cols = head.split(",");
   return rows.filter(Boolean).map(r => Object.fromEntries(r.split(",").map((v, i) => [cols[i], v])));
 }
-function start(data, corrections) {
-  D = data; saved = corrections; store = "fix-" + D.project; answers = {};
+function start(data, corrections, drawn = []) {
+  D = data; saved = corrections; store = "fix-" + D.project; answers = {}; lines = {};
   for (const s of saved) answers[`${s.piece}@${s.x_mm},${s.y_mm}`] = s.number;
+  for (const l of drawn) lines[`${l.piece}@${l.x_mm},${l.y_mm}`] =
+    {kind: l.kind, a: [+l.ax_mm, +l.ay_mm], b: [+l.bx_mm, +l.by_mm], piece: l.piece, x: l.x_mm, y: l.y_mm, read: l.number};
   try { Object.assign(answers, JSON.parse(localStorage.getItem(store) || "{}")); } catch (e) {}
+  try { Object.assign(lines, JSON.parse(localStorage.getItem(store + "-lines") || "{}")); } catch (e) {}
   document.getElementById("title").textContent = "Number check: " + D.project;
   document.title = document.getElementById("title").textContent;
   render();
@@ -64,9 +76,11 @@ async function loadModel(dir) {
   const h = await checkIn(dir);
   const check = JSON.parse(await (await h.getFile()).text());
   let corrections = [];
+  let drawn = [];
   try { corrections = parseCsv(await (await (await dir.getFileHandle(check.project + "-corrections.csv")).getFile()).text()); } catch (e) {}
+  try { drawn = parseCsv(await (await (await dir.getFileHandle(check.project + "-lines.csv")).getFile()).text()); } catch (e) {}
   folder = dir;
-  start(check, corrections);
+  start(check, corrections, drawn);
 }
 async function openData(root) {
   models = {};
@@ -94,7 +108,45 @@ document.getElementById("file").addEventListener("change", async e => {
   const f = e.target.files[0];
   if (f) { folder = null; start(JSON.parse(await f.text()), []); }
 });
-const remember = () => { try { localStorage.setItem(store, JSON.stringify(answers)); } catch (e) {} };
+const remember = () => { try { localStorage.setItem(store, JSON.stringify(answers));
+  localStorage.setItem(store + "-lines", JSON.stringify(lines)); } catch (e) {} };
+const SNAP_MM = 1.2;
+const mmLength = l => Math.hypot(l.b[0] - l.a[0], l.b[1] - l.a[1]).toFixed(1);
+// The scan with the trace on top: outline corners (blue), folds (green), the line found for the
+// number (orange) and a hand-drawn line (purple). Clicks in draw mode snap to traced points.
+function scan(p, onDrawn) {
+  const [left, top, side] = p.box, t = (D.traces || {})[p.piece] || {outline: [], folds: []};
+  const wrap = document.createElement("div");
+  wrap.className = "scan";
+  const r = side / 160;
+  const outline = t.outline.map(q => q.join(",")).join(" ");
+  const own = lines[key(p)];
+  wrap.innerHTML = `<img src="${p.image}" alt="scan around ${p.read}">
+    <svg viewBox="${left} ${top} ${side} ${side}" style="stroke-width:${side / 120}">
+      <polygon class="trace" points="${outline}" style="stroke-width:${r * 0.7}"/>
+      ${t.folds.map(f => `<line class="fold" x1="${f[0]}" y1="${f[1]}" x2="${f[2]}" y2="${f[3]}" stroke-dasharray="${r * 2} ${r}" style="stroke-width:${r * 0.7}"/>`).join("")}
+      ${p.line && p.line.length === 4 ? `<line class="found" x1="${p.line[0]}" y1="${p.line[1]}" x2="${p.line[2]}" y2="${p.line[3]}" style="stroke-width:${r * 1.4};opacity:${own ? .35 : .85}"/>` : ""}
+      ${own ? `<line class="drawn" x1="${own.a[0]}" y1="${own.a[1]}" x2="${own.b[0]}" y2="${own.b[1]}" style="stroke-width:${r * 1.5}"/>` : ""}
+      ${t.outline.map(q => `<circle class="corner" cx="${q[0]}" cy="${q[1]}" r="${r * 1.6}" style="stroke-width:${r * 0.6}"/>`).join("")}
+      ${t.folds.flatMap(f => [[f[0], f[1]], [f[2], f[3]]]).map(q => `<circle cx="${q[0]}" cy="${q[1]}" r="${r}" fill="#00a032"/>`).join("")}
+      <circle cx="${p.x}" cy="${p.y}" r="3.5" fill="none" stroke="#dc00a0" style="stroke-width:${r}"/>
+      <g class="clicks"></g>
+    </svg>`;
+  const svg = wrap.querySelector("svg"), clicks = wrap.querySelector(".clicks");
+  const points = [...t.outline, ...t.folds.flatMap(f => [[f[0], f[1]], [f[2], f[3]]])];
+  let picked = null;
+  wrap.start = () => { picked = []; clicks.innerHTML = ""; wrap.classList.add("drawing"); };
+  svg.addEventListener("click", e => {
+    if (!picked) return;
+    const m = svg.getScreenCTM().inverse(), q = new DOMPoint(e.clientX, e.clientY).matrixTransform(m);
+    let at = [q.x, q.y], best = SNAP_MM;
+    for (const c of points) { const d = Math.hypot(c[0] - q.x, c[1] - q.y); if (d < best) { best = d; at = c; } }
+    picked.push(at.map(v => +(+v).toFixed(2)));
+    clicks.insertAdjacentHTML("beforeend", `<circle cx="${at[0]}" cy="${at[1]}" r="${r * 2.2}" fill="#c000ff"/>`);
+    if (picked.length === 2) { const [a, b] = picked; picked = null; wrap.classList.remove("drawing"); onDrawn(a, b); }
+  });
+  return wrap;
+}
 let touched = new Set();
 const done = c => c.kind === "auto" || (c.kind === "doubt" ? c.panels.some(p => touched.has(key(p)))
   : c.panels.some(p => answers[key(p)] !== undefined && answers[key(p)] !== ""));
@@ -121,9 +173,26 @@ function card(c) {
     const div = document.createElement("div");
     div.className = "panel";
     const label = c.kind === "doubt" ? (i === 0 ? "your fix" : "other copy") : i === 0 ? "this number" : (c.kind === "open" ? "its pair" : "matching line");
-    div.innerHTML = `<img src="${p.image}" alt="scan around ${p.read}">
+    div.innerHTML = `<div class="slot"></div>
       <div><span class="read">${p.read}</span> <span class="meta">${label}: ${p.piece}, ${p.side === "none" ? "no line found" : `${p.side} ${p.length} mm`}</span></div>
-      <div class="row"><button data-a="keep">✓ as read</button><span class="meta">should be</span><input inputmode="numeric"></div>`;
+      <div class="row"><button data-a="keep">✓ as read</button><span class="meta">should be</span><input inputmode="numeric"></div>
+      <div class="row"><button data-a="draw">Draw line</button><select><option value="cut">cut edge</option><option value="fold">fold (tab side)</option></select>
+        <button data-a="undraw">Clear</button><span class="meta drawn-info"></span></div>`;
+    const kind = div.querySelector("select");
+    const info = () => { const l = lines[key(p)]; div.querySelector(".drawn-info").textContent = l ? `drawn: ${l.kind} ${mmLength(l)} mm` : ""; };
+    kind.value = (lines[key(p)] || {}).kind || (p.side === "tab" ? "fold" : "cut");
+    const place = () => {
+      const view = scan(p, (a, b) => {
+        lines[key(p)] = {kind: kind.value, a, b, piece: p.piece, x: p.x, y: p.y, read: p.read};
+        remember(); place(); info(); count(); });
+      div.querySelector(".slot").replaceChildren(view);
+      return view;
+    };
+    let view = place();
+    info();
+    div.querySelector("[data-a=draw]").addEventListener("click", () => { view = place(); view.start(); });
+    div.querySelector("[data-a=undraw]").addEventListener("click", () => { delete lines[key(p)]; remember(); view = place(); info(); count(); });
+    kind.addEventListener("change", () => { if (lines[key(p)]) { lines[key(p)].kind = kind.value; remember(); info(); } });
     const input = div.querySelector("input");
     const value = answers[key(p)];
     if (value !== undefined) { input.value = value; input.classList.toggle("set", value !== ""); }
@@ -158,21 +227,25 @@ document.getElementById("save").addEventListener("click", async () => {
   const reads = {};
   for (const c of D.cards) for (const p of c.panels) reads[key(p)] = p;
   for (const s of saved) reads[`${s.piece}@${s.x_mm},${s.y_mm}`] ??= {piece: s.piece, x: s.x_mm, y: s.y_mm, read: s.read};
-  const lines = ["piece,x_mm,y_mm,read,number"];
+  const rows = ["piece,x_mm,y_mm,read,number"];
   for (const [k, v] of Object.entries(answers)) {
     const p = reads[k];
-    if (p && v !== "") lines.push([p.piece, p.x, p.y, p.read, v].join(","));
+    if (p && v !== "") rows.push([p.piece, p.x, p.y, p.read, v].join(","));
   }
-  const text = lines.join("\n") + "\n";
-  const name = D.project + "-corrections.csv";
-  if (folder) {
-    const w = await (await folder.getFileHandle(name, {create: true})).createWritable();
-    await w.write(text); await w.close();
-    document.getElementById("count").textContent += ` (saved ${lines.length - 1} to ${name})`;
-    return;
+  const drawn = ["piece,x_mm,y_mm,number,kind,ax_mm,ay_mm,bx_mm,by_mm"];
+  for (const l of Object.values(lines)) drawn.push([l.piece, l.x, l.y, l.read, l.kind, ...l.a, ...l.b].join(","));
+  const files = [[D.project + "-corrections.csv", rows], [D.project + "-lines.csv", drawn]];
+  for (const [name, list] of files) {
+    const text = list.join("\n") + "\n";
+    if (folder) {
+      const w = await (await folder.getFileHandle(name, {create: true})).createWritable();
+      await w.write(text); await w.close();
+    } else {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([text], {type: "text/csv"}));
+      a.download = name; a.click();
+    }
   }
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([text], {type: "text/csv"}));
-  a.download = name; a.click();
+  document.getElementById("count").textContent += ` (saved ${rows.length - 1} numbers and ${drawn.length - 1} lines)`;
 });
 </script></body></html>
