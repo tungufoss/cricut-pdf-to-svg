@@ -26,6 +26,7 @@ from pathlib import Path
 import numpy as np
 
 SVG = "{http://www.w3.org/2000/svg}"
+INKSCAPE = "{http://www.inkscape.org/namespaces/inkscape}"
 LABEL_REACH_MM = 3.0     # as detect.py: a number further than this from every line marks none
 LENGTH_TOLERANCE_MM = 1.0  # as edges.py: a clean pair's two lines agree this well
 SNAP_MM = 0.4            # fold ends and outline corners closer than this are one vertex
@@ -63,6 +64,7 @@ class FlatPiece:
     points: list[np.ndarray] = field(default_factory=list)   # vertex id -> 2D position
     faces: list[Face] = field(default_factory=list)
     fold_kind: dict[frozenset, str] = field(default_factory=dict)   # vertex pair -> fold kind
+    page_origin: tuple[float, float] = (0.0, 0.0)                   # its page's corner in document mm
 
     # vertices -------------------------------------------------------------------
     def vertex(self, p, snap: float = SNAP_MM) -> int:
@@ -166,6 +168,8 @@ class PatternReader:
 
     def read(self, path: Path) -> list[FlatPiece]:
         root = ET.parse(path).getroot()
+        origins = {page.get("id"): (float(page.get("x")), float(page.get("y")))
+                   for page in root.iter(f"{INKSCAPE}page")}
         pieces = []
         for group in root.iter(f"{SVG}g"):
             pid = group.get("id", "")
@@ -173,7 +177,8 @@ class PatternReader:
                 continue
             cut = group.find(f"{SVG}g[@id='{pid}-cut']")
             paths = [self._points(p.get("d")) for p in cut.iter(f"{SVG}path")]
-            piece = FlatPiece(pid, group.get("data-material", ""), paths[0], [])
+            piece = FlatPiece(pid, group.get("data-material", ""), paths[0], [],
+                              page_origin=origins.get(f"page-{pid[6:8]}", (0.0, 0.0)))
             for kind in ("mountain", "valley"):
                 for p in group.iter(f"{SVG}g"):
                     if p.get("id") == f"{pid}-{kind}":
@@ -690,14 +695,164 @@ MATERIAL_RGB = {"red": (0.78, 0.16, 0.16), "green": (0.18, 0.49, 0.20), "yellow"
                 "black": (0.2, 0.2, 0.2), "white": (0.95, 0.95, 0.95), "beige": (0.93, 0.86, 0.70)}
 
 
+# -- feeding the folded shape back to the flat pieces ------------------------------
+
+class CornerAdjuster:
+    """Where the folded model had to stretch a face to close its glues, the trace is likely a
+    little off. Flatten each piece again from its folded shape: the 2D corners whose distances
+    best match the folded ones, held lightly to where they were traced. A corner that moves a
+    little becomes a `move` row (piece-edits.csv columns, page mm); one that moves a lot, or a
+    piece with a numbered glue that does not close, is listed for a look by eye. A piece with a
+    fold bent the wrong way sits in a pose the solver could not settle, so its stretch says more
+    about the solver than the trace: it gets no moves."""
+
+    MATCH_MM = 1.5    # as corrections.py: a move row takes the outline corner this close to its start
+
+    def __init__(self, recon: "Reconstruction", min_mm: float = 0.2, max_mm: float = 1.0, hold: float = 0.05):
+        self.recon = recon
+        self.min_mm, self.max_mm, self.hold = min_mm, max_mm, hold
+
+    def shifts(self) -> dict[str, dict[int, np.ndarray]]:
+        """Per piece: outline corner id -> how far to move it (document mm, y down)."""
+        from scipy.optimize import least_squares
+
+        asm, x = self.recon.asm, self.recon.x
+        closed = self._closed_vertices()
+        by_piece = collections.defaultdict(list)
+        for a, b, _ in asm.rigid_pairs():
+            by_piece[asm.key[int(a)][0]].append((int(a), int(b)))
+        out = {}
+        for pid, piece in asm.pieces.items():
+            verts = sorted({v for p, vs in asm.faces if p == pid for v in vs})
+            if not verts or not any(v in closed for v in verts):
+                continue          # nothing holds this piece's shape: no evidence either way
+            local = {v: i for i, v in enumerate(verts)}
+            pairs = np.array([(local[a], local[b], np.linalg.norm(x[a] - x[b])) for a, b in by_piece[pid]])
+            start = np.array([asm.flat[v] for v in verts])
+            i, j, d = pairs[:, 0].astype(int), pairs[:, 1].astype(int), pairs[:, 2]
+
+            def fun(f):
+                q = f.reshape(-1, 2)
+                return np.r_[np.linalg.norm(q[i] - q[j], axis=1) - d, self.hold * (q - start).ravel()]
+            fitted = least_squares(fun, start.ravel()).x.reshape(-1, 2)
+            # Drop any shift every corner shares (the piece as a whole sliding), keep the shape change.
+            delta = fitted - start
+            delta -= delta.mean(0)
+            corners = {piece.vertex(c) for c in piece.outline}
+            out[pid] = {asm.key[v][1]: np.array([dx, -dy]) for v, (dx, dy) in zip(verts, delta)
+                        if asm.key[v][1] in corners}
+        return out
+
+    def _closed_vertices(self) -> set[int]:
+        solver = self.recon.solver
+        return {int(v) for k, p, q in solver.glue if not solver.dropped[k] for v in (p, q)}
+
+    @staticmethod
+    def carry(path: Path, moves: list[dict], match_mm: float = 0.05) -> list[dict]:
+        """The build moves corners of the raw trace, so a run on an SVG that already has the
+        last moves must keep them: a corner that now sits where an earlier row put it keeps that
+        row, and moves on from the earlier row's start if it moves again. A run on the same SVG
+        again replaces its own rows."""
+        if not path.exists():
+            return moves
+        with path.open(newline="", encoding="utf-8") as handle:
+            earlier = list(csv.DictReader(handle))
+        point = lambda r, k: np.array([float(r[f"{k}x_mm"]), float(r[f"{k}y_mm"])])
+        out, used = [], set()
+        for row in moves:
+            for i, old in enumerate(earlier):
+                if old["piece"] == row["piece"] and min(np.hypot(*(point(old, k) - point(row, "a")))
+                                                        for k in "ab") < match_mm:
+                    row = {**row, "ax_mm": old["ax_mm"], "ay_mm": old["ay_mm"]}
+                    used.add(i)
+                    break
+            out.append(row)
+        return out + [old for i, old in enumerate(earlier) if i not in used]
+
+    def unsettled(self) -> set[str]:
+        solver = self.recon.solver
+        return {self.recon.asm.key[int(h[0])][0] for h in solver.hinge[solver.wrong_folds(self.recon.x)]}
+
+    def _movable(self, pid: str, v: int, shift: np.ndarray, worst: float) -> bool:
+        piece = self.recon.asm.pieces[pid]
+        if not self.min_mm <= np.hypot(*shift) <= self.max_mm or worst > self.max_mm:
+            return False      # too small to matter, or a piece with one corner far off is looked at whole
+        # the build would not know which of two near corners to move
+        return sum(np.hypot(*(np.asarray(c) - piece.points[v])) < self.MATCH_MM for c in piece.outline) == 1
+
+    def _hold_glue_lengths(self, chosen: dict[str, dict[int, np.ndarray]], slack_mm: float = 0.5) -> dict[str, list]:
+        """Drop moves that would part a numbered pair: a glued edge and its tab that agree in
+        length (within `slack_mm`, or as well as they did) must still agree once both pieces move."""
+        held = collections.defaultdict(list)
+        pieces, solver = self.recon.asm.pieces, self.recon.solver
+        length = lambda pid, a, b: float(np.hypot(*(pieces[pid].points[a] + chosen.get(pid, {}).get(a, 0)
+                                                     - pieces[pid].points[b] - chosen.get(pid, {}).get(b, 0))))
+        for _ in range(3):
+            changed = False
+            for k, g in enumerate(solver.glues):
+                if solver.dropped[k] or k in self.recon.proposed:
+                    continue
+                ends = [(g.piece, g.a), (g.piece, g.b), (g.other, g.c), (g.other, g.d)]
+                if not any(v in chosen.get(pid, {}) for pid, v in ends):
+                    continue
+                before = abs(pieces[g.piece].length(g.a, g.b) - pieces[g.other].length(g.c, g.d))
+                after = abs(length(g.piece, g.a, g.b) - length(g.other, g.c, g.d))
+                if after > max(before, slack_mm):
+                    for pid, v in ends:
+                        if chosen.get(pid, {}).pop(v, None) is not None:
+                            held[pid].append(g.number)
+                            changed = True
+            if not changed:
+                break
+        return held
+
+    def rows(self) -> tuple[list[dict], list[dict]]:
+        moves, inspect = [], []
+        unsettled = self.unsettled()
+        shifts = {pid: s for pid, s in self.shifts().items() if pid not in unsettled}
+        open_numbers = collections.defaultdict(list)
+        for r in self.recon.glue_rows():
+            if r["status"] in ("does not close", "let go while building"):
+                for pid in (r["piece"], r["tab_piece"]):
+                    open_numbers[pid].append(f"{r['number']} ({r['gap_mm']} mm)")
+        worst = {pid: max((float(np.hypot(*v)) for v in s.values()), default=0.0) for pid, s in shifts.items()}
+        chosen = {pid: {v: shift for v, shift in s.items() if self._movable(pid, v, shift, worst[pid])}
+                  for pid, s in shifts.items()}
+        held = self._hold_glue_lengths(chosen)
+        for pid in sorted(set(shifts) | set(open_numbers)):
+            piece = self.recon.asm.pieces[pid]
+            ox, oy = piece.page_origin
+            for v, shift in sorted(chosen.get(pid, {}).items()):
+                a = piece.points[v] - (ox, oy)
+                b = a + shift
+                moves.append({"piece": pid, "action": "move", "kind": "", "ax_mm": f"{a[0]:.2f}", "ay_mm": f"{a[1]:.2f}",
+                              "bx_mm": f"{b[0]:.2f}", "by_mm": f"{b[1]:.2f}",
+                              "note": f"3D fold: corner {np.hypot(*shift):.2f} mm off"})
+            worst_mm = worst.get(pid, 0.0)
+            reasons = []
+            if worst_mm > self.max_mm:
+                reasons.append(f"a corner {worst_mm:.1f} mm off, too far to move without a look")
+            if held[pid]:
+                reasons.append("moves held back, they would part glued edges: " + ", ".join(sorted(set(held[pid]))))
+            if open_numbers[pid]:
+                reasons.append("glue does not close: " + ", ".join(open_numbers[pid]))
+            if reasons:
+                inspect.append({"piece": pid, "worst_corner_mm": f"{worst_mm:.2f}" if pid in shifts else "",
+                                "reason": "; ".join(reasons)})
+        return moves, inspect
+
+
 class Reconstruction:
     """Pattern SVG in; folded model, per-glue closure table and preview out."""
 
-    def __init__(self, svg: Path, gape_mm: float = 3.0, propose_rounds: int = 3, verbose: bool = True):
+    def __init__(self, svg: Path, gape_mm: float = 3.0, propose_rounds: int = 3, verbose: bool = True,
+                 reference: dict | None = None, anneal: int = 5):
         self.svg = svg
+        self.reference = reference or {}   # finished model's counts (YAML `reference:`)
         self.gape = gape_mm
         self.rounds = propose_rounds
         self.verbose = verbose
+        self.anneal = anneal               # cycles of hard then easy fold pull after the build
 
     def log(self, text: str) -> None:
         if self.verbose:
@@ -751,9 +906,32 @@ class Reconstruction:
         self.grown_dropped = solver.dropped.copy()
         self.grown_dropped[len(keep):] = False
         x = solver.solve(x, rounds=3, max_nfev=200, reweight=True)
+        # A glue let go while building often gaped only because a piece placed early sat in a
+        # poor pose. With every piece in place, try them all again: the Cauchy weights still
+        # ease off any that truly cannot close.
+        solver.dropped[:len(keep)] = False
+        solver.robust[:] = 1.0
+        x = solver.solve(x, rounds=4, max_nfev=300, reweight=True)
+        x = self._anneal(solver, x)
         self._drop_gaping(solver, x)
         self.log(f"rebuilt with {len(keep)} glues, {int((~solver.dropped).sum())} close")
         self.solver, self.x = solver, x
+
+    def _anneal(self, solver: FoldSolver, x: np.ndarray) -> np.ndarray:
+        """Folds that settled the wrong way sit in a pose the glues hold them in. Pulling hard on
+        the fold directions tears some glues open but flips those folds; easing back lets the glues
+        close again around the flipped folds. Each cycle leaves fewer folds the wrong way while
+        as many glues close (bowser: 302 wrong to 155 over six cycles, 703 glues closing)."""
+        weight = solver.fold_weight
+        for cycle in range(self.anneal):
+            for fold_weight, rounds in ((30 * weight, 1), (12 * weight, 1), (4 * weight, 2), (weight, 3)):
+                solver.fold_weight = fold_weight
+                solver.robust[:] = 1.0
+                x = solver.solve(x, rounds=rounds, max_nfev=200, reweight=True)
+            self.log(f"fold pull cycle {cycle + 1}: {int(solver.wrong_folds(x).sum())} folds the wrong way, "
+                     f"{int((solver.gaps(x) <= self.gape).sum())} glues within {self.gape:g} mm")
+        solver.fold_weight = weight
+        return x
 
     def _drop_gaping(self, solver: FoldSolver, x: np.ndarray) -> None:
         solver.dropped |= solver.gaps(x) > self.gape
@@ -779,18 +957,63 @@ class Reconstruction:
     def write(self, out: Path, project: str) -> None:
         out.mkdir(parents=True, exist_ok=True)
         x = self._posed()
-        self._obj(out / f"fold3d.obj", x)
+        self._obj(out / "fold3d.obj", x)
         rows = self.glue_rows()
-        with (out / f"fold3d-glue.csv").open("w", newline="", encoding="utf-8") as handle:
+        with (out / "fold3d-glue.csv").open("w", newline="", encoding="utf-8") as handle:
             writer = csv.DictWriter(handle, list(rows[0]))
             writer.writeheader()
             writer.writerows(rows)
         self._preview(out / "fold3d.png", x)
+        moves, inspect = CornerAdjuster(self).rows()
+        moves = CornerAdjuster.carry(out / "fold3d-moves.csv", moves)
+        self._csv(out / "fold3d-moves.csv", moves,
+                  ["piece", "action", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm", "note"])
+        self._csv(out / "fold3d-inspect.csv", inspect, ["piece", "worst_corner_mm", "reason"])
+        self.log(f"corners to move: {len(moves)} in {len({m['piece'] for m in moves})} pieces; "
+                 f"pieces to look at: {len(inspect)}; pieces with a fold bent the wrong way, left as traced: "
+                 f"{len(CornerAdjuster(self).unsettled())}")
+        if self.reference:
+            self._baseline(out / "fold3d-baseline.csv")
         counts = collections.Counter(r["status"] for r in rows)
         wrong = int(self.solver.wrong_folds(self.x).sum())
         stretch = np.abs(self.solver.stretch(self.x))
         self.log("glues: " + ", ".join(f"{n} {s}" for s, n in counts.most_common())
                  + f"; folds bent the wrong way: {wrong}; faces stretched up to {stretch.max():.1f} mm")
+
+    @staticmethod
+    def _csv(path: Path, rows: list[dict], columns: list[str]) -> None:
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, columns)
+            writer.writeheader()
+            writer.writerows(rows)
+
+    def counts(self) -> dict[str, int]:
+        """Triangles of the folded surface, and its corners once every closing glue joins its ends."""
+        parent = list(range(self.solver.n))
+
+        def find(v):
+            while parent[v] != v:
+                parent[v] = parent[parent[v]]
+                v = parent[v]
+            return v
+        for k, p, q in self.solver.glue:
+            if not self.solver.dropped[k]:
+                parent[find(int(p))] = find(int(q))
+        corners = len({find(v) for _, verts in self.asm.faces for v in verts})
+        return {"triangles": sum(len(verts) - 2 for _, verts in self.asm.faces), "corners": corners}
+
+    def _baseline(self, path: Path) -> None:
+        """The folded trace against the finished model's counts from the project YAML."""
+        counts = self.counts()
+        rows = [{"measure": key, "traced": counts[key], "reference": int(self.reference[key]),
+                 "difference": counts[key] - int(self.reference[key])}
+                for key in ("triangles", "corners") if key in self.reference]
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, ["measure", "traced", "reference", "difference"])
+            writer.writeheader()
+            writer.writerows(rows)
+        self.log("against the finished model: " + ", ".join(
+            f"{r['measure']} {r['traced']} vs {r['reference']} ({r['difference']:+d})" for r in rows))
 
     def _posed(self) -> np.ndarray:
         """Centred on the largest glued part, longest axis up."""
@@ -857,16 +1080,19 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Fold the traced pattern back into the 3D model.")
     parser.add_argument("--config", type=Path, default=Path("data/example/example.yaml"), help="project YAML manifest")
     parser.add_argument("--gape", type=float, default=3.0, help="let go of a glue whose ends stay this far apart (mm)")
+    parser.add_argument("--anneal", type=int, default=5, help="cycles of hard then easy fold pull after the build")
     args = parser.parse_args()
     project = args.config.stem
     out = args.config.parent
     svg = out / f"{project}.svg"
     if not svg.is_file():
         parser.error(f"{svg} not found; run make first")
-    run = Reconstruction(svg, gape_mm=args.gape)
+    import yaml
+    reference = (yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}).get("reference") or {}
+    run = Reconstruction(svg, gape_mm=args.gape, reference=reference, anneal=args.anneal)
     run.run()
     run.write(out, project)
-    print(f"Wrote {out / 'fold3d.obj'}, fold3d-glue.csv and fold3d.png")
+    print(f"Wrote {out / 'fold3d.obj'}, fold3d-glue.csv, fold3d-baseline.csv, fold3d-moves.csv, fold3d-inspect.csv and fold3d.png")
     return 0
 
 

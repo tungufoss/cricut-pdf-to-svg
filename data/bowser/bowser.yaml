@@ -30,3 +30,10 @@ materials:
     name: Black cardstock
     color: "#212121"   # fill in the export SVG
     pages: [24]
+
+# The finished model, for checking the folded-up trace (make -f fold3d.mk).
+# Not downloadable; counts from its public Sketchfab metadata (2026-10-16).
+reference:
+  url: https://sketchfab.com/3d-models/papercraft-bowser-mask-92627b8a93c941b89dad9f6ab62a8fe9
+  triangles: 1238
+  corners: 633
