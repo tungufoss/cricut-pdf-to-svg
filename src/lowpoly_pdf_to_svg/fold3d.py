@@ -964,6 +964,7 @@ class Reconstruction:
             writer.writeheader()
             writer.writerows(rows)
         self._preview(out / "fold3d.png", x)
+        self._viewer_json(out / "fold3d.json", x, rows)
         moves, inspect = CornerAdjuster(self).rows()
         moves = CornerAdjuster.carry(out / "fold3d-moves.csv", moves)
         self._csv(out / "fold3d-moves.csv", moves,
@@ -1021,6 +1022,41 @@ class Reconstruction:
         _, _, vt = np.linalg.svd(x, full_matrices=False)
         x = x @ vt.T
         return x[:, [1, 2, 0]]
+
+    def _viewer_json(self, path: Path, x: np.ndarray, rows: list[dict]) -> None:
+        """Everything app/fold3d-viewer.html draws, with ids that stay put between the 3D model and
+        the pattern: face `piece-PP-NN/k` is the k-th surface face of that piece group in the SVG,
+        with its corners both folded (vertex ids) and flat (document mm, as the SVG draws them)."""
+        import json
+
+        faces, seen = [], collections.Counter()
+        for pid, verts in self.asm.faces:
+            faces.append({"id": f"{pid}/{seen[pid]}", "piece": pid, "v": verts,
+                          "flat": [[round(float(c), 2) for c in self.asm.pieces[pid].points[self.asm.key[v][1]]]
+                                   for v in verts]})
+            seen[pid] += 1
+        status = {(r["number"], r["piece"], r["tab_piece"]): r for r in rows}
+        gaps = self.solver.gaps(self.x)
+        glues = []
+        for k, g in enumerate(self.solver.glues):
+            r = status[(g.number, g.piece, g.other)]
+            try:
+                ends = [self.asm.vid(g.piece, g.a), self.asm.vid(g.piece, g.b),
+                        self.asm.vid(g.other, g.c), self.asm.vid(g.other, g.d)]
+            except KeyError:
+                continue
+            glues.append({"number": g.number, "piece": g.piece, "tab_piece": g.other, "v": ends,
+                          "gap_mm": round(float(gaps[k]), 1), "status": r["status"]})
+        wrong = self.solver.wrong_folds(self.x)
+        inspect = {row["piece"]: row["reason"] for row in CornerAdjuster(self).rows()[1]}
+        data = {"source": self.svg.name, "units": "mm",
+                "vertices": [[round(float(c), 2) for c in p] for p in x],
+                "pieces": {pid: {"material": piece.material, "inspect": inspect.get(pid, "")}
+                           for pid, piece in self.asm.pieces.items()},
+                "faces": faces, "glues": glues,
+                "wrong_folds": [[int(h[0]), int(h[1])] for h in self.solver.hinge[wrong]],
+                "colours": {m: "#%02x%02x%02x" % tuple(int(255 * c) for c in rgb) for m, rgb in MATERIAL_RGB.items()}}
+        path.write_text(json.dumps(data, separators=(",", ":")))
 
     def _obj(self, path: Path, x: np.ndarray) -> None:
         mtl = path.with_suffix(".mtl")
