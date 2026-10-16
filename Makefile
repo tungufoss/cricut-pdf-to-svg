@@ -24,7 +24,7 @@ CONVERT  = $(PYTHON) -m src.lowpoly_pdf_to_svg --config $(CONFIG) --output $(OUT
 
 all: $(OUT)/$(PROJECT).svg
 
-$(OUT)/$(PROJECT).svg: $(CONFIG) $(SOURCES) $(wildcard $(OUT)/$(PROJECT)-corrections.csv $(OUT)/$(PROJECT)-lines.csv $(OUT)/$(PROJECT)-pieces.csv)
+$(OUT)/$(PROJECT).svg: $(CONFIG) $(SOURCES) $(wildcard $(OUT)/$(PROJECT)-corrections.csv $(OUT)/$(PROJECT)-lines.csv $(OUT)/$(PROJECT)-pieces.csv $(OUT)/$(PROJECT)-3d-moves.csv)
 	$(CONVERT)
 
 page:

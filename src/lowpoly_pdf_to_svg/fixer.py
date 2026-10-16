@@ -120,6 +120,10 @@ class CheckData:
         if path.is_file():
             for r in csv.DictReader(path.open(encoding="utf-8")):
                 faults.setdefault(r["piece"], []).append(f"{r['check']}: {r['detail']}")
+        path = self.folder / f"{self.project}-3d-inspect.csv"   # pieces the folded 3D model doubts
+        if path.is_file():
+            for r in csv.DictReader(path.open(encoding="utf-8")):
+                faults.setdefault(r["piece"], []).append(f"3D fold: {r['reason']}")
         suggest: dict[str, list[dict]] = {}
         path = self.folder / f"{self.project}-mirror-folds.csv"
         if path.is_file():

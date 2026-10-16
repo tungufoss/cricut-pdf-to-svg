@@ -13,7 +13,7 @@ from pathlib import Path
 
 from .config import Project
 from .checks import TraceChecks
-from .corrections import Correction, Corrections, LineFixes, PieceFixes
+from .corrections import FOLD_MM, Correction, Corrections, LineFixes, PieceFixes
 from .detect import PageDetector
 from .edges import EdgeTable
 from .ocr import EdgeNumberReader, read_paper
@@ -100,12 +100,23 @@ def main() -> int:
     page_of = {piece.id: page for page, layout, _ in results for piece in layout.pieces}
     changed, missed = piece_fixes.apply([(layout, page.mm_per_px) for page, layout, _ in results],
                                         lambda piece, a, b: detector.fold_kind(page_of[piece], a, b))
+    # Corners the folded 3D model says are slightly off (written by the 3D thread); a corner Helga
+    # moved by hand keeps her position.
+    nudges = PieceFixes.load(output / f"{project.name}-3d-moves.csv")
+    if nudges.rows:
+        hand = [(r.piece, p) for r in piece_fixes.rows if r.action == "move" for p in (r.a, r.b)]
+        nudges.rows = [r for r in nudges.rows
+                       if not any(piece == r.piece and math.dist(p, r.a) <= FOLD_MM for piece, p in hand)]
+        nudged, unmatched = nudges.apply([(layout, page.mm_per_px) for page, layout, _ in results])
+        changed |= nudged
+        print(f"moved {len(nudges.rows) - len(unmatched)} corners on {len(nudged)} pieces from the 3D fold"
+              + (f", {len(unmatched)} matched no corner" if unmatched else ""))
     for page, layout, _ in results:
         for piece in layout.pieces:
             if piece.id in changed:
                 for label in piece.labels:
                     detector._mark_edge(label, piece, 1 / page.mm_per_px)
-    print(f"changed {len(changed)} pieces by hand (folds, corners)" + (f", {len(missed)} rows matched no fold or corner" if missed else ""))
+    print(f"changed {len(changed)} pieces by hand or from the 3D fold (folds, corners)" + (f", {len(missed)} rows matched no fold or corner" if missed else ""))
     lines = LineFixes.load(output / f"{project.name}-lines.csv")
     if lines.rows:
         applied, missed = lines.apply([(layout, page.mm_per_px) for page, layout, _ in results])

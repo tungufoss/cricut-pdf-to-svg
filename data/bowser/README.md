@@ -47,12 +47,12 @@ Conversion status (2026-10-16), written by `make`. Edit the YAML, not this file.
 | 06 | red | red | 6 | 57 | 2 |
 | 07 | red | red | 10 | 73 | 3 |
 | 08 | red | red | 6 | 54 | 2 |
-| 09 | red | red | 7 | 52 | 6 |
-| 10 | red | red | 7 | 53 | 1 |
+| 09 | red | red | 7 | 53 | 5 |
+| 10 | red | red | 7 | 54 | 0 |
 | 11 | green | green | 11 | 87 | 3 |
 | 12 | green | green | 11 | 85 | 5 |
 | 13 | green | green | 4 | 29 | 1 |
-| 14 | yellow | beige ⚠ | 10 | 92 | 0 |
+| 14 | yellow | beige ⚠ | 10 | 90 | 2 |
 | 15 | yellow | beige ⚠ | 10 | 90 | 2 |
 | 16 | yellow | beige ⚠ | 10 | 92 | 1 |
 | 17 | yellow | beige ⚠ | 10 | 91 | 2 |
@@ -73,19 +73,20 @@ Pieces listed by how many of their numbers need a look.
 | piece-12-04 | 7 | 3 | 2 (unpaired), 5 (unpaired), 593 (printed 3 times) |
 | piece-12-06 | 6 | 2 | 593 (printed 3 times), 594 (unpaired) |
 | piece-11-05 | 8 | 2 | 791 (unpaired), 793 (unpaired) |
-| piece-09-04 | 7 | 2 | 286 (extra copy: likely misread), 289 (extra copy: likely misread) |
-| piece-09-01 | 6 | 2 | 657 (unpaired), 683 (unpaired) |
+| piece-09-01 | 6 | 2 | 683 (unpaired), 887 (unpaired) |
 | piece-17-07 | 5 | 1 | 730 (unpaired) |
 | piece-24-03 | 6 | 1 | 789 (unpaired) |
 | piece-06-03 | 10 | 1 | 386 (unpaired) |
 | piece-05-07 | 8 | 1 | 792 (unpaired) |
 | piece-24-04 | 7 | 1 | 794 (unpaired) |
+| piece-14-02 | 6 | 1 | 289 (extra copy: likely misread) |
 | piece-11-06 | 7 | 1 | 790 (unpaired) |
 | piece-24-07 | 7 | 1 | 785 (unpaired) |
 | piece-15-06 | 10 | 1 | 580 (extra copy: likely misread) |
+| piece-14-03 | 7 | 1 | 289 (extra copy: likely misread) |
 | piece-07-01 | 9 | 1 | 672 (unpaired) |
 | piece-16-02 | 8 | 1 | 378 (unpaired) |
-| piece-10-05 | 7 | 1 | 289 (extra copy: likely misread) |
+| piece-09-04 | 8 | 1 | 286 (extra copy: likely misread) |
 | piece-09-05 | 7 | 1 | 296 (extra copy: likely misread) |
 | piece-08-04 | 10 | 1 | 698 (extra copy: likely misread) |
 | piece-13-04 | 4 | 1 | 593 (printed 3 times) |
@@ -98,7 +99,7 @@ Pieces listed by how many of their numbers need a look.
 | piece-17-10 | 11 | 1 | 551 (length mismatch) |
 | piece-07-03 | 8 | 1 | 556 (extra copy: likely misread) |
 | piece-07-02 | 5 | 1 | 685 (extra copy: likely misread) |
-| piece-09-03 | 8 | 1 | 887 (unpaired) |
+| piece-09-03 | 8 | 1 | 657 (unpaired) |
 
 ## Hand corrections that still do not pair
 
@@ -109,22 +110,22 @@ Pieces listed by how many of their numbers need a look.
 | piece-12-04 | 2 | tab | 15.2 | unpaired |   |  |
 | piece-12-04 | 5 | tab | 16.8 | unpaired |   |  |
 | piece-09-04 | 286 | tab | 51.8 | extra copy: likely misread |   |  |
-| piece-09-04 | 289 | tab | 42.1 | extra copy: likely misread |   |  |
-| piece-10-05 | 289 | edge | 42.3 | extra copy: likely misread |   |  |
+| piece-14-02 | 289 | edge | 24.0 | extra copy: likely misread |   |  |
+| piece-14-03 | 289 | tab | 23.9 | extra copy: likely misread |   |  |
 | piece-09-05 | 296 | edge | 51.3 | extra copy: likely misread |   |  |
 | piece-06-03 | 386 | edge | 42.5 | unpaired |   |  |
-| piece-15-06 | 580 | edge | 18.8 | extra copy: likely misread |   |  |
+| piece-15-06 | 580 | edge | 18.6 | extra copy: likely misread |   |  |
 | piece-15-07 | 580 | tab | 18.7 | extra copy: likely misread |   |  |
 | piece-12-04 | 593 | edge | 12.4 | printed 3 times |   |  |
 | piece-12-06 | 593 | edge | 10.8 | printed 3 times |   |  |
 | piece-12-06 | 594 | tab | 24.1 | unpaired |   |  |
-| piece-09-01 | 657 | edge | 42.3 | unpaired |   |  |
 | piece-09-01 | 683 | tab | 55.2 | unpaired |   |  |
 | piece-24-07 | 785 | edge | 15.4 | unpaired |   |  |
 | piece-24-03 | 789 | edge | 18.1 | unpaired |   |  |
 | piece-11-06 | 790 | edge | 24.2 | unpaired |   |  |
 | piece-11-05 | 791 | edge | 15.8 | unpaired |   |  |
 | piece-05-07 | 792 | edge | 24.3 | unpaired |   |  |
+| piece-09-01 | 887 | edge | 42.3 | unpaired |   |  |
 
 ## Mirror twins
 
@@ -133,7 +134,7 @@ The model is symmetric: 89 pairs of pieces are mirror images (178 of 178 pieces)
 
 ## Likely misreads
 
-1 clear-cut misreads were fixed without asking (marked `applied` in `bowser-misreads.csv`). 2 more numbers that did not pair up sit on a line of the same length as another unpaired number on the other side (edge against tab), and the two numbers look alike. Check them with `make fix` and `app/number-check.html`.
+3 clear-cut misreads were fixed without asking (marked `applied` in `bowser-misreads.csv`). 2 more numbers that did not pair up sit on a line of the same length as another unpaired number on the other side (edge against tab), and the two numbers look alike. Check them with `make fix` and `app/number-check.html`.
 
 | piece | side | mm | read | suggested | partner | partner mm | why |
 |---|---|---:|---|---|---|---:|---|
