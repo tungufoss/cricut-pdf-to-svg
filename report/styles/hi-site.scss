@@ -162,9 +162,8 @@ $border-radius:          0;
 }
 
 // ── Main content ──────────────────────────────────────────────────────────────
-#quarto-content main {
-  max-width: 860px;
-}
+// No max-width on main: it spans Quarto's whole page grid, so capping it pulled the text
+// column under the floating sidebar on laptop-width screens. The grid sets the text width.
 
 // ── Headings ──────────────────────────────────────────────────────────────────
 h1 {

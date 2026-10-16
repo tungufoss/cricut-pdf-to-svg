@@ -2,15 +2,15 @@
 
 ## Project Structure & Workflow
 
-This project converts paper craft PDFs into Cricut-ready SVGs. The current root asset, bowser.pdf, is a design input. The planned workflow converts PDF pages to SVG, associates each paper piece with a cardstock color, and nests pieces to reduce waste on available 12 × 12 inch or A4 sheets. Each movable item group keeps its operations together: solid cut paths, dashed fold paths for Cricut scoring, and number labels drawn with Cricut pen. The cardstock color is an attribute of the item group, allowing groups made from the same material to be packed together. Keep source PDFs separate from generated SVGs and document directories added as the project grows.
+This project converts paper craft PDFs into Cricut-ready SVGs. The public repository ships a synthetic example model in `data/example/` (from `bench/synth.py`); real templates live in their own folder or private repository and are passed in with `CONFIG=`. The planned workflow converts PDF pages to SVG, associates each paper piece with a cardstock color, and nests pieces to reduce waste on available 12 × 12 inch or A4 sheets. Each movable item group keeps its operations together: solid cut paths, dashed fold paths for Cricut scoring, and number labels drawn with Cricut pen. The cardstock color is an attribute of the item group, allowing groups made from the same material to be packed together. Keep source PDFs separate from generated SVGs and document directories added as the project grows.
 
 ## Build, Test, and Development
 
-`make` converts every page in `data/bowser/bowser.yaml` into one Inkscape review file, `data/bowser/bowser.svg`; each model keeps its PDF, YAML, SVG, edge table and status `README.md` together in `data/<project>/`. `make page PAGE=4` converts a single page into `output/` for quick checks. The Python package in `src/lowpoly_pdf_to_svg/` keeps each stage (manifest, render, detect, model, SVG writer) in its own module. Preserve source PDFs and make SVGs reproducible. Start by checking a small input.
+`make` converts every page in `data/example/example.yaml` into one Inkscape review file, `data/example/example.svg` (`make CONFIG=<path>/<model>.yaml` for another model, absolute paths included); each model keeps its PDF, YAML, SVG, edge table and status `README.md` together in `data/<project>/`. `make page PAGE=4` converts a single page into `output/` for quick checks. The Python package in `src/lowpoly_pdf_to_svg/` keeps each stage (manifest, render, detect, model, SVG writer) in its own module. Preserve source PDFs and make SVGs reproducible. Start by checking a small input.
 
 ## Coding and Naming
 
-Use descriptive lowercase kebab-case filenames, such as bowser-page-01.svg. Keep PDF conversion, operation classification, item grouping, color assignment, and sheet nesting as inspectable workflow stages. Make units explicit and record whether a sheet uses 12 × 12 inch or A4 dimensions.
+Use descriptive lowercase kebab-case filenames, such as example-page-01.svg. Keep PDF conversion, operation classification, item grouping, color assignment, and sheet nesting as inspectable workflow stages. Make units explicit and record whether a sheet uses 12 × 12 inch or A4 dimensions.
 
 ## Quality Checks
 
