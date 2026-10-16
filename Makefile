@@ -64,6 +64,11 @@ report: $(OUT)/$(PROJECT).svg
 .PHONY: preview
 preview: $(OUT)/$(PROJECT).svg
 	LC_ALL=C.UTF-8 REPORT_OUT=$(abspath $(OUT)) REPORT_PROJECT=$(PROJECT) quarto preview report
+#   make report-data  summary statistics for the public site -> report/data/$(PROJECT)/
+#                     (counts and binned distributions only; review before committing)
+.PHONY: report-data
+report-data:
+	Rscript report/R/stats.R $(OUT) report/data/$(PROJECT)
 
 # Paper 1 benchmark (bench/): synthetic templates with exact ground truth, existing
 # vectorizers, shared cut/fold classifier, conventional and fabrication-aware metrics.

@@ -5,22 +5,28 @@
 #                                             edge numbers ringed green (ok) or red (needs work)
 #   generated/sheets/<project>-page-PP-<material>.png   the rendered PDF page, from previews/
 #   generated/sheets.csv                     one row per sheet, read by sheets.qmd
-#   generated/edges.csv, summary.md          the pipeline's edge table and summary, as is
+#   generated/edges.csv, 3d-glue.csv         the model's own tables, for the full tables in a local build
 #
-# Inputs come from REPORT_OUT (default ../data/bowser); `make report` sets it.
+# Inputs come from REPORT_OUT, the model folder; `make report` and `make preview` set it. Without
+# it (the public GitHub Pages build) nothing is gathered and the pages use only the summary
+# statistics committed in data/<project>/.
 
 suppressPackageStartupMessages(library(xml2))
 source("R/edges.R")
 
-out <- Sys.getenv("REPORT_OUT", "../data/bowser")
+out <- Sys.getenv("REPORT_OUT")
 project <- Sys.getenv("REPORT_PROJECT", basename(out))
 gen <- "generated"
-svg_path <- file.path(out, paste0(project, ".svg"))
-edges_path <- file.path(out, paste0(project, "-edges.csv"))
-summary_md <- file.path(out, "README.md")
-
 unlink(gen, recursive = TRUE)
 dir.create(file.path(gen, "sheets"), recursive = TRUE)
+if (!nzchar(out)) {
+  message("no REPORT_OUT: building from the committed summary statistics only")
+  write_csv(tibble(page = integer()), file.path(gen, "sheets.csv"))
+  quit(save = "no")
+}
+svg_path <- file.path(out, paste0(project, ".svg"))
+edges_path <- file.path(out, paste0(project, "-edges.csv"))
+glue_path <- file.path(out, paste0(project, "-3d-glue.csv"))
 
 NS <- c(svg = "http://www.w3.org/2000/svg",
         inkscape = "http://www.inkscape.org/namespaces/inkscape",
@@ -29,7 +35,7 @@ RING <- c(matching = "#1a9e8f", `needs work` = "#d61f69")
 
 edges <- if (file.exists(edges_path)) read_edges(edges_path) else NULL
 if (!is.null(edges)) invisible(file.copy(edges_path, file.path(gen, "edges.csv")))
-if (file.exists(summary_md)) invisible(file.copy(summary_md, file.path(gen, "summary.md")))
+if (file.exists(glue_path)) invisible(file.copy(glue_path, file.path(gen, "3d-glue.csv")))
 
 # Sheet geometry comes from the Inkscape pages in the review SVG (all in mm).
 if (!file.exists(svg_path)) {
