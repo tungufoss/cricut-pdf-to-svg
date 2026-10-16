@@ -199,9 +199,17 @@ class PieceFixes:
                 if not corners:
                     missed.append(row)
                     continue
+                moved = [tuple(piece.outline[corners[0]])]
                 piece.outline[corners[0]] = b
                 for fold in piece.folds:
+                    moved += [tuple(e) for e in (fold.a, fold.b) if near(e, a)]
                     fold.a, fold.b = (b if near(fold.a, a) else fold.a), (b if near(fold.b, a) else fold.b)
+                # a fold running through a point that moved bends with it, so it still splits there
+                through = [f for f in piece.folds if not near(f.a, b) and not near(f.b, b)
+                           and any(_through(f.a, f.b, e, ON_LINE_MM / mm) for e in moved)]
+                for fold in through:
+                    piece.folds.remove(fold)
+                    piece.folds += [Fold(fold.a, b, fold.kind), Fold(b, fold.b, fold.kind)]
             elif row.action == "number":
                 height = 2.0 / mm   # printed digits are about 2 mm tall
                 box = (round(a[0] - height), round(a[1] - height / 2), round(2 * height), round(height))
@@ -267,7 +275,22 @@ class PieceFixes:
                 continue
             seen.add(key)
             kept.append(Fold(p, q, kind))
-        piece.folds = kept
+        # a fold that two others already cover by way of a point near it (a slight bend) goes too
+        ends = {e for f in kept for e in (f.a, f.b)}
+        covered = lambda f: any(frozenset((f.a, e)) in seen and frozenset((e, f.b)) in seen
+                                and math.dist(f.a, e) + math.dist(e, f.b) - math.dist(f.a, f.b) <= on_line
+                                for e in ends if e not in (f.a, f.b))
+        piece.folds = [f for f in kept if not covered(f)]
+
+
+def _through(a, b, p, reach: float) -> bool:
+    """p lies on the segment a-b, away from its ends, within reach."""
+    length = math.dist(a, b)
+    if length == 0:
+        return False
+    t = ((p[0] - a[0]) * (b[0] - a[0]) + (p[1] - a[1]) * (b[1] - a[1])) / length
+    side = abs((p[0] - a[0]) * (b[1] - a[1]) - (p[1] - a[1]) * (b[0] - a[0])) / length
+    return reach < t < length - reach and side <= reach
 
 
 def _on_fold(piece, a, b, reach: float) -> bool:
