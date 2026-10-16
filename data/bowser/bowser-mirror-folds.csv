@@ -1,10 +1,8 @@
 piece,twin,kind,ax_mm,ay_mm,bx_mm,by_mm
-piece-07-01,piece-07-07,valley,15.88,0.84,6.14,28.11
+piece-07-01,piece-07-07,valley,16.56,0.68,6.14,28.11
 piece-12-04,piece-11-05,valley,56.71,78.32,38.34,68.67
 piece-17-01,piece-16-02,mountain,80.5,85.64,79.76,83.29
-piece-19-08,piece-18-08,mountain,103.78,256.02,96.46,272.16
+piece-18-03,piece-19-04,mountain,55.19,15.82,56.85,28.36
 piece-24-09,piece-24-03,mountain,111.51,98.94,111.01,152.11
-piece-24-03,piece-24-09,mountain,99.62,30.14,97.87,59.95
-piece-24-03,piece-24-09,mountain,97.87,59.95,97.6,83.25
 piece-16-10,piece-17-09,valley,199.42,203.78,193.4,229.31
 piece-16-10,piece-17-09,valley,200.57,250.03,197.72,273.18
