@@ -155,8 +155,9 @@ class Symmetry:
         return found
 
     def fold_gaps(self) -> list[dict]:
-        """Folds of one twin with no fold at their mirror place on the other: per gap, the piece
-        missing it, the twin that has it, its kind, and its ends on the missing piece (mm).
+        """Folds of one twin with no fold at their mirror place on the other (issue `missing`: the
+        piece missing it, the twin that has it, its kind, its ends on the missing piece in mm), and
+        mirror folds read in different styles (issue `style differs`, the twin's style given).
         The twins are laid on each other by the midpoints of their matched numbered lines."""
         gaps = []
         for t in self.twins:
@@ -175,12 +176,19 @@ class Symmetry:
                     ends = np.vstack([corners] + [np.array([p, q]) for p, q, _ in self.folds[target]])
                     ma = min(ends, key=lambda c: np.linalg.norm(c - ma)) if np.min(np.linalg.norm(ends - ma, axis=1)) <= FOLD_MM else ma
                     mb = min(ends, key=lambda c: np.linalg.norm(c - mb)) if np.min(np.linalg.norm(ends - mb, axis=1)) <= FOLD_MM else mb
-                    if any(min(np.linalg.norm(p - ma) + np.linalg.norm(q - mb), np.linalg.norm(p - mb) + np.linalg.norm(q - ma))
-                           <= 2 * FOLD_MM for p, q, _ in self.folds[target]):
+                    same = [k for p, q, k in self.folds[target]
+                            if min(np.linalg.norm(p - ma) + np.linalg.norm(q - mb), np.linalg.norm(p - mb) + np.linalg.norm(q - ma))
+                            <= 2 * FOLD_MM]
+                    if same:
+                        # Mirror folds bend the same way; differing styles mean one was misread.
+                        if same[0] != kind and source < target:
+                            gaps.append({"piece": target, "twin": source, "kind": kind, "issue": "style differs",
+                                         "ax_mm": round(float(ma[0]), 2), "ay_mm": round(float(ma[1]), 2),
+                                         "bx_mm": round(float(mb[0]), 2), "by_mm": round(float(mb[1]), 2)})
                         continue
                     if _to_outline(corners, (ma + mb) / 2) <= ON_CUT_MM or np.linalg.norm(mb - ma) < 2.0:
                         continue
-                    gaps.append({"piece": target, "twin": source, "kind": kind,
+                    gaps.append({"piece": target, "twin": source, "kind": kind, "issue": "missing",
                                  "ax_mm": round(float(ma[0]), 2), "ay_mm": round(float(ma[1]), 2),
                                  "bx_mm": round(float(mb[0]), 2), "by_mm": round(float(mb[1]), 2)})
         return gaps

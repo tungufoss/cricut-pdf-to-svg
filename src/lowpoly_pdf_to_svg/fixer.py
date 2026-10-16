@@ -124,6 +124,8 @@ class CheckData:
         path = self.folder / f"{self.project}-mirror-folds.csv"
         if path.is_file():
             for r in csv.DictReader(path.open(encoding="utf-8")):
+                if r.get("issue", "missing") != "missing":
+                    continue
                 suggest.setdefault(r["piece"], []).append(
                     {"kind": r["kind"], "twin": r["twin"], "a": [float(r["ax_mm"]), float(r["ay_mm"])],
                      "b": [float(r["bx_mm"]), float(r["by_mm"])]})

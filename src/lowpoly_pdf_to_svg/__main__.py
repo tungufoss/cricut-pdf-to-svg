@@ -161,11 +161,12 @@ def main() -> int:
     print(f"Wrote {mirrors}: {off} lines differ in length from their mirror line")
     gaps = symmetry.fold_gaps()
     with (output / f"{project.name}-mirror-folds.csv").open("w", newline="", encoding="utf-8") as handle:
-        table_out = csv.DictWriter(handle, ["piece", "twin", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm"])
+        table_out = csv.DictWriter(handle, ["piece", "twin", "issue", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm"])
         table_out.writeheader()
         table_out.writerows(gaps)
-    print(f"Wrote {output / (project.name + '-mirror-folds.csv')}: {len(gaps)} folds whose mirror twin has them "
-          f"on {len({g['piece'] for g in gaps})} pieces")
+    missing = [g for g in gaps if g["issue"] == "missing"]
+    print(f"Wrote {output / (project.name + '-mirror-folds.csv')}: {len(missing)} folds whose mirror twin has them "
+          f"on {len({g['piece'] for g in missing})} pieces, {len(gaps) - len(missing)} mirror folds in another style")
     print(f"Wrote {output / (project.name + '-misreads.csv')}: {len(misreads)} likely misreads left to check")
     table.write_report(output / "README.md", project.name, datetime.date.today().isoformat(), applied=len(sure),
                        symmetry=(symmetry, off))
