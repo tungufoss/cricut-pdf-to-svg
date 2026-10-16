@@ -113,9 +113,9 @@ document.getElementById("file").addEventListener("change", async e => {
 });
 const remember = () => { try { localStorage.setItem(store, JSON.stringify(answers));
   localStorage.setItem(store + "-lines", JSON.stringify(lines)); } catch (e) {} };
-const SNAP_MM = 1.2;
-const DRAG = "Drag the purple ends of the line onto the right corners; they snap to the blue points.";
-const CLICK = "Click the two ends of this number's line on the scan; clicks snap to the blue points.";
+const SNAP_PX = 7;     // a dragged or clicked end snaps to a traced point this close on screen; Shift turns it off
+const DRAG = "Drag the purple ends of the line onto the right corners; they snap to nearby blue points (hold Shift to place freely).";
+const CLICK = "Click the two ends of this number's line on the scan; clicks snap to nearby blue points (hold Shift to place freely).";
 const mmLength = l => Math.hypot(l.b[0] - l.a[0], l.b[1] - l.a[1]).toFixed(1);
 // The scan with the trace on top: outline corners (blue), folds (green), the line found for the
 // number (orange) and a hand-drawn line (purple). Clicks in draw mode snap to traced points.
@@ -139,8 +139,9 @@ function scan(p, onDrawn) {
   const svg = wrap.querySelector("svg"), clicks = wrap.querySelector(".clicks");
   const points = [...t.outline, ...t.folds.flatMap(f => [[f[0], f[1]], [f[2], f[3]]])];
   const toMM = e => { const q = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse()); return [q.x, q.y]; };
-  const snap = q => {
-    let at = q, best = SNAP_MM;
+  const snap = (q, e) => {
+    const mmPerPx = side / svg.getBoundingClientRect().width;
+    let at = q, best = e && e.shiftKey ? 0 : SNAP_PX * mmPerPx;
     for (const c of points) { const d = Math.hypot(c[0] - q[0], c[1] - q[1]); if (d < best) { best = d; at = c; } }
     return at.map(v => +(+v).toFixed(2));
   };
@@ -160,17 +161,18 @@ function scan(p, onDrawn) {
     if (line) {
       const ends = [line.a, line.b].map(c => Math.hypot(c[0] - q[0], c[1] - q[1]));
       const i = ends[0] <= ends[1] ? 0 : 1;
-      if (ends[i] <= Math.max(r * 6, SNAP_MM)) { dragging = i; svg.setPointerCapture(e.pointerId); e.preventDefault(); }
+      if (ends[i] <= r * 6) { dragging = i; svg.setPointerCapture(e.pointerId); e.preventDefault(); }
       return;
     }
-    picked.push(snap(q));
+    picked.push(snap(q, e));
     wrap.dispatchEvent(new CustomEvent("picked", {detail: picked.length}));
     draw();
     if (picked.length === 2) { const [a, b] = picked; picked = null; wrap.classList.remove("drawing"); onDrawn(a, b); }
   });
   svg.addEventListener("pointermove", e => {
     if (dragging === null) return;
-    line = dragging === 0 ? {a: snap(toMM(e)), b: line.b} : {a: line.a, b: snap(toMM(e))};
+    const q = snap(toMM(e), e);
+    line = dragging === 0 ? {a: q, b: line.b} : {a: line.a, b: q};
     draw();
   });
   svg.addEventListener("pointerup", () => {

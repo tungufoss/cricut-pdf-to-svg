@@ -22,8 +22,8 @@ from pathlib import Path
 
 from PIL import Image
 
-CROP_MM = 30.0        # smallest patch; grows to hold the whole line the number marks
-MARGIN_MM = 5.0
+CROP_MM = 36.0        # smallest patch; grows to hold the whole line the number marks
+MARGIN_MM = 10.0      # room past the line's ends, where the true corner may lie
 MAX_MM = 120.0
 FOLDED_MM = 0.6       # a 3D-model pair matches a card when its line length agrees this closely
 SIZE_PX = 360         # patches are scaled to this so long lines do not bloat the JSON
