@@ -46,7 +46,7 @@ if (!is.null(gaps)) {
     geom_col(width = 0.18, position = "stack", orientation = "x") +
     scale_x_log10() +
     scale_fill_manual(values = c(closes = "#1a9e8f", `proposed, closes` = "#2DD2C0",
-                                 `let go while building` = "#d61f69",
+                                 `does not close` = "#d61f69", `let go while building` = "#FC8484",
                                  `proposed by shape only, not glued` = "#FAC55B")) +
     labs(x = "gap (mm)", y = "glued edges", fill = NULL) +
     theme_minimal() +
