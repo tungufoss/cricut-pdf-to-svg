@@ -5,64 +5,75 @@ title: "3D fold-up"
 ```{r}
 #| label: setup-fold3d
 #| include: false
-suppressPackageStartupMessages({
-  library(dplyr)
-  library(forcats)
-  library(ggplot2)
-  library(readr)
-})
+source("R/site.R")
 library(DT)
-glue_path <- "../data/bowser/fold3d-glue.csv"
-glue <- if (file.exists(glue_path)) read_csv(glue_path, col_types = cols(number = col_character()))
+gaps <- stat_table("glue-gaps")
+glue_status <- stat_table("glue-status")
+render <- file.path(STATS, "fold3d.png")
+# The per-edge glue table is only in a local build (`make preview`), never on the public site.
+glue <- if (file.exists("generated/3d-glue.csv")) read_csv("generated/3d-glue.csv", col_types = cols(number = col_character()))
 ```
 
 The fold-up prototype (`make -f fold3d.mk`) folds the traced pieces along their score lines and
 glues them edge to edge, the way the paper model is built. Each glued edge gets the gap left
 between the two sides in the folded model. A small gap means the traced outlines, folds and
-edge numbers agree in 3D, not only on the sheet. The folded model itself is not shown here:
-like the traced sheets, it is the creator's pattern.
+edge numbers agree in 3D, not only on the sheet.
 
 ```{r}
 #| label: fold3d-summary
 #| output: asis
-if (is.null(glue)) {
-  cat("The fold-up has not been run yet (data/bowser/fold3d-glue.csv is missing).\n")
+if (is.na(stat("glue_total"))) {
+  cat("No fold-up statistics are committed yet (`make -f fold3d.mk`, then `make report-data`).\n")
 } else {
-  closed <- glue |> filter(status %in% c("closes", "proposed, closes"))
-  cat(sprintf("%d glued edges: %d close (median gap %.1f mm), %d were let go while building, %d were proposed by shape only.\n",
-              nrow(glue), nrow(closed), median(closed$gap_mm, na.rm = TRUE),
-              sum(glue$status == "let go while building"),
-              sum(glue$status == "proposed by shape only, not glued")))
+  cat(sprintf("%d glued edges: %d close (median gap %.1f mm).\n",
+              stat("glue_total"), stat("glue_closes"), stat("glue_median_gap_mm")))
 }
+```
+
+```{r}
+#| label: fold3d-render
+#| output: asis
+if (file.exists(render)) cat(sprintf("![The folded trace, rendered by the fold-up.](%s){width=70%%}\n", render))
 ```
 
 ```{r}
 #| label: fold3d-gaps
 #| fig-cap: "Gap between the two sides of each glued edge in the folded model (log scale)."
-if (!is.null(glue)) {
-  glue |>
-    filter(!is.na(gap_mm)) |>
-    mutate(status = fct_infreq(status)) |>
-    ggplot(aes(pmax(gap_mm, 0.05), fill = status)) +
-    geom_histogram(bins = 40) +
+if (!is.null(gaps)) {
+  gaps |>
+    mutate(status = fct_reorder(status, n, sum, .desc = TRUE)) |>
+    ggplot(aes(10^(gap_bin + 0.1), n, fill = status)) +
+    geom_col(width = 0.18, position = "stack", orientation = "x") +
     scale_x_log10() +
-    scale_fill_manual(values = c(closes = "#1a9e8f", `proposed, closes` = "#2DD2C0",
-                                 `let go while building` = "#d61f69",
-                                 `proposed by shape only, not glued` = "#FAC55B")) +
+    scale_fill_manual(values = c(closes = HI[["blue"]], `proposed, closes` = HI[["teal"]],
+                                 `does not close` = HI[["orange"]], `let go while building` = HI[["red"]],
+                                 `proposed by shape only, not glued` = HI[["yellow"]])) +
     labs(x = "gap (mm)", y = "glued edges", fill = NULL) +
-    theme_minimal() +
+    theme_hi() +
     theme(legend.position = "top")
 }
 ```
 
-## Edges that do not close
+```{r}
+#| label: tbl-glue-status
+#| tbl-cap: "Glued edges by outcome."
+if (!is.null(glue_status)) {
+  glue_status |> arrange(desc(n)) |> rename(Outcome = status, Edges = n) |> knitr::kable()
+}
+```
+
+```{r}
+#| label: fold3d-local
+#| output: asis
+if (!is.null(glue)) cat("## Edges that do not close\n\nLocal build only.\n")
+```
 
 ```{r}
 #| label: fold3d-table
 #| column: page-right
 if (!is.null(glue)) {
   glue |>
-    filter(!status %in% c("closes")) |>
+    filter(status != "closes") |>
     arrange(desc(gap_mm)) |>
     mutate(status = factor(status)) |>
     datatable(

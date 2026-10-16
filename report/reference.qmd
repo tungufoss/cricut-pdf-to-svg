@@ -8,7 +8,7 @@ title: "Reference"
 
 | Option | Default | Description |
 |---|---|---|
-| `--config` | `data/bowser/bowser.yaml` | Project YAML manifest |
+| `--config` | `data/example/example.yaml` | Project YAML manifest |
 | `--output` | the YAML's folder, `data/<project>/` | Output directory |
 | `--dpi` | `180` | PDF render resolution |
 | `--page` | all pages | Convert only this 1-based page; repeatable |
@@ -23,15 +23,16 @@ title: "Reference"
 | `make install` | Install the Python dependencies |
 | `make report` | Render this site into `report/_site` |
 | `make preview` | Serve this site on localhost and re-render on save |
+| `make report-data` | Write the summary statistics the public site is built from into `report/data/<project>/` |
 | `make clean` | Remove generated output |
 
 ## Manifest
 
-```{.yaml filename="data/bowser/bowser.yaml"}
-project: bowser
+```{.yaml filename="data/example/example.yaml"}
+project: example
 
 source:
-  pdf: bowser.pdf          # in data/, not committed
+  pdf: example.pdf         # in data/, not committed
   page_size: letter
 
 folds:                     # which printed line style is which fold

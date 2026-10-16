@@ -39,5 +39,3 @@ The numbers are text, so you can correct one by double-clicking it. For the Cric
 Cricut Design Space imports SVG vectors as Cut by default. After import, assign the fold layer to Score and the number layer to Draw/Pen, then attach them to the matching cut pieces. See [Cricut's SVG upload guide](https://help.cricut.com/hc/en-us/articles/360009556313-How-to-upload-images-into-Design-Space) and [operation guide](https://help.cricut.com/hc/en-us/articles/26922998476183-Design-Space-Selecting-Operation).
 
 See `PLAN.md` in the repository for the remaining development stages.
-
-See `PLAN.md` in the repository for the remaining development stages.
