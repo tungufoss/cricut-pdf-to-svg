@@ -12,3 +12,6 @@ __pycache__/
 data/*/review.png
 data/*/cache/
 data/*/*-check.json
+
+# Personal status list, kept local.
+TODO.md
