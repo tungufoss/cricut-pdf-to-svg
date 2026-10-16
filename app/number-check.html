@@ -34,8 +34,10 @@ select{font:inherit;padding:3px;border:1px solid var(--line);border-radius:6px}
 .row{display:flex;gap:6px;align-items:center}
 input{font:inherit;width:70px;padding:4px 6px;border:1px solid var(--line);border-radius:6px}
 input.set{border-color:var(--ok);background:#eef8f0}
-.review{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
-.review .scan{width:min(680px,92vw);height:min(680px,92vw)}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(440px,92vw),1fr));gap:14px}
+.review{display:grid;gap:10px;align-content:start}
+.review .scan{width:100%;height:auto;aspect-ratio:1}
+.nav{display:flex;gap:8px;align-items:center;justify-content:flex-end}
 .side{display:grid;gap:8px;max-width:340px}
 .tools{display:flex;gap:6px;flex-wrap:wrap}
 .dropped{stroke:#e00000;stroke-width:.35}
@@ -297,18 +299,42 @@ const segDist = (q, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = dx 
   const t = Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / l));
   return Math.hypot(q[0] - a[0] - t * dx, q[1] - a[1] - t * dy); };
 let mode = "add", foldKind = "valley";
+// A piece and its mirror twin are reviewed together, side by side; pairs needing the most work come first.
 function pieceOrder() {
-  const list = [...(D.pieces || [])].map(p => ({p, r: Math.random()}));
-  list.sort((u, v) => (fixOf(u.p.piece).ok - fixOf(v.p.piece).ok) || (v.p.score - u.p.score) || (u.r - v.r));
-  return list.map(u => u.p);
+  const byId = Object.fromEntries((D.pieces || []).map(p => [p.piece, p])), seen = new Set(), units = [];
+  for (const p of D.pieces || []) {
+    if (seen.has(p.piece)) continue;
+    const unit = [p, byId[p.twin]].filter(Boolean).filter(q => !seen.has(q.piece));
+    unit.forEach(q => seen.add(q.piece));
+    units.push({unit, score: Math.max(...unit.map(q => q.score)), r: Math.random()});
+  }
+  const ok = u => u.unit.every(q => fixOf(q.piece).ok);
+  units.sort((u, v) => (ok(u) - ok(v)) || (v.score - u.score) || (u.r - v.r));
+  return units.map(u => u.unit);
 }
 function reviewPiece(list) {
   if (!D.pieces) { list.innerHTML = "<p>This check file has no pieces; run <code>make fix</code> again.</p>"; return; }
   order ??= pieceOrder();
   at = Math.max(0, Math.min(at, order.length - 1));
-  const q = order[at], f = fixOf(q.piece), t = D.traces[q.piece] || {outline: [], folds: []};
+  const unit = order[at];
   const reviewed = D.pieces.filter(p => fixOf(p.piece).ok).length;
-  document.getElementById("count").textContent = `piece ${at + 1} of ${order.length} · ${reviewed} reviewed`;
+  document.getElementById("count").textContent = `pair ${at + 1} of ${order.length} · ${reviewed} of ${D.pieces.length} pieces reviewed`;
+  const nav = document.createElement("div");
+  nav.className = "card nav";
+  nav.innerHTML = `<span class="meta">${unit.length > 1 ? "A piece and its mirror twin: they should match, mirrored." : "This piece has no mirror twin."}</span>
+    <button data-a="back">← Back</button><button data-a="skip">Skip</button><button class="next" data-a="ok">OK → next</button>`;
+  const go = step => { at += step; list.innerHTML = ""; reviewPiece(list); window.scrollTo(0, 0); };
+  nav.querySelector("[data-a=back]").addEventListener("click", () => go(-1));
+  nav.querySelector("[data-a=skip]").addEventListener("click", () => go(1));
+  nav.querySelector("[data-a=ok]").addEventListener("click", () => { unit.forEach(q => fixOf(q.piece).ok = true); remember(); save(true); go(1); });
+  list.appendChild(nav);
+  const pair = document.createElement("div");
+  pair.className = "pair";
+  list.appendChild(pair);
+  for (const q of unit) pieceCard(q, pair, () => { remember(); list.innerHTML = ""; reviewPiece(list); });
+}
+function pieceCard(q, list, rerender) {
+  const f = fixOf(q.piece), t = D.traces[q.piece] || {outline: [], folds: []};
   const [left, top, side] = q.box, r = side / 220;
   // Dragged corners take the folds that end at them along.
   const at_ = c => movedIn(f, c);
@@ -342,7 +368,7 @@ function reviewPiece(list) {
       ${pending.length ? `<div class="tools"><button data-a="twin">Add the twin's ${pending.length} fold${pending.length > 1 ? "s" : ""}</button></div>` : ""}
       <div class="meta how"></div>
       <label class="meta">Note for edits the page cannot make<textarea rows="3" style="width:100%;font:inherit">${f.note.replace(/</g, "&lt;")}</textarea></label>
-      <div class="tools"><button data-a="undo">Undo</button><button data-a="back">← Back</button><button data-a="skip">Skip</button><button class="next" data-a="ok">OK → next</button></div>
+      <div class="tools"><button data-a="undo">Undo</button></div>
       <div class="meta">Green dashes are traced folds, purple ones you added, red ones you removed, orange ones the mirror twin has (click one to add it); purple corners you moved. Enter = OK.</div></div>`;
   list.appendChild(el);
   const svg = el.querySelector("svg"), clicks = el.querySelector(".clicks"), how = el.querySelector(".how");
@@ -365,7 +391,7 @@ function reviewPiece(list) {
     return hit.map(v => +(+v).toFixed(2)); };
   const round = p => p.map(v => +v.toFixed(2));
   let picked = [], dragging = null;
-  function changed() { remember(); list.innerHTML = ""; reviewPiece(list); }
+  const changed = rerender;
   svg.addEventListener("pointerdown", e => {
     if (mode !== "move") return;
     const p = toMM(e);
@@ -426,16 +452,12 @@ function reviewPiece(list) {
     clicks.innerHTML = `<circle cx="${picked[0][0]}" cy="${picked[0][1]}" r="${r * 2.5}" fill="#c000ff"/>`;
     how.textContent = "Now click the other end of the fold.";
   });
-  const go = step => { at += step; list.innerHTML = ""; reviewPiece(list); window.scrollTo(0, 0); };
   el.querySelector("[data-a=undo]").addEventListener("click", () => {
     if (picked.length) { picked = []; clicks.innerHTML = ""; setMode(mode); return; }
     const last = f.log.pop();
     if (last) f[last].pop(); changed(); });
   el.querySelector("[data-a=twin]")?.addEventListener("click", () => {
     for (const g of pending) { f.add.push({kind: g.kind, a: g.a, b: g.b}); f.log.push("add"); } changed(); });
-  el.querySelector("[data-a=back]").addEventListener("click", () => go(-1));
-  el.querySelector("[data-a=skip]").addEventListener("click", () => go(1));
-  el.querySelector("[data-a=ok]").addEventListener("click", () => { f.ok = true; remember(); save(true); go(1); });
 }
 document.addEventListener("keydown", e => {
   if (filter === "pieces" && e.key === "Enter" && !["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName)) {

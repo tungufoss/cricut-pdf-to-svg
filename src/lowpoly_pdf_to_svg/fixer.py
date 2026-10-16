@@ -127,6 +127,11 @@ class CheckData:
                 suggest.setdefault(r["piece"], []).append(
                     {"kind": r["kind"], "twin": r["twin"], "a": [float(r["ax_mm"]), float(r["ay_mm"])],
                      "b": [float(r["bx_mm"]), float(r["by_mm"])]})
+        twin: dict[str, str] = {}
+        path = self.folder / f"{self.project}-mirrors.csv"
+        if path.is_file():
+            for r in csv.DictReader(path.open(encoding="utf-8")):
+                twin[r["piece"]], twin[r["twin"]] = r["twin"], r["piece"]
         numbers: dict[str, list[dict]] = {}
         for r in self.edges:
             numbers.setdefault(r["piece"], []).append(
@@ -152,7 +157,7 @@ class CheckData:
             side = max(max(xs) - min(xs), max(ys) - min(ys)) + 2 * PIECE_MARGIN_MM
             image, box = self._patch(piece, (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, side, PIECE_PX, loose)
             found.append({"piece": piece, "score": score, "why": why, "labels": labels, "image": image, "box": box,
-                          "suggest": twins})
+                          "suggest": twins, "twin": twin.get(piece, "")})
         return found
 
     def _loose(self, piece: str, trace: dict, labels: list[dict]) -> np.ndarray:
