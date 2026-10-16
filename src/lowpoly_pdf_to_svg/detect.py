@@ -13,6 +13,7 @@ stray artwork so it shows up on the Review layer instead of silently disappearin
 
 from __future__ import annotations
 
+import collections
 import math
 from dataclasses import dataclass
 
@@ -110,9 +111,20 @@ class PageDetector:
             piece.holes = holes[index]
             inside = cv2.erode(region, _kernel(5))
             piece.folds = self._folds(dash & inside, (dash | glyph) & inside, outline, px)
+            piece.outline = self._split_at_folds(outline, piece.folds, px)
             owner[region > 0] = len(pieces) + 1
             pieces.append(piece)
 
+        # Cut ink a traced line already explains (a neighbouring edge, this corner's other edge
+        # where it leaves at a shallow angle, or a fold) is not a clipped corner.
+        traced = np.zeros_like(solid)
+        cv2.polylines(traced, [np.round(np.asarray(p.outline)).astype(np.int32) for p in pieces], True, 1,
+                      max(3, round(px)))
+        # A fold's first dash often merges with the cut ink at its corner.
+        cv2.polylines(traced, [np.round(np.asarray([f.a, f.b])).astype(np.int32) for p in pieces for f in p.folds],
+                      False, 1, max(3, round(px)))
+        for piece in pieces:
+            piece.ink_past = self._ink_past(piece.outline, solid & (1 - traced), px)
         layout = PageLayout(page.number, material, pieces)
         layout.footer = page.rgb[:, footer_x:].copy()
         for label in self._labels(gray, text_core, glyph, px):
@@ -130,12 +142,86 @@ class PageDetector:
         layout.stray_lines = self._centerlines(stray, min_length=int(px))
         return layout
 
+    @staticmethod
+    def _split_at_folds(outline: list[Point], folds: list[Fold], px: float, reach_mm: float = 1.0,
+                        corner_mm: float = 1.5) -> list[Point]:
+        """Put back corners where a fold meets the cut line. When the two cut edges either
+        side of such a corner are nearly in line, simplification drops the corner and the
+        two edges read as one, too long for the number that marks either of them."""
+        points = [tuple(map(float, p)) for p in outline]
+        for fold in folds:
+            for end in (np.asarray(fold.a, np.float64), np.asarray(fold.b, np.float64)):
+                n = len(points)
+                best = None
+                for i in range(n):
+                    a, b = np.asarray(points[i]), np.asarray(points[(i + 1) % n])
+                    length = float(np.linalg.norm(b - a))
+                    if length < 2 * corner_mm * px:
+                        continue
+                    u = (b - a) / length
+                    along = float((end - a) @ u)
+                    across = abs(float((end - a) @ np.array([-u[1], u[0]])))
+                    if corner_mm * px < along < length - corner_mm * px and across <= reach_mm * px:
+                        if best is None or across < best[0]:
+                            best = (across, i, tuple(a + along * u))
+                if best:
+                    points.insert(best[1] + 1, best[2])
+        return points
+
+    @staticmethod
+    def _ink_past(outline: list[Point], solid: np.ndarray, px: float, start_mm: float = 0.6,
+                  reach_mm: float = 3.0) -> list[tuple[Point, float]]:
+        """Corners the printed cut runs on past: from each corner, follow both of its edges
+        straight on and measure how far the cut ink continues. A clipped corner leaves the
+        true one further out, so both edges ending there read short."""
+        ink = cv2.dilate(solid, _kernel(3))
+        h, w = ink.shape
+        points = np.asarray(outline, np.float64)
+        n = len(points)
+        found = []
+        for i in range(n):
+            best = 0.0
+            for other, onward in ((points[i - 1], points[(i + 1) % n]), (points[(i + 1) % n], points[i - 1])):
+                u = points[i] - other
+                length = float(np.linalg.norm(u))
+                # Running on along the next edge is just that edge (a fold meeting a straight cut).
+                if length < 2 * px or _angle(u, onward - points[i]) < math.radians(25):
+                    continue
+                u /= length
+                run = 0.0
+                for t in np.arange(start_mm, reach_mm, 0.1):
+                    x, y = np.round(points[i] + u * t * px).astype(int)
+                    if not (0 <= x < w and 0 <= y < h) or not ink[y, x]:
+                        break
+                    run = t
+                best = max(best, run)
+            if best >= start_mm + 0.3:
+                found.append((tuple(points[i]), round(best, 1)))
+        return found
+
+    @staticmethod
+    def _fold_parts(fold: Fold, piece: Piece, px: float, reach_mm: float = 1.0, corner_mm: float = 1.5):
+        """A fold line split where other folds or cut corners touch it. A tab fold that runs
+        on in line with another fold reads as one long line; the number marks only its own part."""
+        a, b = np.asarray(fold.a, np.float64), np.asarray(fold.b, np.float64)
+        length = float(np.linalg.norm(b - a))
+        if length < 1e-6:
+            return [(fold.a, fold.b, True)]
+        u = (b - a) / length
+        normal = np.array([-u[1], u[0]])
+        touches = [p for f in piece.folds if f is not fold for p in (f.a, f.b)] + list(piece.outline)
+        cuts = sorted({round(float((np.asarray(p) - a) @ u), 1) for p in touches
+                       if abs(float((np.asarray(p) - a) @ normal)) <= reach_mm * px
+                       and corner_mm * px < float((np.asarray(p) - a) @ u) < length - corner_mm * px})
+        stops = [0.0, *cuts, length]
+        return [(tuple(a + s * u), tuple(a + t * u), True) for s, t in zip(stops, stops[1:])]
+
     def _mark_edge(self, label: Label, piece: Piece, px: float) -> None:
         """Find the line a number labels: a cut edge (no tab) or a fold it sits on (tab side).
         Numbers run along their line, so lines at an angle to the text are penalised."""
         n = len(piece.outline)
         lines = [(piece.outline[i], piece.outline[(i + 1) % n], False) for i in range(n)]
-        lines += [(fold.a, fold.b, True) for fold in piece.folds]
+        lines += [part for fold in piece.folds for part in self._fold_parts(fold, piece, px)]
         centre = np.asarray(label.center)
         reading = np.array([math.cos(math.radians(label.angle)), math.sin(math.radians(label.angle))])
         best, best_score = None, self.s.label_reach_mm * px
@@ -149,7 +235,11 @@ class PageDetector:
             if not 0 <= along <= length:
                 continue
             across = abs(float((centre - a) @ np.array([-u[1], u[0]])))
-            score = across + (0 if abs(float(reading @ u)) > math.cos(math.radians(25)) else 2 * px)
+            # A box not clearly longer than wide (a lone digit, or two staggered digits) says nothing
+            # about which way the number reads, so its angle is not trusted then.
+            turned = (label.glyphs != 1 and getattr(label, "elongation", 2.0) >= 1.8
+                      and abs(float(reading @ u)) <= math.cos(math.radians(25)))
+            score = across + (2 * px if turned else 0)
             if score < best_score:
                 best, best_score = (tuple(a), tuple(b), tab), score
         if best:
@@ -219,6 +309,8 @@ class PageDetector:
             polygon = self._merge_close(polygon, self.s.min_edge_mm * self.px)
             # Fitted edges are reliable, so a clipped acute tip can be restored from further away.
             polygon = self._sharpen(polygon, self.s.fitted_corner_mm)
+            # Fitting can leave a vertex where the cut barely turns; corners where a fold meets the cut come back later.
+            polygon = self._drop_flat(polygon)
             polygons.append(polygon.astype(np.float32).reshape(-1, 1, 2))
         outlines: list[list[Point] | None] = []
         holes: list[list[list[Point]]] = [[] for _ in regions]
@@ -575,20 +667,106 @@ class PageDetector:
     # -- labels -----------------------------------------------------------------
 
     def _labels(self, gray: np.ndarray, text_core: np.ndarray, glyph: np.ndarray, px: float):
-        """Group glyphs into numbers; keep each one's crop, centre, direction and size."""
+        """Group glyphs into numbers; keep each one's crop, centre, direction and size.
+        Two numbers printed against each other merge into one group about two digits high;
+        their digits stand in two rows, so such a group is split into one number per row."""
         grouped = cv2.dilate(glyph, _kernel(round(px)))
         count, groups, stats, _ = cv2.connectedComponentsWithStats(grouped, connectivity=8)
+        found = []
         for i in range(1, count):
             x, y, w, h, _ = stats[i]
             mask = groups[y:y + h, x:x + w] == i
-            ys, xs = np.nonzero(mask & text_core[y:y + h, x:x + w])
+            core = mask & text_core[y:y + h, x:x + w]
+            ys, xs = np.nonzero(core)
             if len(xs) < 5:
                 continue
-            (cx, cy), (rw, rh), angle = cv2.minAreaRect(np.column_stack([xs, ys]).astype(np.float32))
-            if rw < rh:  # make the long side the reading direction
-                angle, rw, rh = angle + 90, rh, rw
-            ink = np.where(mask, 255 - gray[y:y + h, x:x + w], 0).clip(0, 255).astype(np.uint8)
-            yield Label((int(x), int(y), int(w), int(h)), (float(cx + x), float(cy + y)), float(angle), float(rh), ink)
+            _, size, _ = cv2.minAreaRect(np.column_stack([xs, ys]).astype(np.float32))
+            found.append((x, y, mask, core, min(size)))
+        height = float(np.median([f[4] for f in found])) if found else 0.0
+        for x, y, mask, core, across in found:
+            parts, part_of, sizes, _ = cv2.connectedComponentsWithStats(core.astype(np.uint8), connectivity=8)
+            glyphs = [j for j in range(1, parts) if sizes[j, cv2.CC_STAT_AREA] >= 5]
+            rows = self._rows(part_of, glyphs, sizes) if across > 1.6 * height else [glyphs]
+            for row in rows:
+                own = mask
+                if len(rows) > 1:
+                    own = cv2.dilate(np.isin(part_of, row).astype(np.uint8), _kernel(3)).astype(bool) & mask
+                label = self._label(gray, text_core, own, x, y, len(row), crop=len(rows) > 1)
+                if label is not None:
+                    yield label
+
+    @staticmethod
+    def _label(gray: np.ndarray, text_core: np.ndarray, mask: np.ndarray, x: int, y: int, glyphs: int,
+               crop: bool = False) -> Label | None:
+        ys, xs = np.nonzero(mask & text_core[y:y + mask.shape[0], x:x + mask.shape[1]])
+        if len(xs) < 5:
+            return None
+        (cx, cy), (rw, rh), angle = cv2.minAreaRect(np.column_stack([xs, ys]).astype(np.float32))
+        if rw < rh:  # make the long side the reading direction
+            angle, rw, rh = angle + 90, rh, rw
+        if not crop:
+            ink = np.where(mask, 255 - gray[y:y + mask.shape[0], x:x + mask.shape[1]], 0).clip(0, 255).astype(np.uint8)
+            return Label((x, y, mask.shape[1], mask.shape[0]), (float(cx + x), float(cy + y)), float(angle), float(rh), ink,
+                         glyphs=glyphs, elongation=float(rw / max(rh, 1e-6)))
+        # Crop to this number's own pixels, so a split-off neighbour is not read with it.
+        top, left = int(ys.min()), int(xs.min())
+        h, w = int(ys.max()) - top + 1, int(xs.max()) - left + 1
+        pad = 2
+        top, left = max(top - pad, 0), max(left - pad, 0)
+        h, w = min(h + 2 * pad, mask.shape[0] - top), min(w + 2 * pad, mask.shape[1] - left)
+        window = mask[top:top + h, left:left + w]
+        ink = np.where(window, 255 - gray[y + top:y + top + h, x + left:x + left + w], 0).clip(0, 255).astype(np.uint8)
+        return Label((x + left, y + top, w, h), (float(cx + x), float(cy + y)), float(angle), float(rh), ink, glyphs=glyphs,
+                     elongation=float(rw / max(rh, 1e-6)))
+
+    @staticmethod
+    def _rows(part_of: np.ndarray, glyphs: list[int], sizes: np.ndarray, min_area: int = 25) -> list[list[int]]:
+        """Glyphs in rows of text. A digit is taller than wide, so the digits' long axes give the
+        direction across the text; glyphs whose extents along it overlap stand in one row.
+        Specks too small to be a digit join the nearest row."""
+        if len(glyphs) < 2:
+            return [glyphs]
+        pixels = {j: np.column_stack(np.nonzero(part_of == j)[::-1]).astype(np.float32) for j in glyphs}
+        doubled, heights = [], []
+        for j, p in pixels.items():
+            if len(p) < 20:
+                continue
+            _, (w, h), angle = cv2.minAreaRect(p)
+            if max(w, h) >= 1.3 * max(min(w, h), 1):
+                tall = angle + (90 if w < h else 0)  # direction of the long side, degrees
+                doubled.append(np.exp(2j * np.radians(tall)))
+                heights.append(max(w, h))
+        if not doubled:
+            return [glyphs]
+        across = np.angle(np.mean(doubled)) / 2
+        normal = np.array([np.cos(across), np.sin(across)])
+        spans = {j: (float((p @ normal).min()), float((p @ normal).max())) for j, p in pixels.items()}
+        parent = {j: j for j in glyphs}
+        def root(j):
+            while parent[j] != j:
+                j = parent[j]
+            return j
+        for m, a in enumerate(glyphs):
+            for b in glyphs[m + 1:]:
+                (a0, a1), (b0, b1) = spans[a], spans[b]
+                if min(a1, b1) - max(a0, b0) >= 0.5 * min(a1 - a0, b1 - b0):
+                    parent[root(a)] = root(b)
+        grouped = collections.defaultdict(list)
+        for j in glyphs:
+            grouped[root(j)].append(j)
+        rows = list(grouped.values())
+        big = [r for r in rows if sum(sizes[j, cv2.CC_STAT_AREA] for j in r) >= min_area]
+        if len(big) < 2:
+            return [glyphs]
+        centre = lambda r: np.mean([sum(spans[j]) / 2 for j in r])
+        # Rows of one number sit on one line; two stacked numbers are a whole digit height apart.
+        lines = sorted(centre(r) for r in big)
+        if min(b - a for a, b in zip(lines, lines[1:])) < 0.8 * float(np.median(heights)):
+            return [glyphs]
+        for r in rows:
+            if r not in big:
+                min(big, key=lambda k: abs(centre(k) - centre(r))).extend(r)
+        return big
 
     @staticmethod
     def _centerlines(mask: np.ndarray, min_length: int, offset: tuple[int, int] = (0, 0)) -> list[list[Point]]:

@@ -24,7 +24,7 @@ CONVERT  = $(PYTHON) -m src.lowpoly_pdf_to_svg --config $(CONFIG) --output $(OUT
 
 all: $(OUT)/$(PROJECT).svg
 
-$(OUT)/$(PROJECT).svg: $(CONFIG) $(SOURCES)
+$(OUT)/$(PROJECT).svg: $(CONFIG) $(SOURCES) $(wildcard $(OUT)/$(PROJECT)-corrections.csv $(OUT)/$(PROJECT)-lines.csv $(OUT)/$(PROJECT)-pieces.csv)
 	$(CONVERT)
 
 page:
@@ -71,3 +71,9 @@ report-data: $(OUT)/$(PROJECT).svg
 	mkdir -p report/data/$(PROJECT)
 	cp $(OUT)/$(PROJECT)-edges.csv report/data/$(PROJECT)/
 	cp $(OUT)/README.md report/data/$(PROJECT)/$(PROJECT)-report.md
+
+# Paper 1 (Quarto article in paper/, quarto-hi template). Not part of the public site.
+#   make paper      render paper/_output/index.html and index.pdf (quarto-hi article look)
+.PHONY: paper
+paper:
+	cd paper && LC_ALL=C.UTF-8 quarto render   # from paper/ so font-paths: fonts resolves

@@ -15,3 +15,6 @@ data/*/*-check.json
 # The folded model is traced from the pattern too: keep it local.
 data/*/*-3d.obj
 data/*/*-3d.mtl
+
+# Personal status list, kept local.
+TODO.md
