@@ -21,4 +21,4 @@ make report          # render report/_site
 make preview         # serve on localhost, re-render on save
 ```
 
-The public site on GitHub Pages is rebuilt on every push to `main` from the edge table committed in `report/data/`. The traced sheets are the creator's pattern (free for personal use), so they appear only in a local build.
+The public site on GitHub Pages is rebuilt on every push to `main` from the files committed in `data/bowser/` (edge table, fold-up glue table, status page) and the benchmark results in `bench/`. The traced sheets are the creator's pattern (free for personal use), so they appear only in a local build.

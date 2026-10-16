@@ -64,13 +64,6 @@ report: $(OUT)/$(PROJECT).svg
 .PHONY: preview
 preview: $(OUT)/$(PROJECT).svg
 	LC_ALL=C.UTF-8 REPORT_OUT=$(abspath $(OUT)) REPORT_PROJECT=$(PROJECT) quarto preview report
-#   make report-data  copy the edge table and summary into report/data/ for GitHub Pages
-#                     (the SVG and scans stay local: the pattern is free for personal use only)
-.PHONY: report-data
-report-data: $(OUT)/$(PROJECT).svg
-	mkdir -p report/data/$(PROJECT)
-	cp $(OUT)/$(PROJECT)-edges.csv report/data/$(PROJECT)/
-	cp $(OUT)/README.md report/data/$(PROJECT)/$(PROJECT)-report.md
 
 # Paper 1 benchmark (bench/): synthetic templates with exact ground truth, existing
 # vectorizers, shared cut/fold classifier, conventional and fabrication-aware metrics.
