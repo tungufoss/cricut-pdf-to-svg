@@ -701,7 +701,7 @@ class CornerAdjuster:
     """Where the folded model had to stretch a face to close its glues, the trace is likely a
     little off. Flatten each piece again from its folded shape: the 2D corners whose distances
     best match the folded ones, held lightly to where they were traced. A corner that moves a
-    little becomes a `move` row (bowser-pieces.csv columns, page mm); one that moves a lot, or a
+    little becomes a `move` row (piece-edits.csv columns, page mm); one that moves a lot, or a
     piece with a numbered glue that does not close, is listed for a look by eye. A piece with a
     fold bent the wrong way sits in a pose the solver could not settle, so its stretch says more
     about the solver than the trace: it gets no moves."""
@@ -957,23 +957,23 @@ class Reconstruction:
     def write(self, out: Path, project: str) -> None:
         out.mkdir(parents=True, exist_ok=True)
         x = self._posed()
-        self._obj(out / f"{project}-3d.obj", x)
+        self._obj(out / "fold3d.obj", x)
         rows = self.glue_rows()
-        with (out / f"{project}-3d-glue.csv").open("w", newline="", encoding="utf-8") as handle:
+        with (out / "fold3d-glue.csv").open("w", newline="", encoding="utf-8") as handle:
             writer = csv.DictWriter(handle, list(rows[0]))
             writer.writeheader()
             writer.writerows(rows)
-        self._preview(out / f"{project}-3d.png", x)
+        self._preview(out / "fold3d.png", x)
         moves, inspect = CornerAdjuster(self).rows()
-        moves = CornerAdjuster.carry(out / f"{project}-3d-moves.csv", moves)
-        self._csv(out / f"{project}-3d-moves.csv", moves,
+        moves = CornerAdjuster.carry(out / "fold3d-moves.csv", moves)
+        self._csv(out / "fold3d-moves.csv", moves,
                   ["piece", "action", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm", "note"])
-        self._csv(out / f"{project}-3d-inspect.csv", inspect, ["piece", "worst_corner_mm", "reason"])
+        self._csv(out / "fold3d-inspect.csv", inspect, ["piece", "worst_corner_mm", "reason"])
         self.log(f"corners to move: {len(moves)} in {len({m['piece'] for m in moves})} pieces; "
                  f"pieces to look at: {len(inspect)}; pieces with a fold bent the wrong way, left as traced: "
                  f"{len(CornerAdjuster(self).unsettled())}")
         if self.reference:
-            self._baseline(out / f"{project}-3d-baseline.csv")
+            self._baseline(out / "fold3d-baseline.csv")
         counts = collections.Counter(r["status"] for r in rows)
         wrong = int(self.solver.wrong_folds(self.x).sum())
         stretch = np.abs(self.solver.stretch(self.x))
@@ -1092,7 +1092,7 @@ def main() -> int:
     run = Reconstruction(svg, gape_mm=args.gape, reference=reference, anneal=args.anneal)
     run.run()
     run.write(out, project)
-    print(f"Wrote {out / (project + '-3d.obj')}, {project}-3d-glue.csv, {project}-3d-baseline.csv and {project}-3d.png")
+    print(f"Wrote {out / 'fold3d.obj'}, fold3d-glue.csv, fold3d-baseline.csv, fold3d-moves.csv, fold3d-inspect.csv and fold3d.png")
     return 0
 
 

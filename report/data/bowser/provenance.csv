@@ -1,0 +1,8 @@
+source,outcome,n
+person changed,pairs (ok),2
+person changed,still open,1
+person confirmed,pairs (ok),625
+person confirmed,still open,16
+readers sure,pairs (ok),841
+readers unsure,pairs (ok),76
+readers unsure,still open,12

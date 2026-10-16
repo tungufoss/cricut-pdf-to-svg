@@ -12,8 +12,8 @@ Conversion status (2026-10-16), written by `make`. Edit the YAML, not this file.
 | `example.yaml` | pages per cardstock, fold styles, sheet size | yes |
 | `example.svg` | Inkscape review file, one row of pages per cardstock | no, traced pattern |
 | `previews/` | rendered PDF pages, the SVG's faint Source layer | no |
-| `example-edges.csv` | every printed edge number with its line and partner | yes |
-| `example-misreads.csv` | unpaired numbers matched by length to a look-alike number | yes |
+| `edge-numbers.csv` | every printed edge number with its line and partner | yes |
+| `number-misreads.csv` | unpaired numbers matched by length to a look-alike number | yes |
 | `README.md` | this status page | yes |
 
 ## Status
@@ -71,12 +71,12 @@ Pieces listed by how many of their numbers need a look.
 
 ## Mirror twins
 
-The model is symmetric: 0 pairs of pieces are mirror images (0 of 11 pieces), found by the lengths of their numbered lines: 0 exact mirrors (outline and tabs match) and 0 mirror variations (same body, tabs on other edges). Of their {paired} mirrored lines, {off} differ in length from their mirror line by more than 1 mm, so one of the two was traced off (`example-mirrors.csv`). A twin's clean glue pair also predicts the number on the mirror line; those predictions are applied when clear-cut, and otherwise go to the check page with `mirror` as the reason.
+The model is symmetric: 0 pairs of pieces are mirror images (0 of 11 pieces), found by the lengths of their numbered lines: 0 exact mirrors (outline and tabs match) and 0 mirror variations (same body, tabs on other edges). Of their {paired} mirrored lines, {off} differ in length from their mirror line by more than 1 mm, so one of the two was traced off (`mirror-mismatches.csv`). A twin's clean glue pair also predicts the number on the mirror line; those predictions are applied when clear-cut, and otherwise go to the check page with `mirror` as the reason.
 
 
 ## Likely misreads
 
-1 clear-cut misreads were fixed without asking (marked `applied` in `example-misreads.csv`). 3 more numbers that did not pair up sit on a line of the same length as another unpaired number on the other side (edge against tab), and the two numbers look alike. Check them with `make fix` and `app/number-check.html`.
+1 clear-cut misreads were fixed without asking (marked `applied` in `number-misreads.csv`). 3 more numbers that did not pair up sit on a line of the same length as another unpaired number on the other side (edge against tab), and the two numbers look alike. Check them with `make fix` and `app/number-check.html`.
 
 | piece | side | mm | read | suggested | partner | partner mm | why |
 |---|---|---:|---|---|---|---:|---|
@@ -84,4 +84,4 @@ The model is symmetric: 0 pairs of pieces are mirror images (0 of 11 pieces), fo
 | piece-01-01 | tab | 19.6 | 41 | 47 | piece-01-03 edge | 19.8 | one digit differs |
 | piece-01-07 | edge | 17.0 | 195 | 198 | piece-01-06 tab | 17.2 | one digit differs |
 
-Full tables: `example-edges.csv`, `example-misreads.csv`.
+Full tables: `edge-numbers.csv`, `number-misreads.csv`.

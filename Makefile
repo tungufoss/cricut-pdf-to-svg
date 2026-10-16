@@ -7,8 +7,8 @@
 #   make redo PAGES="5 11"  trace only those pages again, reuse the saved trace of the rest;
 #                    make redo with no PAGES only redraws the SVG and redoes the edge check (seconds)
 #   make number NUMBER=20  every piece carrying that number, PDF beside trace, in data/<project>/review.png
-#   make fix        data/<project>/<project>-check.json for app/number-check.html: check each unpaired number
-#                   against the scan, accept or type the right one; Save writes <project>-corrections.csv
+#   make fix        data/<project>/check-page.json for app/number-check.html: check each unpaired number
+#                   against the scan, accept or type the right one; Save writes number-corrections.csv
 #   make install    install Python dependencies (Poppler's pdftoppm comes from the OS)
 #   make example    regenerate data/example/example.pdf from bench/synth.py (needs scipy, shapely, cairosvg)
 #   make clean      remove generated files (keeps the PDF and YAML)
@@ -27,7 +27,7 @@ CONVERT  = $(PYTHON) -m src.lowpoly_pdf_to_svg --config $(CONFIG) --output $(OUT
 
 all: $(OUT)/$(PROJECT).svg
 
-$(OUT)/$(PROJECT).svg: $(CONFIG) $(SOURCES) $(wildcard $(OUT)/$(PROJECT)-corrections.csv $(OUT)/$(PROJECT)-lines.csv $(OUT)/$(PROJECT)-pieces.csv $(OUT)/$(PROJECT)-3d-moves.csv)
+$(OUT)/$(PROJECT).svg: $(CONFIG) $(SOURCES) $(wildcard $(OUT)/number-corrections.csv $(OUT)/number-lines.csv $(OUT)/piece-edits.csv $(OUT)/fold3d-moves.csv)
 	$(CONVERT)
 
 page:
@@ -49,7 +49,7 @@ number:
 	$(PYTHON) -m src.lowpoly_pdf_to_svg.piece --config $(CONFIG) --number $(NUMBER)
 
 fix:
-	@test -f $(OUT)/$(PROJECT)-misreads.csv || { echo "run make first"; exit 2; }
+	@test -f $(OUT)/number-misreads.csv || { echo "run make first"; exit 2; }
 	$(PYTHON) -m src.lowpoly_pdf_to_svg.fixer --config $(CONFIG) --dpi $(DPI)
 
 # A synthetic template with exact ground truth: one A4 page, cut lines grey like the real
@@ -64,7 +64,7 @@ install:
 	$(PYTHON) -m pip install -r requirements.txt
 
 clean:
-	rm -rf $(OUT)/previews $(OUT)/$(PROJECT).svg $(OUT)/$(PROJECT)-edges.csv $(OUT)/$(PROJECT)-misreads.csv $(OUT)/README.md $(OUT)/pieces $(OUT)/cache $(OUT)/review.png $(OUT)/$(PROJECT)-check.json output/$(PROJECT)
+	rm -rf $(OUT)/previews $(OUT)/$(PROJECT).svg $(OUT)/edge-numbers.csv $(OUT)/number-misreads.csv $(OUT)/README.md $(OUT)/pieces $(OUT)/cache $(OUT)/review.png $(OUT)/check-page.json output/$(PROJECT)
 
 # Results site (Quarto website in report/, R with tidyverse, xml2 and DT).
 #   make report     render report/_site/index.html from the current output
@@ -75,6 +75,11 @@ report: $(OUT)/$(PROJECT).svg
 .PHONY: preview
 preview: $(OUT)/$(PROJECT).svg
 	LC_ALL=C.UTF-8 REPORT_OUT=$(abspath $(OUT)) REPORT_PROJECT=$(PROJECT) quarto preview report
+#   make report-data  summary statistics for the public site -> report/data/$(PROJECT)/
+#                     (counts and binned distributions only; review before committing)
+.PHONY: report-data
+report-data:
+	Rscript report/R/stats.R $(OUT) report/data/$(PROJECT)
 
 # Paper 1 benchmark (bench/): synthetic templates with exact ground truth, existing
 # vectorizers, shared cut/fold classifier, conventional and fabrication-aware metrics.

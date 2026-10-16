@@ -8,28 +8,9 @@ date-format: long
 ```{r}
 #| label: setup-method
 #| include: false
-suppressPackageStartupMessages({
-  library(dplyr)
-  library(forcats)
-  library(ggplot2)
-  library(readr)
-  library(tidyr)
-})
-data_dir <- "../data/bowser"
-read_if <- function(name, ...) {
-  path <- file.path(data_dir, paste0("bowser-", name, ".csv"))
-  if (file.exists(path)) read_csv(path, na = c("", "NA"), show_col_types = FALSE, ...)
-}
-as_text <- cols(.default = col_character())
-edges <- read_if("edges", col_types = as_text) |> mutate(across(c(length_mm, ocr_conf), as.numeric))
-misreads <- read_if("misreads", col_types = as_text)
-corrections <- read_if("corrections", col_types = as_text)
-mirrors <- read_if("mirrors", col_types = as_text)
-checks <- read_if("checks", col_types = as_text)
-glue <- read_if("3d-glue", col_types = as_text)
-pieces_fix <- read_if("pieces", col_types = as_text)
-lines_fix <- read_if("lines", col_types = as_text)
-have <- !is.null(edges)
+source("R/site.R")
+provenance <- stat_table("provenance")
+have <- !is.null(NUMBERS)
 ```
 
 This page describes how `lowpoly-pdf-to-svg` turns a papercraft template into a cut file, and
@@ -101,15 +82,15 @@ reading, so nothing has to be corrected twice.
 
 | file | holds | matched by |
 |---|---|---|
-| `bowser-corrections.csv` | what a number should say (or that it is not a number) | the nearest mark on that piece, within 2 mm |
-| `bowser-pieces.csv` | folds added or dropped, corners moved | the nearest fold or corner |
-| `bowser-lines.csv` | the line a number marks, drawn by hand | the number's mark |
+| `number-corrections.csv` | what a number should say (or that it is not a number) | the nearest mark on that piece, within 2 mm |
+| `piece-edits.csv` | folds added or dropped, corners moved | the nearest fold or corner |
+| `number-lines.csv` | the line a number marks, drawn by hand | the number's mark |
 
 After a piece changes, its numbers look for their lines again.
 
 ### 5 Joint repair
 
-Each edge number is now checked against its partner. The edge table (`bowser-edges.csv`)
+Each edge number is now checked against its partner. The edge table (`edge-numbers.csv`)
 gives every number one status: *ok* (one plain edge and one tab, lengths within 1 mm),
 *unpaired*, *length mismatch*, *no tab*, *both tabs* or *extra copy*. Two kinds of evidence then
 fix numbers without asking.
@@ -152,19 +133,16 @@ misread number or a mis-traced line usually shows up as a glue that will not clo
 #| label: auto-summary
 #| output: asis
 if (have) {
-  applied <- misreads |> filter(sure == "applied")
-  by_mirror <- sum(grepl("^mirror", applied$why))
   cat(sprintf(paste(
     "On Bowser, the program read %d numbers on %d pieces. It was sure of %d without help.",
     "It fixed %d further numbers itself: %d look-alike misreads and %d predicted from mirror twins.",
     "Mirror twins pair up %d numbered lines (%d of them on exact twins); %d differ in length from their mirror line.",
     "The self-checks flag %d trace faults."),
-    nrow(edges), n_distinct(edges$piece), sum(edges$ocr_trusted == "yes"),
-    nrow(applied), nrow(applied) - by_mirror, by_mirror,
-    nrow(mirrors), sum(mirrors$mirror == "exact"),
-    sum(mirrors$check != "ok"), if (is.null(checks)) 0L else nrow(checks)))
-  if (!is.null(glue)) cat(sprintf(" In the 3D fold-up, %d of %d glued edges close.",
-                                  sum(grepl("closes", glue$status)), nrow(glue)))
+    stat("numbers"), stat("pieces"), stat("ocr_sure"),
+    stat("auto_fixed"), stat("auto_lookalike"), stat("auto_mirror"),
+    stat("mirror_lines"), stat("mirror_exact"), stat("mirror_differ"), stat("trace_faults")))
+  if (!is.na(stat("glue_total"))) cat(sprintf(" In the 3D fold-up, %d of %d glued edges close.",
+                                              stat("glue_closes"), stat("glue_total")))
   cat("\n")
 }
 ```
@@ -173,7 +151,7 @@ if (have) {
 
 The aim is that the person spends time only where the program is unsure, and that each answer
 improves later reads as well as fixing this one. The review happens on one local page,
-`app/number-check.html`. `make fix` writes its data (`bowser-check.json`, with crops of the scan,
+`app/number-check.html`. `make fix` writes its data (`check-page.json`, with crops of the scan,
 which stays local because the pattern is personal-use only). The page opens the model folder and
 saves straight back into it.
 
@@ -214,26 +192,15 @@ first pages did.
 #| label: fig-provenance
 #| fig-cap: "Where each edge number's final reading comes from. *Confirmed* means a person checked the number and kept the reading; *changed* means they typed another one."
 #| fig-height: 2.6
-if (have) {
-  auto_keys <- misreads |> filter(sure == "applied") |> transmute(piece, x_mm, y_mm, auto = TRUE)
-  hand <- corrections |> transmute(piece, x_mm, y_mm, hand_read = read, hand_number = number)
-  source <- edges |>
-    left_join(hand, by = c("piece", "x_mm", "y_mm")) |>
-    left_join(auto_keys, by = c("piece", "x_mm", "y_mm")) |>
-    mutate(source = case_when(
-      !is.na(hand_number) & hand_read == hand_number ~ "person confirmed",
-      !is.na(hand_number) | corrected == "yes" ~ "person changed",
-      !is.na(auto) ~ "fixed by the program",
-      ocr_trusted == "yes" ~ "readers sure",
-      TRUE ~ "readers unsure"),
-      source = factor(source, c("readers sure", "fixed by the program", "person confirmed",
-                                "person changed", "readers unsure")),
-      outcome = if_else(status == "ok", "pairs (ok)", "still open"))
-  ggplot(source, aes(y = fct_rev(source), fill = outcome)) +
-    geom_bar() +
-    scale_fill_manual(values = c("pairs (ok)" = "#2f6db5", "still open" = "#e8903a")) +
+if (!is.null(provenance)) {
+  provenance |>
+    mutate(source = factor(source, c("readers sure", "fixed by the program", "person confirmed",
+                                     "person changed", "readers unsure"))) |>
+    ggplot(aes(n, fct_rev(source), fill = outcome)) +
+    geom_col() +
+    scale_fill_manual(values = c("pairs (ok)" = HI[["blue"]], "still open" = HI[["orange"]])) +
     labs(x = "edge numbers", y = NULL, fill = NULL) +
-    theme_minimal(base_size = 11) +
+    theme_hi(base_size = 11) +
     theme(legend.position = "top")
 }
 ```
@@ -242,17 +209,13 @@ if (have) {
 #| label: effort-summary
 #| output: asis
 if (have) {
-  changed <- sum(corrections$read != corrections$number)
   cat(sprintf(paste(
     "So far the person has answered %d number cards: %d confirmed the reading and %d changed it.",
     "The piece review holds %d piece edits (%s), and %d lines were drawn by hand (%s).",
     "%d of %d numbers pair cleanly; the rest are still open.\n"),
-    nrow(corrections), nrow(corrections) - changed, changed,
-    if (is.null(pieces_fix)) 0L else nrow(pieces_fix),
-    if (is.null(pieces_fix)) "none" else paste(names(table(pieces_fix$action)), table(pieces_fix$action), collapse = ", "),
-    if (is.null(lines_fix)) 0L else nrow(lines_fix),
-    if (is.null(lines_fix)) "none" else paste(table(lines_fix$kind), names(table(lines_fix$kind)), collapse = ", "),
-    sum(edges$status == "ok"), nrow(edges)))
+    stat("cards_answered"), stat("cards_answered") - stat("cards_changed"), stat("cards_changed"),
+    stat("piece_edits"), stat("piece_edits_by_action"), stat("lines_drawn"), stat("lines_by_kind"),
+    stat("matching"), stat("numbers")))
 }
 ```
 
