@@ -773,6 +773,39 @@ class CornerAdjuster:
         solver = self.recon.solver
         return {self.recon.asm.key[int(h[0])][0] for h in solver.hinge[solver.wrong_folds(self.recon.x)]}
 
+    def _movable(self, pid: str, v: int, shift: np.ndarray, worst: float) -> bool:
+        piece = self.recon.asm.pieces[pid]
+        if not self.min_mm <= np.hypot(*shift) <= self.max_mm or worst > self.max_mm:
+            return False      # too small to matter, or a piece with one corner far off is looked at whole
+        # the build would not know which of two near corners to move
+        return sum(np.hypot(*(np.asarray(c) - piece.points[v])) < self.MATCH_MM for c in piece.outline) == 1
+
+    def _hold_glue_lengths(self, chosen: dict[str, dict[int, np.ndarray]], slack_mm: float = 0.5) -> dict[str, list]:
+        """Drop moves that would part a numbered pair: a glued edge and its tab that agree in
+        length (within `slack_mm`, or as well as they did) must still agree once both pieces move."""
+        held = collections.defaultdict(list)
+        pieces, solver = self.recon.asm.pieces, self.recon.solver
+        length = lambda pid, a, b: float(np.hypot(*(pieces[pid].points[a] + chosen.get(pid, {}).get(a, 0)
+                                                     - pieces[pid].points[b] - chosen.get(pid, {}).get(b, 0))))
+        for _ in range(3):
+            changed = False
+            for k, g in enumerate(solver.glues):
+                if solver.dropped[k] or k in self.recon.proposed:
+                    continue
+                ends = [(g.piece, g.a), (g.piece, g.b), (g.other, g.c), (g.other, g.d)]
+                if not any(v in chosen.get(pid, {}) for pid, v in ends):
+                    continue
+                before = abs(pieces[g.piece].length(g.a, g.b) - pieces[g.other].length(g.c, g.d))
+                after = abs(length(g.piece, g.a, g.b) - length(g.other, g.c, g.d))
+                if after > max(before, slack_mm):
+                    for pid, v in ends:
+                        if chosen.get(pid, {}).pop(v, None) is not None:
+                            held[pid].append(g.number)
+                            changed = True
+            if not changed:
+                break
+        return held
+
     def rows(self) -> tuple[list[dict], list[dict]]:
         moves, inspect = [], []
         unsettled = self.unsettled()
@@ -782,29 +815,29 @@ class CornerAdjuster:
             if r["status"] in ("does not close", "let go while building"):
                 for pid in (r["piece"], r["tab_piece"]):
                     open_numbers[pid].append(f"{r['number']} ({r['gap_mm']} mm)")
+        worst = {pid: max((float(np.hypot(*v)) for v in s.values()), default=0.0) for pid, s in shifts.items()}
+        chosen = {pid: {v: shift for v, shift in s.items() if self._movable(pid, v, shift, worst[pid])}
+                  for pid, s in shifts.items()}
+        held = self._hold_glue_lengths(chosen)
         for pid in sorted(set(shifts) | set(open_numbers)):
             piece = self.recon.asm.pieces[pid]
             ox, oy = piece.page_origin
-            sizes = {v: float(np.hypot(*shift)) for v, shift in shifts.get(pid, {}).items()}
-            worst = max(sizes.values(), default=0.0)
-            for v, shift in sorted(shifts.get(pid, {}).items()):
-                size = sizes[v]
-                if not self.min_mm <= size <= self.max_mm or worst > self.max_mm:
-                    continue          # a piece with one corner far off is looked at whole
-                if sum(np.hypot(*(np.asarray(c) - piece.points[v])) < self.MATCH_MM for c in piece.outline) > 1:
-                    continue          # the build would not know which of two near corners to move
+            for v, shift in sorted(chosen.get(pid, {}).items()):
                 a = piece.points[v] - (ox, oy)
                 b = a + shift
                 moves.append({"piece": pid, "action": "move", "kind": "", "ax_mm": f"{a[0]:.2f}", "ay_mm": f"{a[1]:.2f}",
                               "bx_mm": f"{b[0]:.2f}", "by_mm": f"{b[1]:.2f}",
-                              "note": f"3D fold: corner {size:.2f} mm off"})
+                              "note": f"3D fold: corner {np.hypot(*shift):.2f} mm off"})
+            worst_mm = worst.get(pid, 0.0)
             reasons = []
-            if worst > self.max_mm:
-                reasons.append(f"a corner {worst:.1f} mm off, too far to move without a look")
+            if worst_mm > self.max_mm:
+                reasons.append(f"a corner {worst_mm:.1f} mm off, too far to move without a look")
+            if held[pid]:
+                reasons.append("moves held back, they would part glued edges: " + ", ".join(sorted(set(held[pid]))))
             if open_numbers[pid]:
                 reasons.append("glue does not close: " + ", ".join(open_numbers[pid]))
             if reasons:
-                inspect.append({"piece": pid, "worst_corner_mm": f"{worst:.2f}" if pid in shifts else "",
+                inspect.append({"piece": pid, "worst_corner_mm": f"{worst_mm:.2f}" if pid in shifts else "",
                                 "reason": "; ".join(reasons)})
         return moves, inspect
 
