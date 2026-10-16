@@ -693,8 +693,10 @@ MATERIAL_RGB = {"red": (0.78, 0.16, 0.16), "green": (0.18, 0.49, 0.20), "yellow"
 class Reconstruction:
     """Pattern SVG in; folded model, per-glue closure table and preview out."""
 
-    def __init__(self, svg: Path, gape_mm: float = 3.0, propose_rounds: int = 3, verbose: bool = True):
+    def __init__(self, svg: Path, gape_mm: float = 3.0, propose_rounds: int = 3, verbose: bool = True,
+                 reference: dict | None = None):
         self.svg = svg
+        self.reference = reference or {}   # finished model's counts (YAML `reference:`)
         self.gape = gape_mm
         self.rounds = propose_rounds
         self.verbose = verbose
@@ -786,11 +788,41 @@ class Reconstruction:
             writer.writeheader()
             writer.writerows(rows)
         self._preview(out / f"{project}-3d.png", x)
+        if self.reference:
+            self._baseline(out / f"{project}-3d-baseline.csv")
         counts = collections.Counter(r["status"] for r in rows)
         wrong = int(self.solver.wrong_folds(self.x).sum())
         stretch = np.abs(self.solver.stretch(self.x))
         self.log("glues: " + ", ".join(f"{n} {s}" for s, n in counts.most_common())
                  + f"; folds bent the wrong way: {wrong}; faces stretched up to {stretch.max():.1f} mm")
+
+    def counts(self) -> dict[str, int]:
+        """Triangles of the folded surface, and its corners once every closing glue joins its ends."""
+        parent = list(range(self.solver.n))
+
+        def find(v):
+            while parent[v] != v:
+                parent[v] = parent[parent[v]]
+                v = parent[v]
+            return v
+        for k, p, q in self.solver.glue:
+            if not self.solver.dropped[k]:
+                parent[find(int(p))] = find(int(q))
+        corners = len({find(v) for _, verts in self.asm.faces for v in verts})
+        return {"triangles": sum(len(verts) - 2 for _, verts in self.asm.faces), "corners": corners}
+
+    def _baseline(self, path: Path) -> None:
+        """The folded trace against the finished model's counts from the project YAML."""
+        counts = self.counts()
+        rows = [{"measure": key, "traced": counts[key], "reference": int(self.reference[key]),
+                 "difference": counts[key] - int(self.reference[key])}
+                for key in ("triangles", "corners") if key in self.reference]
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, ["measure", "traced", "reference", "difference"])
+            writer.writeheader()
+            writer.writerows(rows)
+        self.log("against the finished model: " + ", ".join(
+            f"{r['measure']} {r['traced']} vs {r['reference']} ({r['difference']:+d})" for r in rows))
 
     def _posed(self) -> np.ndarray:
         """Centred on the largest glued part, longest axis up."""
@@ -863,10 +895,12 @@ def main() -> int:
     svg = out / f"{project}.svg"
     if not svg.is_file():
         parser.error(f"{svg} not found; run make first")
-    run = Reconstruction(svg, gape_mm=args.gape)
+    import yaml
+    reference = (yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}).get("reference") or {}
+    run = Reconstruction(svg, gape_mm=args.gape, reference=reference)
     run.run()
     run.write(out, project)
-    print(f"Wrote {out / (project + '-3d.obj')}, {project}-3d-glue.csv and {project}-3d.png")
+    print(f"Wrote {out / (project + '-3d.obj')}, {project}-3d-glue.csv, {project}-3d-baseline.csv and {project}-3d.png")
     return 0
 
 

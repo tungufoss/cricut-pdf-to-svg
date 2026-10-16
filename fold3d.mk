@@ -1,6 +1,7 @@
 # Fold the traced pattern back into the 3D model (prototype, src/lowpoly_pdf_to_svg/fold3d.py).
-#   make -f fold3d.mk          data/<project>/<project>-3d.obj (+ .mtl), -3d.png preview and
-#                              -3d-glue.csv: every glued edge, its gap in the folded model and status
+#   make -f fold3d.mk          data/<project>/<project>-3d.obj (+ .mtl), -3d.png preview,
+#                              -3d-glue.csv: every glued edge, its gap in the folded model and status,
+#                              and -3d-baseline.csv: triangles and corners against the YAML `reference:`
 #   make -f fold3d.mk install  extra Python dependencies (scipy, shapely, matplotlib)
 # Needs data/<project>/<project>.svg from a full `make` first.
 
