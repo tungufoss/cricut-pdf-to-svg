@@ -1,0 +1,66 @@
+---
+title: "Export SVG contract"
+---
+
+The contract between `make export` (this repository) and downstream tools such as [papercraft-nester](https://github.com/tungufoss/papercraft-nester) ([converter issue #17](https://github.com/tungufoss/lowpoly-pdf-to-svg/issues/17), [nester issue #12](https://github.com/tungufoss/papercraft-nester/issues/12)). Version **`lowpoly-export/1`**. A consumer reads only what is listed here: `data-*` attributes, element names, `d`, `x`, `y` and `transform`. Styles, `inkscape:label`, layer nesting and element order are presentation and may change without a version bump.
+
+The review SVG (`<project>.svg`) is **not** covered: it is work in progress and keeps the PDF numbers. Consume only `<project>-export.svg`.
+
+## Document
+
+| Where | Attribute | Meaning |
+|---|---|---|
+| `<svg>` | `data-contract` | `lowpoly-export/1`. Reject other values. |
+| `<svg>` | `data-units` | `mm`: every coordinate (`viewBox`, `d`, `x`, `y`) is in millimetres. |
+| `<svg>` | `width`, `height` | Physical size in inches (`in`), equal to the `viewBox` size / 25.4, so Inkscape and Cricut Design Space open it at true scale. |
+| `<svg>` | `data-project` | Model name from the YAML. |
+
+`<inkscape:page>` elements inside `sodipodi:namedview` show the source pages; they are informational.
+
+## Piece
+
+Every physical paper piece is one `<g data-piece="…">`. Find pieces by that attribute anywhere in the tree, not by layer.
+
+| Attribute | Meaning |
+|---|---|
+| `data-piece` | Stable unique id, `piece-PP-NN` (source page, piece number on the page). Same as the group's `id`. |
+| `data-material` | Cardstock id from the YAML (`red`, `black`, …). Pieces with the same id go on the same sheets. |
+| `data-material-name` | Human name, e.g. `Red cardstock`. |
+| `data-color` | Cardstock colour as `#rrggbb` (YAML `color:`). |
+| `data-source-pdf` | Source PDF file name. |
+| `data-source-page` | 1-based PDF page the piece was traced from. |
+| `data-page-origin-mm` | `x y` of that page's top-left corner in document mm; subtract it to get PDF page coordinates. |
+
+A piece group and every group inside it has **no `transform`**. A nester places a piece by wrapping or setting a transform on the piece group itself.
+
+## Operations
+
+Every drawable element inside a piece is a `<path>` or `<text>` carrying `data-operation`:
+
+| `data-operation` | Element | Meaning |
+|---|---|---|
+| `cut` | `<path>` | Exactly one per piece: the cut boundary. One compound path, outline first then any holes, closed polygons (`M x,y x,y … Z`, straight segments only), filled with `fill-rule:evenodd`. |
+| `score` | `<path>` | One straight fold line `M x,y x,y`, with `data-fold` = `mountain` or `valley`. |
+| `draw` | `<text>` | One pen label, see below. |
+
+Coordinates in `d` are absolute, comma-separated pairs; no relative commands, arcs or curves. No `clipPath`, `mask`, `use`, `symbol` or `image` appears anywhere in the file.
+
+## Labels
+
+| Attribute | Meaning |
+|---|---|
+| text content, `data-label` | The short label, e.g. `2A`. Same on both edges of a glue pair, used by no other edge. At least one letter; no 0/O, 1/I, Q, 6, 9. |
+| `data-pdf-number` | The number printed in the PDF, for tracing back. |
+| `data-pair-status` | Edge-check result for the pair: `ok`, `unpaired`, `length mismatch`, … (`ok` means two edges of matching length). |
+| `data-edge` | `tab` (glue tab fold) or `edge` (plain cut edge), from the edge table; absent if the number had no row. |
+| `x`, `y`, `transform` | Label centre in mm, and `rotate(angle x y)` only. |
+
+`<project>-labels.csv` holds the same mapping: `label, pdf_number, status, pieces`.
+
+## Not provided yet
+
+Body/tab boundaries are not in the export: the converter knows which numbered edge is a tab (`data-edge="tab"`) but not the tab's polygon, so a consumer must not infer one from the cut outline.
+
+## Checking
+
+`python -m src.lowpoly_pdf_to_svg.export --check FILE` lists every way a file breaks this contract (exit 1) or confirms it. `make export-check` rebuilds the synthetic fixture in `fixtures/export/` and fails if the export or the check changes; `fixtures/export/sample-export.svg` is a small file downstream tools can test against.

@@ -16,13 +16,17 @@ output:
 materials:
   - id: red
     name: Red cardstock
+    color: "#c62828"   # fill in the export SVG
     pages: [4, 5, 6, 7, 8, 9, 10]
   - id: green
     name: Green cardstock
+    color: "#2e7d32"   # fill in the export SVG
     pages: [11, 12, 13]
   - id: yellow
     name: Yellow cardstock
+    color: "#f9d71c"   # fill in the export SVG
     pages: [14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
   - id: black
     name: Black cardstock
+    color: "#212121"   # fill in the export SVG
     pages: [24]

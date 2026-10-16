@@ -20,6 +20,8 @@ title: "Reference"
 |---|---|
 | `make` | Convert every page in the manifest into `data/<project>/<project>.svg` |
 | `make page PAGE=4` | Convert one page into `output/<project>/page-4/` |
+| `make export` | Last step: `data/<project>/<project>-export.svg` with short glue-pair labels and cardstock fills, see [Export SVG contract](export-contract.qmd) |
+| `make export-check` | Rebuild the synthetic export fixture and check it against the contract |
 | `make install` | Install the Python dependencies |
 | `make report` | Render this site into `report/_site` |
 | `make preview` | Serve this site on localhost and re-render on save |
