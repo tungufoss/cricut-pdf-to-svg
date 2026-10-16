@@ -1,0 +1,285 @@
+---
+title: "Method"
+subtitle: "The tracing algorithm and the human-in-the-loop review"
+date: 2026-10-16
+date-format: long
+---
+
+```{r}
+#| label: setup-method
+#| include: false
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(forcats)
+  library(ggplot2)
+  library(readr)
+  library(tidyr)
+})
+data_dir <- "../data/bowser"
+read_if <- function(name, ...) {
+  path <- file.path(data_dir, paste0("bowser-", name, ".csv"))
+  if (file.exists(path)) read_csv(path, na = c("", "NA"), show_col_types = FALSE, ...)
+}
+as_text <- cols(.default = col_character())
+edges <- read_if("edges", col_types = as_text) |> mutate(across(c(length_mm, ocr_conf), as.numeric))
+misreads <- read_if("misreads", col_types = as_text)
+corrections <- read_if("corrections", col_types = as_text)
+mirrors <- read_if("mirrors", col_types = as_text)
+checks <- read_if("checks", col_types = as_text)
+glue <- read_if("3d-glue", col_types = as_text)
+pieces_fix <- read_if("pieces", col_types = as_text)
+lines_fix <- read_if("lines", col_types = as_text)
+have <- !is.null(edges)
+```
+
+This page describes how `lowpoly-pdf-to-svg` turns a papercraft template into a cut file, and
+how a person and the program share the work of getting it right. The program does every step it
+can check itself and fixes what it can prove. It asks the person only about what it cannot
+decide. Every answer is saved, applied on each later build, and used to train the number reader.
+The numbers below come from the Bowser model on the current `main` branch.
+
+The design rests on one observation. A low-poly template carries more than its picture. Every
+printed edge number appears exactly twice, once on each of the two edges that are glued
+together. The two edges must be the same length, one of them must sit on a glue tab, and the
+finished model must fold up and close. These rules let the program check its own trace without
+any ground truth. Tracing alone, judged by how close the picture looks, cannot catch these
+errors. The [benchmark](benchmark.qmd) shows that visual metrics barely react to them.
+
+## Pipeline
+
+```{mermaid}
+%%| fig-cap: "One build (`make`). Grey boxes run without a person; the check page is the only step that needs one, and its saved files feed the next build."
+flowchart TD
+  pdf[PDF template] --> render[1 Render pages]
+  render --> detect[2 Detect pieces, cuts, folds, number marks]
+  detect --> read[3 Read numbers: Tesseract + digit matcher]
+  read --> hand[4 Apply saved hand fixes]
+  hand --> joint[5 Joint repair: look-alikes, mirror twins]
+  joint --> check[6 Self-checks: pairs, junctions, scale, 3D fold-up]
+  check --> out[Inkscape SVG, edge table, status page]
+  check --> cards[7 Check page: only what is left in doubt]
+  cards -- "corrections, lines, piece fixes" --> hand
+  cards -- "corrected digits" --> read
+```
+
+### 1 Render
+
+`pdftoppm` renders each page listed in the project YAML at 180 dpi. The YAML assigns each page
+to a cardstock colour and names the fold styles the template uses. All later geometry is in
+millimetres, using the page's own scale.
+
+### 2 Detect
+
+The template prints three kinds of ink, and `detect.py` separates them:
+
+* **Cut lines** are solid grey strokes that enclose each piece. A piece is the background area
+  fully enclosed by cut lines. Its outline is traced and then reduced to corner points joined by
+  straight segments, because a low-poly piece has no curves. Each segment is fitted to the
+  printed line, and a corner is kept only where the ink turns.
+* **Fold lines** are dashed (valley) or dash-dot (mountain) grey strokes. Dashes are thinned to
+  centrelines and merged when collinear. Each fold is refitted to its dashes and stretched from
+  cut to cut, ending on a corner. Its style is read from the dash pattern under it.
+* **Edge numbers** are the darkest ink. Glyphs are grouped into number marks, and each mark is
+  attached to the cut edge or tab fold it labels. Ink that belongs to no piece stays on the
+  Review layer, so nothing disappears silently.
+
+### 3 Read numbers
+
+Every number mark goes to two readers. Tesseract reads it in both orientations. A small digit
+matcher is trained on the page itself, using digits from reads Tesseract is sure of plus every
+digit a person has corrected. A reading is accepted when both readers agree, or when Tesseract
+alone is very sure (confidence 93 or higher).
+
+The remaining marks are settled together, not one at a time. Since every number is printed
+twice, an uncertain mark prefers a close candidate reading that completes a pair. Any number
+not printed exactly twice is flagged.
+
+### 4 Apply saved fixes
+
+Three files in the model folder hold what a person has decided. Each build applies them after
+reading, so nothing has to be corrected twice.
+
+| file | holds | matched by |
+|---|---|---|
+| `bowser-corrections.csv` | what a number should say (or that it is not a number) | the nearest mark on that piece, within 2 mm |
+| `bowser-pieces.csv` | folds added or dropped, corners moved | the nearest fold or corner |
+| `bowser-lines.csv` | the line a number marks, drawn by hand | the number's mark |
+
+After a piece changes, its numbers look for their lines again.
+
+### 5 Joint repair
+
+Each edge number is now checked against its partner. The edge table (`bowser-edges.csv`)
+gives every number one status: *ok* (one plain edge and one tab, lengths within 1 mm),
+*unpaired*, *length mismatch*, *no tab*, *both tabs* or *extra copy*. Two kinds of evidence then
+fix numbers without asking.
+
+**Look-alike misreads.** Take a number that did not pair up. If an unpaired line of the same
+length on the other side (edge against tab) carries a number that looks like a misreading of it,
+the two are matched. The evidence is OCR's own second choice, or a single differing digit. A
+match is applied only when it is clear-cut: OCR offered the suggested number, the lines agree
+within 0.3 mm, neither copy has another candidate, and the suggested number has no clean pair
+yet. In addition, either the read number already pairs elsewhere, or the copy being fixed was a
+shaky read (confidence below 80) while its partner was not. Any other match becomes a suggestion
+for the person.
+
+**Mirror twins.** Most pieces have a mirror twin cut from the same cardstock. Twins are found
+by walking round each piece and comparing the lengths of its numbered lines with another
+piece's lengths walked the other way. An *exact* mirror also matches tab for tab; a *variation*
+has its tabs on other edges. Pairing every numbered line with its mirror line gives three
+checks:
+
+* A line and its mirror should be the same length; if not, one was traced wrongly.
+* A fold on one twin with nothing at the mirror place on the other is probably a missed fold.
+* Glue pairs mirror too, so a clean pair on one side predicts the number on the other side.
+
+### 6 Self-checks
+
+`checks.py` looks for faults that need no ground truth:
+
+* a fold that meets the cut between two corners (a corner was missed);
+* a cut line that runs on past a traced corner (the corner was clipped);
+* a piece traced twice, or a tiny outline with no folds or numbers;
+* a page whose glued pairs are all slightly longer or shorter than their partners (a scale error).
+
+Each fault is written to the edge table at the numbers it touches.
+
+The 3D fold-up (`make -f fold3d.mk`, [3D fold-up](fold3d.qmd)) is the strongest check. It
+folds every piece along its scores, glues each numbered pair and measures the gap left. A
+misread number or a mis-traced line usually shows up as a glue that will not close.
+
+```{r}
+#| label: auto-summary
+#| output: asis
+if (have) {
+  applied <- misreads |> filter(sure == "applied")
+  by_mirror <- sum(grepl("^mirror", applied$why))
+  cat(sprintf(paste(
+    "On Bowser, the program read %d numbers on %d pieces. It was sure of %d without help.",
+    "It fixed %d further numbers itself: %d look-alike misreads and %d predicted from mirror twins.",
+    "Mirror twins pair up %d numbered lines (%d of them on exact twins); %d differ in length from their mirror line.",
+    "The self-checks flag %d trace faults."),
+    nrow(edges), n_distinct(edges$piece), sum(edges$ocr_trusted == "yes"),
+    nrow(applied), nrow(applied) - by_mirror, by_mirror,
+    nrow(mirrors), sum(mirrors$mirror == "exact"),
+    sum(mirrors$check != "ok"), if (is.null(checks)) 0L else nrow(checks)))
+  if (!is.null(glue)) cat(sprintf(" In the 3D fold-up, %d of %d glued edges close.",
+                                  sum(grepl("closes", glue$status)), nrow(glue)))
+  cat("\n")
+}
+```
+
+## Human in the loop
+
+The aim is that the person spends time only where the program is unsure, and that each answer
+improves later reads as well as fixing this one. The review happens on one local page,
+`app/number-check.html`. `make fix` writes its data (`bowser-check.json`, with crops of the scan,
+which stays local because the pattern is personal-use only). The page opens the model folder and
+saves straight back into it.
+
+### What the person is asked
+
+The program sorts what it found into cards. Each card shows the scan around the number beside
+the scan around its partner, with the traced line drawn on both.
+
+| card | when | the person |
+|---|---|---|
+| Fixed for you | a clear-cut look-alike or mirror fix was applied | can glance and override; no answer needed |
+| Suggested | a likely misread, not clear-cut enough to apply | confirms the suggestion or types the right number |
+| Doubt | a hand correction that still does not pair | rechecks the correction, its partner or the line |
+| Open | a number with no explanation | types the number, marks it *not a number*, or draws its line |
+
+A hint on each suggestion says whether the 3D fold-up agrees: the two pieces meet when glued on
+that number. By default the page shows only open cards. Fixes the program made itself are
+listed under *Fixed for you*.
+
+The **piece review** works the same way for geometry. Twin pieces are shown side by side and
+sorted by how much likely needs fixing. That score counts trace faults, untraced line ink inside
+the piece, numbers that found no fold, and folds the mirror twin has but this piece lacks.
+Missing folds are drawn in orange. The person adds or drops a fold, moves a corner, or marks the
+piece OK. The style of an added fold is read from the dashes printed under it.
+
+### What happens to an answer
+
+Saving writes the three fix files from step 4. The next build (`make redo`, which reuses the
+saved trace of untouched pages) applies them, reruns joint repair and the self-checks, and
+rebuilds the cards. Fixing one number can complete a pair, and that can settle a mirror
+prediction or close a glue in 3D. One answer often clears more than one card.
+
+Corrections also feed back into reading. Each corrected number teaches the digit matcher its
+digits, upright as Tesseract turned them. Freshly traced pages therefore read better than the
+first pages did.
+
+```{r}
+#| label: fig-provenance
+#| fig-cap: "Where each edge number's final reading comes from. *Confirmed* means a person checked the number and kept the reading; *changed* means they typed another one."
+#| fig-height: 2.6
+if (have) {
+  auto_keys <- misreads |> filter(sure == "applied") |> transmute(piece, x_mm, y_mm, auto = TRUE)
+  hand <- corrections |> transmute(piece, x_mm, y_mm, hand_read = read, hand_number = number)
+  source <- edges |>
+    left_join(hand, by = c("piece", "x_mm", "y_mm")) |>
+    left_join(auto_keys, by = c("piece", "x_mm", "y_mm")) |>
+    mutate(source = case_when(
+      !is.na(hand_number) & hand_read == hand_number ~ "person confirmed",
+      !is.na(hand_number) | corrected == "yes" ~ "person changed",
+      !is.na(auto) ~ "fixed by the program",
+      ocr_trusted == "yes" ~ "readers sure",
+      TRUE ~ "readers unsure"),
+      source = factor(source, c("readers sure", "fixed by the program", "person confirmed",
+                                "person changed", "readers unsure")),
+      outcome = if_else(status == "ok", "pairs (ok)", "still open"))
+  ggplot(source, aes(y = fct_rev(source), fill = outcome)) +
+    geom_bar() +
+    scale_fill_manual(values = c("pairs (ok)" = "#2f6db5", "still open" = "#e8903a")) +
+    labs(x = "edge numbers", y = NULL, fill = NULL) +
+    theme_minimal(base_size = 11) +
+    theme(legend.position = "top")
+}
+```
+
+```{r}
+#| label: effort-summary
+#| output: asis
+if (have) {
+  changed <- sum(corrections$read != corrections$number)
+  cat(sprintf(paste(
+    "So far the person has answered %d number cards: %d confirmed the reading and %d changed it.",
+    "The piece review holds %d piece edits (%s), and %d lines were drawn by hand (%s).",
+    "%d of %d numbers pair cleanly; the rest are still open.\n"),
+    nrow(corrections), nrow(corrections) - changed, changed,
+    if (is.null(pieces_fix)) 0L else nrow(pieces_fix),
+    if (is.null(pieces_fix)) "none" else paste(names(table(pieces_fix$action)), table(pieces_fix$action), collapse = ", "),
+    if (is.null(lines_fix)) 0L else nrow(lines_fix),
+    if (is.null(lines_fix)) "none" else paste(table(lines_fix$kind), names(table(lines_fix$kind)), collapse = ", "),
+    sum(edges$status == "ok"), nrow(edges)))
+}
+```
+
+### Why the review is split this way
+
+Three rules shape it.
+
+1. **Act only on proof.** A fix is applied without asking only when several independent
+   checks agree: the reader's own alternative, matching lengths, a single candidate, and no clash
+   with an existing pair. A wrong automatic fix costs more than a question, because a person
+   would have to find it first. Every automatic fix stays visible and can be overridden.
+2. **Ask with the evidence on screen.** A card shows both copies of the number and the line
+   each one marks. The person judges a pair, not an isolated digit.
+3. **Keep every answer as data.** Corrections are plain CSV files kept in git. They make builds
+   reproducible, they train the reader, and they form the record of human effort that research
+   question 3 needs ([#9](https://github.com/tungufoss/lowpoly-pdf-to-svg/issues/9)).
+
+## Research use
+
+The pipeline is the system evaluated in papers 2 and 3. Paper 1 benchmarks existing methods
+only.
+
+* **Joint reasoning** ([#8](https://github.com/tungufoss/lowpoly-pdf-to-svg/issues/8)). Each
+  repair source can be switched off: pair-up during reading, look-alike fixes, mirror twins,
+  self-checks and the 3D hint. Rerunning without one measures what it adds. The ablation runs
+  have not been done yet.
+* **Correction effort** ([#9](https://github.com/tungufoss/lowpoly-pdf-to-svg/issues/9)). The
+  corrections file records what was decided but not how long it took, and not what a
+  person would have had to look at without triage. Logging time per card, and replaying the
+  saved corrections on an exhaustive review order, is the next step.
