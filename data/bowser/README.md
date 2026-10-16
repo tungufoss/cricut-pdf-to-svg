@@ -1,6 +1,6 @@
 # Bowser
 
-1573 printed numbers on 178 pieces. 760 numbers form a clean pair (one plain edge, one tab, lengths within 1 mm); 53 labels need a look.
+1573 printed numbers on 178 pieces. 763 numbers form a clean pair (one plain edge, one tab, lengths within 1 mm); 47 labels need a look.
 
 Conversion status (2026-10-16), written by `make`. Edit the YAML, not this file.
 
@@ -32,11 +32,10 @@ Conversion status (2026-10-16), written by `make`. Edit the YAML, not this file.
 
 | status | labels | meaning |
 |---|---:|---|
-| ok | 1520 | partner found, one tab and one plain edge, same length |
+| ok | 1526 | partner found, one tab and one plain edge, same length |
 | unpaired | 20 | no other copy of this number: likely misread |
 | extra copy: likely misread | 14 | number read more than twice; the other copies already form a clean pair |
 | length mismatch | 10 | partner found but the marked lines differ in length: misread number or traced line |
-| both tabs | 6 | both copies sit on a tab fold |
 | printed 3 times | 3 | number read more than twice: some are misread |
 
 ## Pages
@@ -46,11 +45,11 @@ Conversion status (2026-10-16), written by `make`. Edit the YAML, not this file.
 | 04 | red | red | 8 | 74 | 1 |
 | 05 | red | red | 8 | 74 | 1 |
 | 06 | red | red | 6 | 55 | 4 |
-| 07 | red | red | 10 | 71 | 5 |
-| 08 | red | red | 6 | 52 | 4 |
+| 07 | red | red | 10 | 73 | 3 |
+| 08 | red | red | 6 | 54 | 2 |
 | 09 | red | red | 7 | 52 | 6 |
 | 10 | red | red | 7 | 52 | 2 |
-| 11 | green | green | 11 | 85 | 5 |
+| 11 | green | green | 11 | 87 | 3 |
 | 12 | green | green | 11 | 85 | 5 |
 | 13 | green | green | 4 | 29 | 1 |
 | 14 | yellow | beige ⚠ | 10 | 90 | 2 |
@@ -75,16 +74,12 @@ Pieces listed by how many of their numbers need a look.
 | piece-12-06 | 6 | 2 | 593 (printed 3 times), 594 (unpaired) |
 | piece-06-03 | 9 | 2 | 316 (length mismatch), 386 (unpaired) |
 | piece-11-05 | 8 | 2 | 791 (unpaired), 793 (unpaired) |
-| piece-07-01 | 8 | 2 | 273 (both tabs), 672 (unpaired) |
 | piece-09-04 | 7 | 2 | 286 (length mismatch), 289 (extra copy: likely misread) |
 | piece-09-01 | 6 | 2 | 657 (unpaired), 683 (unpaired) |
 | piece-17-06 | 3 | 1 | 628 (extra copy: likely misread) |
 | piece-17-07 | 5 | 1 | 730 (unpaired) |
-| piece-11-03 | 8 | 1 | 14 (both tabs) |
 | piece-24-03 | 6 | 1 | 789 (unpaired) |
-| piece-11-07 | 6 | 1 | 14 (both tabs) |
 | piece-06-06 | 9 | 1 | 316 (length mismatch) |
-| piece-07-07 | 9 | 1 | 273 (both tabs) |
 | piece-05-07 | 8 | 1 | 792 (unpaired) |
 | piece-24-04 | 7 | 1 | 794 (unpaired) |
 | piece-16-04 | 14 | 1 | 286 (length mismatch) |
@@ -94,13 +89,12 @@ Pieces listed by how many of their numbers need a look.
 | piece-24-08 | 5 | 1 | 268 (extra copy: likely misread) |
 | piece-18-04 | 7 | 1 | 192 (unpaired) |
 | piece-24-07 | 7 | 1 | 785 (unpaired) |
+| piece-07-01 | 9 | 1 | 672 (unpaired) |
 | piece-16-07 | 5 | 1 | 376 (unpaired) |
 | piece-14-03 | 7 | 1 | 280 (extra copy: likely misread) |
 | piece-16-10 | 8 | 1 | 378 (length mismatch) |
 | piece-16-02 | 8 | 1 | 378 (length mismatch) |
-| piece-08-05 | 8 | 1 | 305 (both tabs) |
 | piece-09-05 | 7 | 1 | 295 (extra copy: likely misread) |
-| piece-08-06 | 7 | 1 | 305 (both tabs) |
 | piece-08-04 | 10 | 1 | 698 (length mismatch) |
 | piece-10-05 | 7 | 1 | 885 (unpaired) |
 | piece-13-04 | 4 | 1 | 593 (printed 3 times) |
@@ -119,24 +113,18 @@ Pieces listed by how many of their numbers need a look.
 
 ## Hand corrections that still do not pair
 
-633 numbers were set by hand; 31 of them still do not form a clean pair, so the correction, its partner or the traced line is likely off. They come first on the check page.
+633 numbers were set by hand; 25 of them still do not form a clean pair, so the correction, its partner or the traced line is likely off. They come first on the check page.
 
 | piece | number | side | mm | status | partner | partner mm |
 |---|---|---|---:|---|---|---:|
 | piece-12-04 | 2 | tab | 15.2 | unpaired |   |  |
 | piece-12-04 | 5 | tab | 16.8 | unpaired |   |  |
-| piece-11-03 | 14 | tab | 9.6 | both tabs | piece-11-07 tab | 9.6 |
-| piece-11-07 | 14 | tab | 9.6 | both tabs | piece-11-03 tab | 9.6 |
 | piece-18-04 | 192 | edge | 39.5 | unpaired |   |  |
 | piece-24-08 | 268 | tab | 13.3 | extra copy: likely misread |   |  |
-| piece-07-01 | 273 | tab | 17.1 | both tabs | piece-07-07 tab | 17.0 |
-| piece-07-07 | 273 | tab | 17.0 | both tabs | piece-07-01 tab | 17.1 |
 | piece-09-04 | 286 | tab | 51.8 | length mismatch | piece-16-04 edge | 13.8 |
 | piece-16-04 | 286 | edge | 13.8 | length mismatch | piece-09-04 tab | 51.8 |
 | piece-09-04 | 289 | tab | 42.1 | extra copy: likely misread |   |  |
 | piece-09-05 | 295 | edge | 51.3 | extra copy: likely misread |   |  |
-| piece-08-05 | 305 | tab | 29.7 | both tabs | piece-08-06 tab | 29.7 |
-| piece-08-06 | 305 | tab | 29.7 | both tabs | piece-08-05 tab | 29.7 |
 | piece-06-03 | 316 | edge | 37.3 | length mismatch | piece-06-06 tab | 38.3 |
 | piece-06-06 | 316 | tab | 38.3 | length mismatch | piece-06-03 edge | 37.3 |
 | piece-16-07 | 376 | tab | 26.2 | unpaired |   |  |

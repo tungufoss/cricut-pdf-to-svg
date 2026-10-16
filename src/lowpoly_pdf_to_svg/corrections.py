@@ -14,6 +14,7 @@ import math
 from dataclasses import dataclass
 from pathlib import Path
 
+import cv2
 import numpy as np
 
 from .model import Fold, FoldKind, Label, PageLayout
@@ -130,11 +131,14 @@ class LineFixes:
             mm = pieces[row.piece][1]
             a, b = (row.a[0] / mm, row.a[1] / mm), (row.b[0] / mm, row.b[1] / mm)
             label.edge = (a, b)
-            # A line drawn as cut that lies on a fold (one added later on the piece review, say)
-            # is that fold: the number sits on the tab side.
-            on = lambda p, q: math.dist(p, q) <= FOLD_MM / mm
-            label.tab = row.kind == "fold" or any((on(f.a, a) and on(f.b, b)) or (on(f.a, b) and on(f.b, a))
-                                                  for f in pieces[row.piece][0].folds)
+            # Where the line lies decides cut or fold, not the label it was drawn with: on a fold it
+            # is that fold (the number sits on the tab side), along the outline it is a cut edge.
+            piece = pieces[row.piece][0]
+            label.tab = row.kind == "fold"
+            if _on_fold(piece, a, b, FOLD_MM / mm):
+                label.tab = True
+            elif _on_outline(piece, a, b, FOLD_MM / mm):
+                label.tab = False
             applied += 1
         return applied, missed
 
@@ -262,3 +266,16 @@ class PieceFixes:
             seen.add(key)
             kept.append(Fold(p, q, kind))
         piece.folds = kept
+
+
+def _on_fold(piece, a, b, reach: float) -> bool:
+    """Does a fold of the piece run from a to b (either way round)?"""
+    on = lambda p, q: math.dist(p, q) <= reach
+    return any((on(f.a, a) and on(f.b, b)) or (on(f.a, b) and on(f.b, a)) for f in piece.folds)
+
+
+def _on_outline(piece, a, b, reach: float) -> bool:
+    """Do both ends and the middle of the line lie on the cut outline?"""
+    outline = np.asarray(piece.outline, np.float32).reshape(-1, 1, 2)
+    middle = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+    return all(abs(cv2.pointPolygonTest(outline, (float(p[0]), float(p[1])), True)) <= reach for p in (a, b, middle))
