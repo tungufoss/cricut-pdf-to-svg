@@ -1,14 +1,9 @@
 piece,x_mm,y_mm,side,length_mm,read,ocr_conf,suggested,partner_piece,partner_x_mm,partner_y_mm,partner_side,partner_length_mm,length_diff_mm,why,sure
-piece-09-03,88.5,120.3,edge,53.9,885,-1,685,piece-09-01,190.4,98.8,tab,54.1,0.2,OCR's other reading,applied
+piece-06-02,20.1,28.6,edge,56.9,865,55,355,piece-06-01,68.5,28.1,tab,57.2,0.2,OCR's other reading,applied
 piece-12-07,99.1,99.9,tab,17.0,548,84,546,piece-12-06,66.3,53.8,edge,17.1,0.2,OCR's other reading; the read number already pairs elsewhere,applied
 piece-16-03,190.6,148.7,tab,22.4,386,0,368,piece-16-10,177.6,266.6,edge,22.6,0.2,OCR's other reading,applied
-piece-04-02,153.7,166.4,edge,17.7,03,-1,6,piece-12-04,45.3,94.0,tab,17.8,0.1,mirror: twin piece-05-03 pairs 58 with piece-11-05,applied
-piece-12-04,45.3,94.0,tab,17.8,6,100,03,piece-04-02,153.7,166.4,edge,17.7,0.1,mirror: twin piece-11-05 pairs 58 with piece-05-03,applied
-piece-24-05,22.5,97.0,edge,32.6,261,100,281,piece-24-05,38.5,74.4,tab,32.6,0.0,mirror: twin piece-24-06 pairs 632 with piece-24-06,applied
-piece-04-03,65.2,177.6,tab,37.6,456,-1,406,piece-12-03,163.1,40.2,edge,37.9,0.3,mirror: twin piece-05-01 pairs 10 with piece-11-02,applied
-piece-17-05,152.6,125.9,edge,31.2,556,100,999,piece-17-08,132.0,168.8,tab,31.4,0.2,mirror: twin piece-16-05 pairs 196 with piece-16-08,applied
 piece-16-07,179.8,187.6,tab,26.2,376,100,378,piece-16-10,199.2,217.4,edge,26.3,0.0,OCR's other reading,no
-piece-10-05,159.9,217.0,edge,42.3,885,64,887,piece-09-03,86.7,74.0,tab,42.2,0.1,one digit differs,no
+piece-09-04,139.1,150.7,tab,42.1,289,100,885,piece-10-05,159.9,217.0,edge,42.3,0.1,OCR's other reading; the read number already pairs elsewhere,no
 piece-17-06,75.4,113.0,edge,59.2,628,-1,698,piece-10-04,106.3,137.6,tab,59.3,0.1,one digit differs; the read number already pairs elsewhere,no
 piece-22-02,90.4,97.7,tab,46.0,580,100,680,piece-22-01,115.5,14.8,edge,46.0,0.1,OCR's other reading; the read number already pairs elsewhere,no
 piece-14-03,182.9,75.8,edge,32.6,280,-1,260,piece-14-07,178.8,91.7,tab,32.5,0.2,one digit differs; the read number already pairs elsewhere,no
@@ -16,9 +11,6 @@ piece-16-09,64.2,231.1,tab,39.7,162,0,192,piece-18-04,199.7,55.1,edge,39.5,0.2,o
 piece-09-05,193.8,198.6,edge,51.3,295,100,286,piece-09-04,116.5,198.0,tab,51.8,0.5,OCR's other reading; the read number already pairs elsewhere,no
 piece-24-08,44.2,101.1,tab,13.3,268,100,286,piece-16-04,98.7,122.7,edge,13.8,0.5,OCR's other reading; the read number already pairs elsewhere,no
 piece-06-04,189.0,19.3,tab,43.2,369,0,386,piece-06-03,144.8,206.9,edge,42.5,0.7,OCR's other reading; the read number already pairs elsewhere,no
-piece-12-04,35.8,76.4,tab,16.8,5,100,6,piece-04-02,153.7,166.4,edge,17.7,0.8,one digit differs,no
-piece-12-04,45.3,94.0,tab,17.8,03,100,6,piece-04-02,153.7,166.4,edge,17.7,0.1,mirror: twin piece-11-05 pairs 58 with piece-05-03,yes
-piece-04-02,153.7,166.4,edge,17.7,6,100,03,piece-12-04,45.3,94.0,tab,17.8,0.1,mirror: twin piece-05-03 pairs 58 with piece-11-05,yes
 piece-14-07,178.8,91.7,tab,32.5,260,92,280,piece-14-03,182.9,75.8,edge,32.6,0.2,mirror: twin piece-15-06 pairs 636 with piece-15-01,no
 piece-09-04,116.5,198.0,tab,51.8,286,100,296,piece-09-05,142.7,73.8,edge,51.7,0.1,mirror: twin piece-09-03 pairs 656 with piece-09-02,no
 piece-16-04,98.7,122.7,edge,13.8,286,100,268,piece-24-08,44.2,101.1,tab,13.3,0.5,mirror: twin piece-17-04 pairs 634 with piece-24-10,no
@@ -26,5 +18,5 @@ piece-07-03,151.1,81.7,tab,71.3,556,-1,685,piece-07-02,112.7,96.2,edge,70.6,0.6,
 piece-13-04,31.4,248.2,edge,54.2,593,54,883,piece-13-03,154.0,30.7,tab,54.3,0.1,mirror: twin piece-13-01 pairs 334 with piece-13-02,no
 piece-22-01,115.5,14.8,edge,46.0,680,100,580,piece-22-02,90.4,97.7,tab,46.0,0.1,mirror: twin piece-23-01 pairs 250 with piece-23-02,no
 piece-09-01,131.7,21.9,tab,55.2,683,100,883,piece-09-03,68.5,29.3,edge,55.3,0.0,mirror: twin piece-10-05 pairs 329 with piece-09-04,no
-piece-07-02,112.7,96.2,edge,70.6,685,95,556,piece-07-03,151.1,81.7,tab,71.3,0.6,mirror: twin piece-07-10 pairs 264 with piece-07-06,yes
+piece-07-02,112.7,96.2,edge,70.6,685,95,556,piece-07-03,151.1,81.7,tab,71.3,0.6,mirror: twin piece-07-10 pairs 264 with piece-07-06,no
 piece-10-04,106.3,137.6,tab,59.3,698,83,628,piece-17-06,75.4,113.0,edge,59.2,0.1,mirror: twin piece-10-02 pairs 341 with piece-16-06,no

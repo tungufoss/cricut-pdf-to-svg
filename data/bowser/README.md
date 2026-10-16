@@ -1,6 +1,6 @@
 # Bowser
 
-1573 printed numbers on 178 pieces. 756 numbers form a clean pair (one plain edge, one tab, lengths within 1 mm); 61 labels need a look.
+1573 printed numbers on 178 pieces. 760 numbers form a clean pair (one plain edge, one tab, lengths within 1 mm); 53 labels need a look.
 
 Conversion status (2026-10-16), written by `make`. Edit the YAML, not this file.
 
@@ -23,8 +23,8 @@ Conversion status (2026-10-16), written by `make`. Edit the YAML, not this file.
 | pages | 21 converted |
 | pieces | 178 cut outlines, corners joined by straight edges |
 | folds | 1543, 0 stretched far to reach the cut |
-| numbers | 1573 read, 150 uncertain (orange in the SVG) |
-| pieces to check | 95 marked ⚠ in Inkscape |
+| numbers | 1573 read, 142 uncertain (orange in the SVG) |
+| pieces to check | 92 marked ⚠ in Inkscape |
 | paper colour | footers disagree with the YAML: pages 14–23 say beige (YAML: yellow); page 24 says white (YAML: black) |
 | nesting on sheets | not started |
 
@@ -32,10 +32,10 @@ Conversion status (2026-10-16), written by `make`. Edit the YAML, not this file.
 
 | status | labels | meaning |
 |---|---:|---|
-| ok | 1512 | partner found, one tab and one plain edge, same length |
-| unpaired | 24 | no other copy of this number: likely misread |
-| extra copy: likely misread | 16 | number read more than twice; the other copies already form a clean pair |
-| length mismatch | 12 | partner found but the marked lines differ in length: misread number or traced line |
+| ok | 1520 | partner found, one tab and one plain edge, same length |
+| unpaired | 20 | no other copy of this number: likely misread |
+| extra copy: likely misread | 14 | number read more than twice; the other copies already form a clean pair |
+| length mismatch | 10 | partner found but the marked lines differ in length: misread number or traced line |
 | both tabs | 6 | both copies sit on a tab fold |
 | printed 3 times | 3 | number read more than twice: some are misread |
 
@@ -43,23 +43,23 @@ Conversion status (2026-10-16), written by `make`. Edit the YAML, not this file.
 
 | page | config material | footer says | pieces | ok | check |
 |---|---|---|---:|---:|---:|
-| 04 | red | red | 8 | 73 | 2 |
+| 04 | red | red | 8 | 74 | 1 |
 | 05 | red | red | 8 | 74 | 1 |
-| 06 | red | red | 6 | 53 | 6 |
+| 06 | red | red | 6 | 55 | 4 |
 | 07 | red | red | 10 | 71 | 5 |
 | 08 | red | red | 6 | 52 | 4 |
 | 09 | red | red | 7 | 52 | 6 |
 | 10 | red | red | 7 | 52 | 2 |
 | 11 | green | green | 11 | 85 | 5 |
-| 12 | green | green | 11 | 84 | 6 |
+| 12 | green | green | 11 | 85 | 5 |
 | 13 | green | green | 4 | 29 | 1 |
 | 14 | yellow | beige ⚠ | 10 | 90 | 2 |
-| 15 | yellow | beige ⚠ | 10 | 90 | 2 |
+| 15 | yellow | beige ⚠ | 10 | 92 | 0 |
 | 16 | yellow | beige ⚠ | 10 | 88 | 5 |
 | 17 | yellow | beige ⚠ | 10 | 90 | 3 |
 | 18 | yellow | beige ⚠ | 8 | 81 | 1 |
 | 19 | yellow | beige ⚠ | 8 | 81 | 1 |
-| 20 | yellow | beige ⚠ | 8 | 74 | 2 |
+| 20 | yellow | beige ⚠ | 8 | 76 | 0 |
 | 21 | yellow | beige ⚠ | 8 | 76 | 0 |
 | 22 | yellow | beige ⚠ | 6 | 56 | 2 |
 | 23 | yellow | beige ⚠ | 6 | 58 | 0 |
@@ -71,27 +71,22 @@ Pieces listed by how many of their numbers need a look.
 
 | piece | ok | check | numbers to check |
 |---|---:|---:|---|
-| piece-12-04 | 6 | 4 | 2 (unpaired), 03 (unpaired), 5 (unpaired), 593 (printed 3 times) |
+| piece-12-04 | 7 | 3 | 2 (unpaired), 5 (unpaired), 593 (printed 3 times) |
 | piece-12-06 | 6 | 2 | 593 (printed 3 times), 594 (unpaired) |
 | piece-06-03 | 9 | 2 | 316 (length mismatch), 386 (unpaired) |
 | piece-11-05 | 8 | 2 | 791 (unpaired), 793 (unpaired) |
-| piece-09-04 | 7 | 2 | 259 (extra copy: likely misread), 286 (length mismatch) |
 | piece-07-01 | 8 | 2 | 273 (both tabs), 672 (unpaired) |
+| piece-09-04 | 7 | 2 | 286 (length mismatch), 289 (extra copy: likely misread) |
 | piece-09-01 | 6 | 2 | 657 (unpaired), 683 (unpaired) |
 | piece-17-06 | 3 | 1 | 628 (extra copy: likely misread) |
 | piece-17-07 | 5 | 1 | 730 (unpaired) |
-| piece-04-02 | 11 | 1 | 6 (unpaired) |
 | piece-11-03 | 8 | 1 | 14 (both tabs) |
 | piece-24-03 | 6 | 1 | 789 (unpaired) |
 | piece-11-07 | 6 | 1 | 14 (both tabs) |
-| piece-06-02 | 8 | 1 | 865 (unpaired) |
-| piece-06-01 | 8 | 1 | 356 (extra copy: likely misread) |
 | piece-06-06 | 9 | 1 | 316 (length mismatch) |
 | piece-07-07 | 9 | 1 | 273 (both tabs) |
 | piece-05-07 | 8 | 1 | 792 (unpaired) |
 | piece-24-04 | 7 | 1 | 794 (unpaired) |
-| piece-20-07 | 8 | 1 | 80 (extra copy: likely misread) |
-| piece-20-06 | 11 | 1 | 80 (extra copy: likely misread) |
 | piece-16-04 | 14 | 1 | 286 (length mismatch) |
 | piece-11-06 | 7 | 1 | 790 (unpaired) |
 | piece-16-09 | 11 | 1 | 162 (extra copy: likely misread) |
@@ -114,10 +109,8 @@ Pieces listed by how many of their numbers need a look.
 | piece-04-07 | 8 | 1 | 784 (unpaired) |
 | piece-19-03 | 7 | 1 | 551 (length mismatch) |
 | piece-24-09 | 6 | 1 | 786 (extra copy: likely misread) |
-| piece-15-10 | 10 | 1 | 527 (length mismatch) |
 | piece-17-10 | 11 | 1 | 551 (length mismatch) |
-| piece-15-08 | 13 | 1 | 527 (length mismatch) |
-| piece-07-03 | 8 | 1 | 556 (unpaired) |
+| piece-07-03 | 8 | 1 | 556 (extra copy: likely misread) |
 | piece-22-02 | 6 | 1 | 580 (extra copy: likely misread) |
 | piece-22-01 | 10 | 1 | 680 (extra copy: likely misread) |
 | piece-07-02 | 5 | 1 | 685 (extra copy: likely misread) |
@@ -126,23 +119,21 @@ Pieces listed by how many of their numbers need a look.
 
 ## Hand corrections that still do not pair
 
-623 numbers were set by hand; 33 of them still do not form a clean pair, so the correction, its partner or the traced line is likely off. They come first on the check page.
+633 numbers were set by hand; 31 of them still do not form a clean pair, so the correction, its partner or the traced line is likely off. They come first on the check page.
 
 | piece | number | side | mm | status | partner | partner mm |
 |---|---|---|---:|---|---|---:|
 | piece-12-04 | 2 | tab | 15.2 | unpaired |   |  |
-| piece-12-04 | 03 | tab | 17.8 | unpaired |   |  |
 | piece-12-04 | 5 | tab | 16.8 | unpaired |   |  |
 | piece-11-03 | 14 | tab | 9.6 | both tabs | piece-11-07 tab | 9.6 |
 | piece-11-07 | 14 | tab | 9.6 | both tabs | piece-11-03 tab | 9.6 |
-| piece-20-06 | 80 | tab | 32.2 | extra copy: likely misread |   |  |
-| piece-20-07 | 80 | edge | 32.3 | extra copy: likely misread |   |  |
 | piece-18-04 | 192 | edge | 39.5 | unpaired |   |  |
 | piece-24-08 | 268 | tab | 13.3 | extra copy: likely misread |   |  |
 | piece-07-01 | 273 | tab | 17.1 | both tabs | piece-07-07 tab | 17.0 |
 | piece-07-07 | 273 | tab | 17.0 | both tabs | piece-07-01 tab | 17.1 |
 | piece-09-04 | 286 | tab | 51.8 | length mismatch | piece-16-04 edge | 13.8 |
 | piece-16-04 | 286 | edge | 13.8 | length mismatch | piece-09-04 tab | 51.8 |
+| piece-09-04 | 289 | tab | 42.1 | extra copy: likely misread |   |  |
 | piece-09-05 | 295 | edge | 51.3 | extra copy: likely misread |   |  |
 | piece-08-05 | 305 | tab | 29.7 | both tabs | piece-08-06 tab | 29.7 |
 | piece-08-06 | 305 | tab | 29.7 | both tabs | piece-08-05 tab | 29.7 |
@@ -171,12 +162,12 @@ The model is symmetric: 89 pairs of pieces are mirror images (178 of 178 pieces)
 
 ## Likely misreads
 
-8 clear-cut misreads were fixed without asking (marked `applied` in `bowser-misreads.csv`). 10 more numbers that did not pair up sit on a line of the same length as another unpaired number on the other side (edge against tab), and the two numbers look alike. Check them with `make fix` and `app/number-check.html`.
+3 clear-cut misreads were fixed without asking (marked `applied` in `bowser-misreads.csv`). 9 more numbers that did not pair up sit on a line of the same length as another unpaired number on the other side (edge against tab), and the two numbers look alike. Check them with `make fix` and `app/number-check.html`.
 
 | piece | side | mm | read | suggested | partner | partner mm | why |
 |---|---|---:|---|---|---|---:|---|
 | piece-16-07 | tab | 26.2 | 376 | 378 | piece-16-10 edge | 26.3 | OCR's other reading |
-| piece-10-05 | edge | 42.3 | 885 | 887 | piece-09-03 tab | 42.2 | one digit differs |
+| piece-09-04 | tab | 42.1 | 289 | 885 | piece-10-05 edge | 42.3 | OCR's other reading; the read number already pairs elsewhere |
 | piece-17-06 | edge | 59.2 | 628 | 698 | piece-10-04 tab | 59.3 | one digit differs; the read number already pairs elsewhere |
 | piece-22-02 | tab | 46.0 | 580 | 680 | piece-22-01 edge | 46.0 | OCR's other reading; the read number already pairs elsewhere |
 | piece-14-03 | edge | 32.6 | 280 | 260 | piece-14-07 tab | 32.5 | one digit differs; the read number already pairs elsewhere |
@@ -184,6 +175,5 @@ The model is symmetric: 89 pairs of pieces are mirror images (178 of 178 pieces)
 | piece-09-05 | edge | 51.3 | 295 | 286 | piece-09-04 tab | 51.8 | OCR's other reading; the read number already pairs elsewhere |
 | piece-24-08 | tab | 13.3 | 268 | 286 | piece-16-04 edge | 13.8 | OCR's other reading; the read number already pairs elsewhere |
 | piece-06-04 | tab | 43.2 | 369 | 386 | piece-06-03 edge | 42.5 | OCR's other reading; the read number already pairs elsewhere |
-| piece-12-04 | tab | 16.8 | 5 | 6 | piece-04-02 edge | 17.7 | one digit differs |
 
 Full tables: `bowser-edges.csv`, `bowser-misreads.csv`.
