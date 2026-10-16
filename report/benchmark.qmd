@@ -5,13 +5,7 @@ title: "Benchmark"
 ```{r}
 #| label: setup-benchmark
 #| include: false
-suppressPackageStartupMessages({
-  library(dplyr)
-  library(ggplot2)
-  library(readr)
-  library(stringr)
-  library(tidyr)
-})
+source("R/site.R")
 library(DT)
 bench <- "../bench"
 results <- if (file.exists(file.path(bench, "results.csv"))) read_csv(file.path(bench, "results.csv"), show_col_types = FALSE)
@@ -56,8 +50,10 @@ if (!is.null(results)) {
     ggplot(aes(raster_iou, value, colour = method, shape = kind)) +
     geom_point(alpha = 0.7) +
     facet_wrap(~fabrication, scales = "free_y") +
+    scale_colour_hi() +
     labs(x = "raster IoU", y = NULL, colour = NULL, shape = NULL) +
-    theme_minimal()
+    theme_hi() +
+    theme(legend.position = "right")
 }
 ```
 
@@ -89,8 +85,8 @@ if (!is.null(cors)) {
     geom_tile(colour = "white") +
     geom_text(aes(label = sprintf("%.2f", spearman)), size = 3) +
     facet_wrap(~group) +
-    scale_fill_gradient2(low = "#d61f69", mid = "white", high = "#10099F", limits = c(-1, 1)) +
+    scale_fill_gradient2(low = HI[["orange"]], mid = "white", high = HI[["blue"]], limits = c(-1, 1)) +
     labs(x = NULL, y = NULL, fill = "Spearman") +
-    theme_minimal()
+    theme_hi()
 }
 ```

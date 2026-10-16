@@ -12,7 +12,7 @@ Each stage is a class in `src/lowpoly_pdf_to_svg/`:
 | Render | `render.py` | Renders each page with `pdftoppm` at 180 dpi; the PNG is kept in `data/<project>/previews/`. |
 | Detect | `detect.py` | Separates grey cut lines, dashed folds and black edge numbers. The paper around the pieces is flood-filled from the page border; each enclosed area grows through everything the fill did not reach, so numbers and fold dashes touching a cut line cannot notch it. Outlines are low-poly: every edge is a straight line fitted to the printed cut line, corners are where edges meet. The right margin's "Print on … paper" note is read and checked against the YAML. Folds are found with a Hough transform, classified by line style (dash-dot or dashed; the `folds:` block in the YAML says which is mountain and which valley, Pepakura default dash-dot = mountain), and stretched into one straight line from cut edge to cut edge; a line that is not mostly printed dashes is dropped. |
 | Read numbers | `ocr.py` | Tesseract reads each number; its confident reads train a digit matcher on the template's own font, which reads every number again. Every edge number is printed exactly twice, so uncertain reads prefer the candidate that completes a pair. |
-| Edge pairs | `edges.py` | Links each number to the line it marks (a plain cut edge, or the fold of a glue tab) and pairs the two copies. Writes `<project>-edges.csv` and the summary `README.md` (the model folder's status page): a good pair is one tab and one plain edge of the same length. |
+| Edge pairs | `edges.py` | Links each number to the line it marks (a plain cut edge, or the fold of a glue tab) and pairs the two copies. Writes `edge-numbers.csv` and the summary `README.md` (the model folder's status page): a good pair is one tab and one plain edge of the same length. |
 | Model | `model.py` | `Piece`, `Fold`, `Label` and `PageLayout`, in page pixels. |
 | Write | `svg.py` | One Inkscape SVG for the whole project: document size in inches for Cricut Design Space, drawing coordinates in millimetres. |
 | Export | `export.py` | Last step, run with `make export` once review and fixes are done. Writes `<project>-export.svg` and the label key `<project>-labels.csv`. |
@@ -31,7 +31,7 @@ The numbers are text, so you can correct one by double-clicking it. For the Cric
 
 ## Exporting for the Cricut
 
-`make export` is the last step, after the review and `make fix` rounds. It reads the finished `<project>.svg` and `<project>-edges.csv` and writes `<project>-export.svg` beside them; the review file is not changed, so the check page, the fix loop and the 3D fold keep working on the PDF numbers.
+`make export` is the last step, after the review and `make fix` rounds. It reads the finished `<project>.svg` and `edge-numbers.csv` and writes `<project>-export.svg` beside them; the review file is not changed, so the check page, the fix loop and the 3D fold keep working on the PDF numbers.
 
 - **Short labels.** Every glue pair gets its own two-character label, such as `2A`, in place of the PDF number, so the pen draws two characters instead of three. Both edges of a pair carry the same label and no other edge does; a number the edge check left unpaired gets a label of its own. The alphabet leaves out look-alikes (0/O, 1/I, Q) and 6/9, since labels sit at any angle, and every label has a letter so none reads as a PDF number; two characters cover 851 pairs, beyond that labels grow to three. `<project>-labels.csv` lists each label with its PDF number, edge status and pieces, and each label in the SVG keeps `data-pdf-number`.
 - **Cardstock fill.** Each piece's cut outline is filled with the `color:` of its material in the YAML (named defaults for red, green, yellow, black and a few others when it is missing); holes stay open. Labels turn white on dark card.
@@ -47,7 +47,5 @@ The numbers are text, so you can correct one by double-clicking it. For the Cric
 - Export SVGs organized by material and sheet for review and Cricut Design Space.
 
 Cricut Design Space imports SVG vectors as Cut by default. After import, assign the fold layer to Score and the number layer to Draw/Pen, then attach them to the matching cut pieces. See [Cricut's SVG upload guide](https://help.cricut.com/hc/en-us/articles/360009556313-How-to-upload-images-into-Design-Space) and [operation guide](https://help.cricut.com/hc/en-us/articles/26922998476183-Design-Space-Selecting-Operation).
-
-See `PLAN.md` in the repository for the remaining development stages.
 
 See `PLAN.md` in the repository for the remaining development stages.

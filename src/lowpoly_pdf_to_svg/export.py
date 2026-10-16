@@ -2,7 +2,7 @@
 
     python -m src.lowpoly_pdf_to_svg.export --config data/bowser/bowser.yaml
 
-reads data/bowser/bowser.svg and bowser-edges.csv (both as left by make, make fix and
+reads data/bowser/bowser.svg and edge-numbers.csv (both as left by make, make fix and
 the piece review) and writes
 
 * data/bowser/bowser-export.svg: the Pieces layer only (Source and Review dropped),
@@ -339,7 +339,7 @@ def main() -> int:
         return 1 if problems else 0
     folder = args.output or args.config.parent
     project = args.config.stem
-    source, edges = args.svg or folder / f"{project}.svg", folder / f"{project}-edges.csv"
+    source, edges = args.svg or folder / f"{project}.svg", folder / "edge-numbers.csv"
     for path in (source, edges):
         if not path.is_file():
             parser.error(f"{path} not found; run make first")

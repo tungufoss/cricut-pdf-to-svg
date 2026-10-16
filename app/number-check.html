@@ -53,9 +53,9 @@ button.next{background:var(--ok);color:#fff;border-color:var(--ok);font-weight:6
 <button data-f="open">Open</button><button data-f="auto">Fixed for you</button><button data-f="all">All</button>
 <button class="save" id="save">Save corrections</button></header>
 <main id="list"><p>Run <code>make fix</code>, then open this repository's <code>data</code> folder and pick a model
-(any folder holding a <code>&lt;project&gt;-check.json</code> from <code>make fix</code>). The page remembers the folder,
+(any folder holding a <code>check-page.json</code> from <code>make fix</code>). The page remembers the folder,
 so next time Open only asks to allow it again. Save writes
-<code>&lt;project&gt;-corrections.csv</code> into the same folder, and the next build applies it.
+<code>number-corrections.csv</code> into the same folder, and the next build applies it.
 Without folder access (Firefox), load the JSON file instead and Save downloads the CSV.</p></main>
 <script>
 let D = null, folder = null, store = "", answers = {}, saved = [], lines = {}, pieceFixes = {}, order = null, at = 0;
@@ -105,17 +105,17 @@ const db = () => new Promise((ok, fail) => { const r = indexedDB.open("number-ch
 const recall = async () => { try { const d = await db(); return await new Promise(ok => {
   const r = d.transaction("handles").objectStore("handles").get("data"); r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); }); } catch (e) { return null; } };
 const keep = async h => { try { (await db()).transaction("handles", "readwrite").objectStore("handles").put(h, "data"); } catch (e) {} };
-const checkIn = async dir => { for await (const [name, h] of dir.entries()) if (h.kind === "file" && name.endsWith("-check.json")) return h; return null; };
+const checkIn = async dir => { for await (const [name, h] of dir.entries()) if (h.kind === "file" && name === "check-page.json") return h; return null; };
 let models = {};
 async function loadModel(dir) {
   const h = await checkIn(dir);
   const check = JSON.parse(await (await h.getFile()).text());
   let corrections = [];
   let drawn = [];
-  try { corrections = parseCsv(await (await (await dir.getFileHandle(check.project + "-corrections.csv")).getFile()).text()); } catch (e) {}
-  try { drawn = parseCsv(await (await (await dir.getFileHandle(check.project + "-lines.csv")).getFile()).text()); } catch (e) {}
+  try { corrections = parseCsv(await (await (await dir.getFileHandle("number-corrections.csv")).getFile()).text()); } catch (e) {}
+  try { drawn = parseCsv(await (await (await dir.getFileHandle("number-lines.csv")).getFile()).text()); } catch (e) {}
   let reviewed = [];
-  try { reviewed = parseCsv(await (await (await dir.getFileHandle(check.project + "-pieces.csv")).getFile()).text()); } catch (e) {}
+  try { reviewed = parseCsv(await (await (await dir.getFileHandle("piece-edits.csv")).getFile()).text()); } catch (e) {}
   folder = dir;
   start(check, corrections, drawn, reviewed);
 }
@@ -124,7 +124,7 @@ async function openData(root) {
   if (await checkIn(root)) models[root.name] = root;
   else for await (const [name, h] of root.entries()) if (h.kind === "directory" && await checkIn(h)) models[name] = h;
   const names = Object.keys(models).sort();
-  if (!names.length) { alert(`No model with a -check.json in ${root.name}. Run make fix first.`); return; }
+  if (!names.length) { alert(`No model with a check-page.json in ${root.name}. Run make fix first.`); return; }
   const pick = document.getElementById("model");
   pick.innerHTML = names.map(n => `<option>${n}</option>`).join("");
   pick.hidden = names.length < 2;
@@ -132,7 +132,7 @@ async function openData(root) {
 }
 document.getElementById("model").addEventListener("change", e => loadModel(models[e.target.value]));
 async function choose(reuse) {
-  if (!window.showDirectoryPicker) { alert("This browser cannot open folders; load the -check.json file instead."); return; }
+  if (!window.showDirectoryPicker) { alert("This browser cannot open folders; load the check-page.json file instead."); return; }
   const last = await recall();
   if (reuse && last && await last.requestPermission({mode: "readwrite"}) === "granted") { await openData(last); return; }
   const root = await showDirectoryPicker({mode: "readwrite", id: "number-check-data", ...(last ? {startIn: last} : {})});
@@ -513,7 +513,7 @@ async function save(quiet) {
     for (const l of f.drop) reviewed.push([piece, "drop", "", ...movedIn(f, l.a), ...movedIn(f, l.b), ""].join(","));
     if (f.ok) reviewed.push([piece, "ok", "", "", "", "", "", ""].join(","));
   }
-  const files = [[D.project + "-corrections.csv", rows], [D.project + "-lines.csv", drawn], [D.project + "-pieces.csv", reviewed]];
+  const files = [["number-corrections.csv", rows], ["number-lines.csv", drawn], ["piece-edits.csv", reviewed]];
   const download = (name, text) => {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([text], {type: "text/csv"}));

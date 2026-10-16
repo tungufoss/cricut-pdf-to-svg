@@ -8,7 +8,7 @@ title: "Reference"
 
 | Option | Default | Description |
 |---|---|---|
-| `--config` | `data/bowser/bowser.yaml` | Project YAML manifest |
+| `--config` | `data/example/example.yaml` | Project YAML manifest |
 | `--output` | the YAML's folder, `data/<project>/` | Output directory |
 | `--dpi` | `180` | PDF render resolution |
 | `--page` | all pages | Convert only this 1-based page; repeatable |
@@ -25,15 +25,16 @@ title: "Reference"
 | `make install` | Install the Python dependencies |
 | `make report` | Render this site into `report/_site` |
 | `make preview` | Serve this site on localhost and re-render on save |
+| `make report-data` | Write the summary statistics the public site is built from into `report/data/<project>/` |
 | `make clean` | Remove generated output |
 
 ## Manifest
 
-```{.yaml filename="data/bowser/bowser.yaml"}
-project: bowser
+```{.yaml filename="data/example/example.yaml"}
+project: example
 
 source:
-  pdf: bowser.pdf          # in data/, not committed
+  pdf: example.pdf         # in data/, not committed
   page_size: letter
 
 folds:                     # which printed line style is which fold
@@ -54,8 +55,8 @@ materials:                 # one entry per cardstock colour
 | File | Contents |
 |---|---|
 | `data/<project>/<project>.svg` | One Inkscape SVG, one row of pages per cardstock (not committed); document size in inches, drawing in millimetres |
-| `data/<project>/previews/<project>-page-PP-<material>.png` | Each PDF page as rendered for tracing (not committed) |
-| `data/<project>/<project>-edges.csv` | One row per printed edge number, read by the [glue pairs](glue-pairs.qmd) page |
+| `data/<project>/previews/page-PP-<material>.png` | Each PDF page as rendered for tracing (not committed) |
+| `data/<project>/edge-numbers.csv` | One row per printed edge number, read by the [glue pairs](glue-pairs.qmd) page |
 | `data/<project>/README.md` | Conversion status and edge check; its first paragraph is shown on the home page |
 
 ### Edge table columns

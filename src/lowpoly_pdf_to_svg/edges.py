@@ -206,8 +206,8 @@ class EdgeTable:
                  f"| `{project}.yaml` | pages per cardstock, fold styles, sheet size | yes |",
                  f"| `{project}.svg` | Inkscape review file, one row of pages per cardstock | no, traced pattern |",
                  "| `previews/` | rendered PDF pages, the SVG's faint Source layer | no |",
-                 f"| `{project}-edges.csv` | every printed edge number with its line and partner | yes |",
-                 f"| `{project}-misreads.csv` | unpaired numbers matched by length to a look-alike number | yes |",
+                 f"| `edge-numbers.csv` | every printed edge number with its line and partner | yes |",
+                 f"| `number-misreads.csv` | unpaired numbers matched by length to a look-alike number | yes |",
                  "| `README.md` | this status page | yes |", "",
                  "## Status", "",
                  "| stage | result |", "|---|---|",
@@ -265,20 +265,20 @@ class EdgeTable:
                       f"lengths of their numbered lines: {sum(t.exact for t in mirror.twins)} exact mirrors (outline and "
                       f"tabs match) and {sum(not t.exact for t in mirror.twins)} mirror variations (same body, tabs on "
                       "other edges). Of their {paired} mirrored lines, {off} differ in length from "
-                      f"their mirror line by more than 1 mm, so one of the two was traced off (`{project}-mirrors.csv`). "
+                      f"their mirror line by more than 1 mm, so one of the two was traced off (`mirror-mismatches.csv`). "
                       "A twin's clean glue pair also predicts the number on the mirror line; those predictions are "
                       "applied when clear-cut, and otherwise go to the check page with `mirror` as the reason.", ""]
         found = self.misreads(records)
         lines += ["", "## Likely misreads", "",
                   f"{applied} clear-cut misreads were fixed without asking (marked `applied` in "
-                  f"`{project}-misreads.csv`). {len(found)} more numbers that did not pair up sit on a line of the "
+                  f"`number-misreads.csv`). {len(found)} more numbers that did not pair up sit on a line of the "
                   "same length as another unpaired number on the other side (edge against tab), and the two numbers "
                   "look alike. Check them with `make fix` and `app/number-check.html`.", "",
                   "| piece | side | mm | read | suggested | partner | partner mm | why |", "|---|---|---:|---|---|---|---:|---|"]
         for f in found:
             lines.append(f"| {f['piece']} | {f['side']} | {f['length_mm']} | {f['read']} | {f['suggested']} | "
                          f"{f['partner_piece']} {f['partner_side']} | {f['partner_length_mm']} | {f['why']} |")
-        lines += ["", f"Full tables: `{project}-edges.csv`, `{project}-misreads.csv`.", ""]
+        lines += ["", f"Full tables: `edge-numbers.csv`, `number-misreads.csv`.", ""]
         path.write_text("\n".join(lines), encoding="utf-8")
 
 

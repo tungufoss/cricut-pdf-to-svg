@@ -1,11 +1,11 @@
-"""Data for the number check page: data/<project>/<project>-check.json.
+"""Data for the number check page: data/<project>/check-page.json.
 
     python -m src.lowpoly_pdf_to_svg.fixer --config data/example/example.yaml
 
 One card per number that did not pair up: the PDF patch around it beside the patch
 around its partner (the suggested look-alike, or the copy it was paired with).
 app/number-check.html opens a model folder, shows the cards, and Save writes
-<project>-corrections.csv back into the folder; the next build applies it. The JSON
+number-corrections.csv back into the folder; the next build applies it. The JSON
 embeds scan patches, so it stays local (gitignored).
 """
 
@@ -38,8 +38,8 @@ class CheckData:
     def __init__(self, folder: Path, project: str, dpi: int):
         self.folder, self.project = folder, project
         self.mm_per_px = 25.4 / dpi
-        self.edges = list(csv.DictReader((folder / f"{project}-edges.csv").open(encoding="utf-8")))
-        self.misreads = list(csv.DictReader((folder / f"{project}-misreads.csv").open(encoding="utf-8")))
+        self.edges = list(csv.DictReader((folder / f"edge-numbers.csv").open(encoding="utf-8")))
+        self.misreads = list(csv.DictReader((folder / f"number-misreads.csv").open(encoding="utf-8")))
         self.pages: dict[str, Image.Image] = {}
         self.lines = {(r["piece"], r["x_mm"], r["y_mm"]): [float(v) for v in r.get("line_mm", "").split()]
                       for r in self.edges}
@@ -48,12 +48,12 @@ class CheckData:
         self.folded = self._folded()
 
     def _folded(self) -> dict[frozenset, list[tuple[float, str]]]:
-        """Second opinion from the folded 3D model (<project>-3d-glue.csv, written by the 3D
+        """Second opinion from the folded 3D model (fold3d-glue.csv, written by the 3D
         reconstruction): pairs of an open edge and an open tab of the same length that meet once
         folded. Keyed by the two pieces; reads can differ between builds, so a pair is matched
         to a card by its pieces and line length."""
         found: dict[frozenset, list[tuple[float, str]]] = {}
-        for path in (self.folder / f"{self.project}-3d-glue.csv", self.folder / "3d" / f"{self.project}-3d-glue.csv"):
+        for path in (self.folder / f"fold3d-glue.csv", self.folder / "3d" / f"fold3d-glue.csv"):
             if path.is_file():
                 for r in csv.DictReader(path.open(encoding="utf-8")):
                     if r["status"].startswith("proposed"):
@@ -116,16 +116,16 @@ class CheckData:
         """One entry per traced piece for the piece review: the scan of the whole piece and how much
         its corners and folds likely need fixing (trace faults, untraced ink, numbers with no fold)."""
         faults: dict[str, list[str]] = {}
-        path = self.folder / f"{self.project}-checks.csv"
+        path = self.folder / f"trace-faults.csv"
         if path.is_file():
             for r in csv.DictReader(path.open(encoding="utf-8")):
                 faults.setdefault(r["piece"], []).append(f"{r['check']}: {r['detail']}")
-        path = self.folder / f"{self.project}-3d-inspect.csv"   # pieces the folded 3D model doubts
+        path = self.folder / f"fold3d-inspect.csv"   # pieces the folded 3D model doubts
         if path.is_file():
             for r in csv.DictReader(path.open(encoding="utf-8")):
                 faults.setdefault(r["piece"], []).append(f"3D fold: {r['reason']}")
         suggest: dict[str, list[dict]] = {}
-        path = self.folder / f"{self.project}-mirror-folds.csv"
+        path = self.folder / f"mirror-missing-folds.csv"
         if path.is_file():
             for r in csv.DictReader(path.open(encoding="utf-8")):
                 if r.get("issue", "missing") != "missing":
@@ -134,7 +134,7 @@ class CheckData:
                     {"kind": r["kind"], "twin": r["twin"], "a": [float(r["ax_mm"]), float(r["ay_mm"])],
                      "b": [float(r["bx_mm"]), float(r["by_mm"])]})
         twin: dict[str, str] = {}
-        path = self.folder / f"{self.project}-mirrors.csv"
+        path = self.folder / f"mirror-mismatches.csv"
         if path.is_file():
             for r in csv.DictReader(path.open(encoding="utf-8")):
                 twin[r["piece"]], twin[r["twin"]] = r["twin"], r["piece"]
@@ -189,7 +189,7 @@ class CheckData:
     def _page(self, piece: str) -> Image.Image:
         page = piece.split("-")[1]
         if page not in self.pages:
-            found = sorted((self.folder / "previews").glob(f"{self.project}-page-{page}-*.png"))
+            found = sorted((self.folder / "previews").glob(f"page-{page}-*.png"))
             self.pages[page] = Image.open(found[0]).convert("L") if found else Image.new("L", (10, 10), 255)
         return self.pages[page]
 
@@ -240,10 +240,10 @@ def main() -> int:
     args = parser.parse_args()
     folder, project = args.config.parent, args.config.stem
     try:
-        count = CheckData(folder, project, args.dpi).write(folder / f"{project}-check.json")
+        count = CheckData(folder, project, args.dpi).write(folder / f"check-page.json")
     except OSError as error:
         parser.error(str(error))
-    print(f"Wrote {folder / (project + '-check.json')} with {count} numbers to check; "
+    print(f"Wrote {folder / 'check-page.json'} with {count} numbers to check; "
           "open app/number-check.html and pick the folder")
     return 0
 
