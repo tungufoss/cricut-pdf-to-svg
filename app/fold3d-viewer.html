@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Folded Model Viewer</title>
 <!-- The glued model from fold3d.py beside the traced pattern. Click a face in 3D to find it on the
-     pattern, or a face on the pattern to find it in 3D. Data: <model>-3d.json (fold3d.py) and the
+     pattern, or a face on the pattern to find it in 3D. Data: fold3d.json (fold3d.py) and the
      review SVG; pass ?json=…&svg=… to load another model. Needs http (make -f fold3d.mk view). -->
 <style>
   :root {
@@ -75,7 +75,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 const params = new URLSearchParams(location.search);
-const jsonUrl = params.get("json") || "../data/example/example-3d.json";
+const jsonUrl = params.get("json") || "../data/example/fold3d.json";
 const svgUrl = params.get("svg") || "../data/example/example.svg";
 const SVGNS = "http://www.w3.org/2000/svg";
 
