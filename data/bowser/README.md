@@ -1,6 +1,6 @@
 # Bowser
 
-1573 printed numbers on 178 pieces. 769 numbers form a clean pair (one plain edge, one tab, lengths within 1 mm); 35 labels need a look.
+1573 printed numbers on 178 pieces. 770 numbers form a clean pair (one plain edge, one tab, lengths within 1 mm); 33 labels need a look.
 
 Conversion status (2026-10-16), written by `make`. Edit the YAML, not this file.
 
@@ -32,11 +32,11 @@ Conversion status (2026-10-16), written by `make`. Edit the YAML, not this file.
 
 | status | labels | meaning |
 |---|---:|---|
-| ok | 1538 | partner found, one tab and one plain edge, same length |
+| ok | 1540 | partner found, one tab and one plain edge, same length |
 | unpaired | 17 | no other copy of this number: likely misread |
 | extra copy: likely misread | 11 | number read more than twice; the other copies already form a clean pair |
-| length mismatch | 4 | partner found but the marked lines differ in length: misread number or traced line |
 | printed 3 times | 3 | number read more than twice: some are misread |
+| length mismatch | 2 | partner found but the marked lines differ in length: misread number or traced line |
 
 ## Pages
 
@@ -51,7 +51,7 @@ Conversion status (2026-10-16), written by `make`. Edit the YAML, not this file.
 | 10 | red | red | 7 | 54 | 0 |
 | 11 | green | green | 11 | 87 | 3 |
 | 12 | green | green | 11 | 85 | 5 |
-| 13 | green | green | 4 | 27 | 3 |
+| 13 | green | green | 4 | 29 | 1 |
 | 14 | yellow | beige ⚠ | 10 | 90 | 2 |
 | 15 | yellow | beige ⚠ | 10 | 90 | 2 |
 | 16 | yellow | beige ⚠ | 10 | 92 | 1 |
@@ -80,7 +80,6 @@ Pieces listed by how many of their numbers need a look.
 | piece-24-04 | 7 | 1 | 794 (unpaired) |
 | piece-14-02 | 6 | 1 | 289 (extra copy: likely misread) |
 | piece-11-06 | 7 | 1 | 790 (unpaired) |
-| piece-13-02 | 9 | 1 | 765 (length mismatch) |
 | piece-24-07 | 7 | 1 | 785 (unpaired) |
 | piece-15-06 | 10 | 1 | 562 (length mismatch) |
 | piece-14-03 | 7 | 1 | 289 (extra copy: likely misread) |
@@ -89,7 +88,6 @@ Pieces listed by how many of their numbers need a look.
 | piece-09-04 | 8 | 1 | 286 (extra copy: likely misread) |
 | piece-09-05 | 7 | 1 | 296 (extra copy: likely misread) |
 | piece-08-04 | 10 | 1 | 698 (extra copy: likely misread) |
-| piece-13-01 | 4 | 1 | 765 (length mismatch) |
 | piece-13-04 | 4 | 1 | 593 (printed 3 times) |
 | piece-08-01 | 10 | 1 | 588 (extra copy: likely misread) |
 | piece-04-07 | 8 | 1 | 784 (unpaired) |
