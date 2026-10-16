@@ -131,14 +131,16 @@ class LineFixes:
         return applied, missed
 
 
-PIECE_COLUMNS = ["piece", "action", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm"]
+PIECE_COLUMNS = ["piece", "action", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm", "note"]
 FOLD_MM = 1.0          # a dropped fold is the traced fold whose two ends lie this close to the row's
 
 
 @dataclass
 class PieceFix:
     """One answer from the piece review: `ok` (the piece was looked at), `add` (a fold the
-    trace missed, with its kind) or `drop` (a traced fold that is no fold), ends in page mm."""
+    trace missed, with its kind), `drop` (a traced fold that is no fold) or `move` (an outline
+    corner dragged from a to b, taking the folds that end there along), points in page mm.
+    A `note` row carries free text for edits the page cannot make; the build leaves it alone."""
     piece: str
     action: str
     kind: str = ""
@@ -147,7 +149,7 @@ class PieceFix:
 
 
 class PieceFixes:
-    """data/<project>/<project>-pieces.csv: folds added or dropped by hand, piece by piece."""
+    """data/<project>/<project>-pieces.csv: folds added or dropped and corners moved by hand, piece by piece."""
 
     def __init__(self, rows: list[PieceFix]):
         self.rows = rows
@@ -160,10 +162,10 @@ class PieceFixes:
         with path.open(encoding="utf-8", newline="") as handle:
             return cls([PieceFix(r["piece"], r["action"], r.get("kind", ""),
                                  (number(r["ax_mm"]), number(r["ay_mm"])), (number(r["bx_mm"]), number(r["by_mm"])))
-                        for r in csv.DictReader(handle) if r.get("action") in ("ok", "add", "drop")])
+                        for r in csv.DictReader(handle) if r.get("action") in ("ok", "add", "drop", "move")])
 
     def apply(self, layouts: list[tuple[PageLayout, float]]) -> tuple[set[str], list[PieceFix]]:
-        """Add and drop folds; returns (ids of pieces whose folds changed, rows that matched nothing)."""
+        """Move corners, add and drop folds; returns (ids of pieces changed, rows that matched nothing)."""
         pieces = {piece.id: (piece, mm) for layout, mm in layouts for piece in layout.pieces}
         changed, missed = set(), []
         for row in self.rows:
@@ -174,10 +176,18 @@ class PieceFixes:
                 missed.append(row)
                 continue
             a, b = (row.a[0] / mm, row.a[1] / mm), (row.b[0] / mm, row.b[1] / mm)
-            if row.action == "add":
+            near = lambda p, q: (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 <= (FOLD_MM / mm) ** 2
+            if row.action == "move":
+                corners = [i for i, p in enumerate(piece.outline) if near(p, a)]
+                if not corners:
+                    missed.append(row)
+                    continue
+                piece.outline[corners[0]] = b
+                for fold in piece.folds:
+                    fold.a, fold.b = (b if near(fold.a, a) else fold.a), (b if near(fold.b, a) else fold.b)
+            elif row.action == "add":
                 piece.folds.append(Fold(a, b, FoldKind(row.kind or "valley")))
             else:
-                near = lambda p, q: (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 <= (FOLD_MM / mm) ** 2
                 keep = [f for f in piece.folds
                         if not ((near(f.a, a) and near(f.b, b)) or (near(f.a, b) and near(f.b, a)))]
                 if len(keep) == len(piece.folds):

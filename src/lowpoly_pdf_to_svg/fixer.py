@@ -30,7 +30,7 @@ MAX_MM = 120.0
 FOLDED_MM = 0.6       # a 3D-model pair matches a card when its line length agrees this closely
 SIZE_PX = 360         # patches are scaled to this so long lines do not bloat the JSON
 PIECE_PX = 720        # whole-piece patches for the piece review
-PIECE_MARGIN_MM = 6.0
+PIECE_MARGIN_MM = 15.0     # room past the traced outline, where a clipped piece goes on
 LOOSE_MM = 4.0        # untraced line ink inside a piece beyond this much may be a missed fold
 
 

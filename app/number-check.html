@@ -60,15 +60,29 @@ const key = p => `${p.piece}@${p.x},${p.y}`;
 let filter = "todo";
 
 function parseCsv(text) {
-  const [head, ...rows] = text.trim().split(/\r?\n/);
-  const cols = head.split(",");
-  return rows.filter(Boolean).map(r => Object.fromEntries(r.split(",").map((v, i) => [cols[i], v])));
+  // Quoted fields (a note with commas or line breaks) are read whole.
+  const rows = [[]];
+  let field = "", quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) { if (c === '"' && text[i + 1] === '"') { field += c; i++; } else if (c === '"') quoted = false; else field += c; }
+    else if (c === '"') quoted = true;
+    else if (c === ",") { rows.at(-1).push(field); field = ""; }
+    else if (c === "\n") { rows.at(-1).push(field.replace(/\r$/, "")); field = ""; rows.push([]); }
+    else field += c;
+  }
+  if (field || rows.at(-1).length) rows.at(-1).push(field);
+  const [cols, ...body] = rows.filter(r => r.length > 1 || r[0]);
+  return body.map(r => Object.fromEntries(cols.map((c, i) => [c, r[i] ?? ""])));
 }
+const csvField = v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v;
 function start(data, corrections, drawn = [], reviewed = []) {
   D = data; saved = corrections; store = "fix-" + D.project; answers = {}; lines = {}; pieceFixes = {}; order = null;
   for (const r of reviewed) {
-    const f = pieceFixes[r.piece] ??= {ok: false, add: [], drop: []};
+    const f = pieceFixes[r.piece] ??= {ok: false, add: [], drop: [], move: [], note: "", log: []};
     if (r.action === "ok") f.ok = true;
+    else if (r.action === "note") f.note = r.note;
+    else if (r.action === "move") f.move.push({a: [+r.ax_mm, +r.ay_mm], b: [+r.bx_mm, +r.by_mm]});
     else (r.action === "add" ? f.add : f.drop).push({kind: r.kind, a: [+r.ax_mm, +r.ay_mm], b: [+r.bx_mm, +r.by_mm]});
   }
   for (const s of saved) answers[`${s.piece}@${s.x_mm},${s.y_mm}`] = s.number;
@@ -276,7 +290,8 @@ function card(c) {
 // Piece review: one whole piece at a time, those needing the most work first (shuffled among
 // equals). Click two points to add a fold the trace missed; in remove mode click a fold to drop
 // it; click a number to correct it. OK saves into the folder and moves to the next piece.
-const fixOf = id => pieceFixes[id] ??= {ok: false, add: [], drop: []};
+const fixOf = id => { const f = pieceFixes[id] ??= {ok: false, add: [], drop: []}; f.move ??= []; f.note ??= ""; f.log ??= []; return f; };
+const movedIn = (f, c) => { const m = (f.move || []).find(m => Math.hypot(m.a[0] - c[0], m.a[1] - c[1]) < 0.3); return m ? m.b : c; };
 const segDist = (q, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy || 1;
   const t = Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / l));
   return Math.hypot(q[0] - a[0] - t * dx, q[1] - a[1] - t * dy); };
@@ -294,15 +309,22 @@ function reviewPiece(list) {
   const reviewed = D.pieces.filter(p => fixOf(p.piece).ok).length;
   document.getElementById("count").textContent = `piece ${at + 1} of ${order.length} · ${reviewed} reviewed`;
   const [left, top, side] = q.box, r = side / 220;
-  const isDropped = g => f.drop.some(d => Math.hypot(d.a[0] - g[0], d.a[1] - g[1]) + Math.hypot(d.b[0] - g[2], d.b[1] - g[3]) < 0.5);
+  // Dragged corners take the folds that end at them along.
+  const at_ = c => movedIn(f, c);
+  const outline = t.outline.map(at_);
+  const folds = t.folds.map(g => [...at_([g[0], g[1]]), ...at_([g[2], g[3]])]);
+  const same = (d, g) => { const a = at_(d.a), b = at_(d.b);
+    return Math.min(Math.hypot(a[0] - g[0], a[1] - g[1]) + Math.hypot(b[0] - g[2], b[1] - g[3]),
+                    Math.hypot(a[0] - g[2], a[1] - g[3]) + Math.hypot(b[0] - g[0], b[1] - g[1])) < 0.5; };
+  const isDropped = i => f.drop.some(d => same(d, folds[i]));
   const el = document.createElement("div");
   el.className = "card review";
   el.innerHTML = `<div class="scan"><img src="${q.image}" alt="scan of ${q.piece}">
     <svg viewBox="${left} ${top} ${side} ${side}">
-      <polygon class="trace" points="${t.outline.map(c => c.join(",")).join(" ")}" style="stroke-width:${r * 0.8}"/>
-      ${t.folds.map(g => `<line class="${isDropped(g) ? "dropped" : "fold"}" x1="${g[0]}" y1="${g[1]}" x2="${g[2]}" y2="${g[3]}" stroke-dasharray="${r * 3} ${r * 1.5}" style="stroke-width:${r * 1.1}"/>`).join("")}
+      <polygon class="trace" points="${outline.map(c => c.join(",")).join(" ")}" style="stroke-width:${r * 0.8}"/>
+      ${t.folds.map((g, i) => `<line class="${isDropped(i) ? "dropped" : "fold"}" x1="${folds[i][0]}" y1="${folds[i][1]}" x2="${folds[i][2]}" y2="${folds[i][3]}" stroke-dasharray="${r * 3} ${r * 1.5}" style="stroke-width:${r * 1.1}"/>`).join("")}
       ${f.add.map(g => `<line class="added" x1="${g.a[0]}" y1="${g.a[1]}" x2="${g.b[0]}" y2="${g.b[1]}" stroke-dasharray="${g.kind === "mountain" ? `${r * 4} ${r * 1.5} ${r} ${r * 1.5}` : `${r * 3} ${r * 1.5}`}" style="stroke-width:${r * 1.6}"/>`).join("")}
-      ${t.outline.map(c => `<circle class="corner" cx="${c[0]}" cy="${c[1]}" r="${r * 1.6}" style="stroke-width:${r * 0.6}"/>`).join("")}
+      ${outline.map((c, i) => `<circle class="corner" data-i="${i}" cx="${c[0]}" cy="${c[1]}" r="${r * (mode === "move" ? 2.6 : 1.6)}" style="stroke-width:${r * 0.6}${f.move.some(m => m.b === c) ? ";fill:#c000ff" : ""}"/>`).join("")}
       ${q.labels.map(l => { const v = answers[`${q.piece}@${l.x},${l.y}`]; const ok = l.status === "ok";
         return `<g class="label" data-k="${l.x},${l.y}" style="cursor:pointer"><circle cx="${l.x}" cy="${l.y}" r="${r * 7}" fill="${ok ? "#1b8a3a" : "#e00000"}" fill-opacity=".18" stroke="${ok ? "#1b8a3a" : "#e00000"}" style="stroke-width:${r * 0.8}"/>
           ${v !== undefined && v !== "" ? `<text class="num" x="${l.x}" y="${+l.y - r * 8}" text-anchor="middle" font-size="${r * 9}" fill="#c000ff" style="stroke-width:${r * 2}">${v === "x" ? "✕" : v}</text>` : ""}</g>`; }).join("")}
@@ -310,27 +332,58 @@ function reviewPiece(list) {
     </svg></div>
     <div class="side"><div><span class="read">${q.piece}</span> <span class="meta">${q.labels.length} numbers, ${t.folds.length} traced folds${f.ok ? " · reviewed" : ""}</span></div>
       <div class="meta">${q.why.length ? q.why.map(w => `<div class="hint">${w}</div>`).join("") : "Nothing flagged; check the folds look complete."}</div>
-      <div class="tools"><button data-m="add">Add fold</button><select><option value="valley">valley (dashed)</option><option value="mountain">mountain (dash-dot)</option></select><button data-m="drop">Remove fold</button></div>
+      <div class="tools"><button data-m="add">Add fold</button><select><option value="valley">valley (dashed)</option><option value="mountain">mountain (dash-dot)</option></select><button data-m="drop">Remove fold</button><button data-m="move">Move corner</button></div>
       <div class="meta how"></div>
+      <label class="meta">Note for edits the page cannot make<textarea rows="3" style="width:100%;font:inherit">${f.note.replace(/</g, "&lt;")}</textarea></label>
       <div class="tools"><button data-a="undo">Undo</button><button data-a="back">← Back</button><button data-a="skip">Skip</button><button class="next" data-a="ok">OK → next</button></div>
-      <div class="meta">Green dashes are traced folds, purple ones you added, red ones you removed. Numbers: green circle paired, red not; click one to correct it. Enter = OK.</div></div>`;
+      <div class="meta">Green dashes are traced folds, purple ones you added, red ones you removed; purple corners you moved. Numbers: green circle paired, red not; click one to correct it. Enter = OK.</div></div>`;
   list.appendChild(el);
   const svg = el.querySelector("svg"), clicks = el.querySelector(".clicks"), how = el.querySelector(".how");
   const kind = el.querySelector("select");
   kind.value = foldKind; kind.addEventListener("change", () => { foldKind = kind.value; });
-  const setMode = m => { mode = m; el.querySelectorAll("[data-m]").forEach(b => b.classList.toggle("on", b.dataset.m === m));
-    how.textContent = m === "add" ? "Click the two ends of the missing fold; ends snap to blue corners (Shift places freely)." : "Click a fold to remove it, or a purple one to take it back."; };
+  el.querySelector("textarea").addEventListener("input", e => { f.note = e.target.value; remember(); });
+  const HOW = {add: "Click the two ends of the missing fold; ends snap to blue corners (Shift places freely).",
+    drop: "Click a fold to remove it, or a purple one to take it back.",
+    move: "Drag a blue corner to where the printed cut really turns; its folds follow."};
+  const setMode = (m, redraw) => { mode = m; if (redraw) { changed(); return; }
+    el.querySelectorAll("[data-m]").forEach(b => b.classList.toggle("on", b.dataset.m === m)); how.textContent = HOW[m]; };
   setMode(mode);
-  el.querySelectorAll("[data-m]").forEach(b => b.addEventListener("click", () => setMode(b.dataset.m)));
-  const points = [...t.outline, ...t.folds.flatMap(g => [[g[0], g[1]], [g[2], g[3]]]), ...f.add.flatMap(g => [g.a, g.b])];
+  el.querySelectorAll("[data-m]").forEach(b => b.addEventListener("click", () => setMode(b.dataset.m, true)));
+  const points = [...outline, ...folds.flatMap(g => [[g[0], g[1]], [g[2], g[3]]]), ...f.add.flatMap(g => [g.a, g.b])];
   const toMM = e => { const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse()); return [p.x, p.y]; };
   const mmPerPx = () => side / svg.getBoundingClientRect().width;
   const snap = (p, e) => { let best = e.shiftKey ? 0 : SNAP_PX * mmPerPx(), hit = p;
     for (const c of points) { const d = Math.hypot(c[0] - p[0], c[1] - p[1]); if (d < best) { best = d; hit = c; } }
     return hit.map(v => +(+v).toFixed(2)); };
-  let picked = [];
-  const changed = () => { remember(); list.innerHTML = ""; reviewPiece(list); };
+  const round = p => p.map(v => +v.toFixed(2));
+  let picked = [], dragging = null;
+  function changed() { remember(); list.innerHTML = ""; reviewPiece(list); }
+  svg.addEventListener("pointerdown", e => {
+    if (mode !== "move") return;
+    const p = toMM(e);
+    const i = outline.map((c, i) => ({i, d: Math.hypot(c[0] - p[0], c[1] - p[1])})).sort((u, v) => u.d - v.d)[0];
+    if (!i || i.d > SNAP_PX * 1.5 * mmPerPx()) return;
+    dragging = {i: i.i, from: t.outline[i.i], dot: svg.querySelector(`.corner[data-i="${i.i}"]`)};
+    svg.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  svg.addEventListener("pointermove", e => {
+    if (!dragging) return;
+    const p = toMM(e);
+    dragging.to = round(p);
+    dragging.dot.setAttribute("cx", p[0]); dragging.dot.setAttribute("cy", p[1]);
+    const shown = outline.slice(); shown[dragging.i] = p;
+    svg.querySelector(".trace").setAttribute("points", shown.map(c => c.join(",")).join(" "));
+  });
+  svg.addEventListener("pointerup", () => {
+    if (!dragging) return;
+    const {from, to} = dragging; dragging = null;
+    if (!to) return;
+    const m = f.move.find(m => Math.hypot(m.a[0] - from[0], m.a[1] - from[1]) < 0.3);
+    if (m) m.b = to; else f.move.push({a: from, b: to});
+    f.log.push("move"); changed();
+  });
   svg.addEventListener("click", e => {
+    if (mode === "move") return;
     const p = toMM(e);
     const label = e.target.closest(".label");
     if (label) {
@@ -343,21 +396,22 @@ function reviewPiece(list) {
       const reach = SNAP_PX * mmPerPx() * 1.5;
       const added = f.add.findIndex(g => segDist(p, g.a, g.b) <= reach);
       if (added >= 0) { f.add.splice(added, 1); changed(); return; }
-      const g = t.folds.map(g => ({g, d: segDist(p, [g[0], g[1]], [g[2], g[3]])})).sort((u, v) => u.d - v.d)[0];
+      const g = folds.map(g => ({g, d: segDist(p, g.slice(0, 2), g.slice(2))})).sort((u, v) => u.d - v.d)[0];
       if (!g || g.d > reach) return;
-      const i = f.drop.findIndex(d => Math.hypot(d.a[0] - g.g[0], d.a[1] - g.g[1]) + Math.hypot(d.b[0] - g.g[2], d.b[1] - g.g[3]) < 0.5);
-      if (i >= 0) f.drop.splice(i, 1); else f.drop.push({a: [g.g[0], g.g[1]], b: [g.g[2], g.g[3]]});
+      const i = f.drop.findIndex(d => same(d, g.g));
+      if (i >= 0) f.drop.splice(i, 1); else { f.drop.push({a: [g.g[0], g.g[1]], b: [g.g[2], g.g[3]]}); f.log.push("drop"); }
       changed(); return;
     }
     picked.push(snap(p, e));
-    if (picked.length === 2) { f.add.push({kind: foldKind, a: picked[0], b: picked[1]}); changed(); return; }
+    if (picked.length === 2) { f.add.push({kind: foldKind, a: picked[0], b: picked[1]}); f.log.push("add"); changed(); return; }
     clicks.innerHTML = `<circle cx="${picked[0][0]}" cy="${picked[0][1]}" r="${r * 2.5}" fill="#c000ff"/>`;
     how.textContent = "Now click the other end of the fold.";
   });
   const go = step => { at += step; list.innerHTML = ""; reviewPiece(list); window.scrollTo(0, 0); };
   el.querySelector("[data-a=undo]").addEventListener("click", () => {
     if (picked.length) { picked = []; clicks.innerHTML = ""; setMode(mode); return; }
-    if (f.add.length) f.add.pop(); else f.drop.pop(); changed(); });
+    const last = f.log.pop();
+    if (last) f[last].pop(); changed(); });
   el.querySelector("[data-a=back]").addEventListener("click", () => go(-1));
   el.querySelector("[data-a=skip]").addEventListener("click", () => go(1));
   el.querySelector("[data-a=ok]").addEventListener("click", () => { f.ok = true; remember(); save(true); go(1); });
@@ -387,11 +441,13 @@ async function save(quiet) {
   }
   const drawn = ["piece,x_mm,y_mm,number,kind,ax_mm,ay_mm,bx_mm,by_mm"];
   for (const l of Object.values(lines)) drawn.push([l.piece, l.x, l.y, l.read, l.kind, ...l.a, ...l.b].join(","));
-  const reviewed = ["piece,action,kind,ax_mm,ay_mm,bx_mm,by_mm"];
+  const reviewed = ["piece,action,kind,ax_mm,ay_mm,bx_mm,by_mm,note"];
   for (const [piece, f] of Object.entries(pieceFixes)) {
-    for (const l of f.add) reviewed.push([piece, "add", l.kind, ...l.a, ...l.b].join(","));
-    for (const l of f.drop) reviewed.push([piece, "drop", "", ...l.a, ...l.b].join(","));
-    if (f.ok) reviewed.push([piece, "ok", "", "", "", "", ""].join(","));
+    for (const m of f.move || []) reviewed.push([piece, "move", "", ...m.a, ...m.b, ""].join(","));
+    if (f.note) reviewed.push([piece, "note", "", "", "", "", "", csvField(f.note)].join(","));
+    for (const l of f.add) reviewed.push([piece, "add", l.kind, ...l.a, ...l.b, ""].join(","));
+    for (const l of f.drop) reviewed.push([piece, "drop", "", ...movedIn(f, l.a), ...movedIn(f, l.b), ""].join(","));
+    if (f.ok) reviewed.push([piece, "ok", "", "", "", "", "", ""].join(","));
   }
   const files = [[D.project + "-corrections.csv", rows], [D.project + "-lines.csv", drawn], [D.project + "-pieces.csv", reviewed]];
   const download = (name, text) => {
