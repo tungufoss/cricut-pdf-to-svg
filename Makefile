@@ -12,6 +12,8 @@
 #   make export     last step: data/<project>/<project>-export.svg with short edge labels (2A instead
 #                   of 558, one per glue pair) and pieces filled in their cardstock colour; the key
 #                   from label to PDF number goes to <project>-labels.csv
+#   make export-check  rebuild the synthetic fixture in fixtures/export/ and check it against the
+#                   export contract (report/export-contract.qmd)
 #   make install    install Python dependencies (Poppler's pdftoppm comes from the OS)
 #   make clean      remove generated files (keeps the PDF and YAML)
 
@@ -23,7 +25,7 @@ DPI     ?= 180
 SOURCES := $(filter-out %/export.py,$(wildcard src/lowpoly_pdf_to_svg/*.py))
 CONVERT  = $(PYTHON) -m src.lowpoly_pdf_to_svg --config $(CONFIG) --output $(OUT) --dpi $(DPI)
 
-.PHONY: all page redo piece number fix export install clean
+.PHONY: all page redo piece number fix export export-check install clean
 
 all: $(OUT)/$(PROJECT).svg
 
@@ -56,6 +58,11 @@ export: $(OUT)/$(PROJECT)-export.svg
 
 $(OUT)/$(PROJECT)-export.svg: $(OUT)/$(PROJECT).svg $(CONFIG) src/lowpoly_pdf_to_svg/export.py
 	$(PYTHON) -m src.lowpoly_pdf_to_svg.export --config $(CONFIG) --output $(OUT)
+
+export-check:
+	$(PYTHON) -m src.lowpoly_pdf_to_svg.export --config fixtures/export/sample.yaml --svg fixtures/export/sample-review.svg
+	$(PYTHON) -m src.lowpoly_pdf_to_svg.export --check fixtures/export/sample-export.svg
+	git diff --exit-code -- fixtures/export
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt

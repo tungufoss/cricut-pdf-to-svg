@@ -1,0 +1,16 @@
+# Synthetic two-piece model for the export contract: no template artwork.
+project: sample
+source:
+  pdf: sample.pdf
+  page_size: letter
+output:
+  default_sheet: a4
+materials:
+  - id: red
+    name: Red cardstock
+    color: "#c62828"
+    pages: [1]
+  - id: black
+    name: Black cardstock
+    color: "#212121"
+    pages: [2]

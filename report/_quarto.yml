@@ -62,6 +62,7 @@ website:
       - section: "Reference"
         contents:
           - reference.qmd
+          - export-contract.qmd
   page-footer:
     left: 'Bowser papercraft by [Sweets The Cat](https://sweetsthecat.itch.io/), free for personal use'
     right:

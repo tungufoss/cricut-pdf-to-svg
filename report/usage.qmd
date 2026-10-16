@@ -33,9 +33,10 @@ The numbers are text, so you can correct one by double-clicking it. For the Cric
 
 `make export` is the last step, after the review and `make fix` rounds. It reads the finished `<project>.svg` and `<project>-edges.csv` and writes `<project>-export.svg` beside them; the review file is not changed, so the check page, the fix loop and the 3D fold keep working on the PDF numbers.
 
-- **Short labels.** Every glue pair gets its own two-character label, such as `2A`, in place of the PDF number, so the pen draws two characters instead of three. Both edges of a pair carry the same label and no other edge does; a number the edge check left unpaired gets a label of its own. The alphabet leaves out look-alikes (0/O, 1/I, Q) and 6/9, since labels sit at any angle; two characters cover up to 900 pairs, beyond that labels grow to three. `<project>-labels.csv` lists each label with its PDF number, edge status and pieces, and each label in the SVG keeps `data-pdf-number`.
+- **Short labels.** Every glue pair gets its own two-character label, such as `2A`, in place of the PDF number, so the pen draws two characters instead of three. Both edges of a pair carry the same label and no other edge does; a number the edge check left unpaired gets a label of its own. The alphabet leaves out look-alikes (0/O, 1/I, Q) and 6/9, since labels sit at any angle, and every label has a letter so none reads as a PDF number; two characters cover 851 pairs, beyond that labels grow to three. `<project>-labels.csv` lists each label with its PDF number, edge status and pieces, and each label in the SVG keeps `data-pdf-number`.
 - **Cardstock fill.** Each piece's cut outline is filled with the `color:` of its material in the YAML (named defaults for red, green, yellow, black and a few others when it is missing); holes stay open. Labels turn white on dark card.
 - Only the Pieces layer is kept, with its cardstock sublayers and each piece's Cut, Score and Draw groups; Source and Review are dropped and the review marks (orange numbers, `⚠ check` names) removed.
+- The file follows the [export contract](export-contract.qmd) that the nester reads: piece id, material, colour, page provenance and the operation of every path are `data-*` attributes. `make export` checks it on every run.
 
 ## Intended workflow
 

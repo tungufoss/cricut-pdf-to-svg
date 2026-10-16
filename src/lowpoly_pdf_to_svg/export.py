@@ -15,8 +15,10 @@ the piece review) and writes
 
 The review SVG, the check page and the fix loop keep the PDF numbers; only this file
 is renumbered. Labels are handed out in PDF-number order from an alphabet without
-look-alikes (0/O, 1/I, Q, and 6/9 since labels sit at any angle), all of one width:
-two characters for up to 900 glue pairs, three beyond that.
+look-alikes (0/O, 1/I, Q, and 6/9 since labels sit at any angle), all of one width and
+each with at least one letter so none reads as a PDF number: two characters cover 851
+glue pairs, three beyond that. The export follows the contract in
+report/export-contract.qmd; `--check FILE` tests a file against it.
 """
 
 from __future__ import annotations
@@ -45,6 +47,7 @@ DEFAULT_COLORS = {"red": "#c62828", "green": "#2e7d32", "yellow": "#f9d71c", "bl
                   "brown": "#6d4c41", "grey": "#9e9e9e", "gray": "#9e9e9e", "pink": "#f48fb1",
                   "purple": "#6a1b9a"}
 FALLBACK_COLOR = "#cccccc"
+CONTRACT = "lowpoly-export/1"  # bump when the attributes below change meaning
 
 
 class LabelAlphabet:
@@ -59,9 +62,12 @@ class LabelAlphabet:
 
     def take(self, count: int) -> list[str]:
         width = self.shortest
-        while len(self.symbols) ** width < count:
+        letters = sum(not c.isdigit() for c in self.symbols)
+        while len(self.symbols) ** width - (len(self.symbols) - letters) ** width < count:
             width += 1
-        return ["".join(chars) for chars in islice(product(self.symbols, repeat=width), count)]
+        # Labels need a letter, so none can be mistaken for a PDF number.
+        labels = ("".join(chars) for chars in product(self.symbols, repeat=width))
+        return list(islice((label for label in labels if not label.isdigit()), count))
 
 
 @dataclass
@@ -74,6 +80,7 @@ class Edge:
     y_mm: float
     partner: str
     status: str
+    side: str  # "tab" or "edge"
 
 
 @dataclass
@@ -105,9 +112,9 @@ class GluePairs:
     def read(cls, path: Path) -> "GluePairs":
         with path.open(newline="", encoding="utf-8") as handle:
             return cls([Edge(row["number"], row["piece"], float(row["x_mm"]), float(row["y_mm"]),
-                             row["partner_piece"], row["status"]) for row in csv.DictReader(handle)])
+                             row["partner_piece"], row["status"], row["side"]) for row in csv.DictReader(handle)])
 
-    def find(self, piece: str, number: str, x_mm: float, y_mm: float, used: set[int]) -> GluePair:
+    def find(self, piece: str, number: str, x_mm: float, y_mm: float, used: set[int]) -> tuple[GluePair, Edge | None]:
         """The pair of the nearest unused edge row with this piece and number; a number with
         no row gets a pair of its own, shared by every other such copy of that number."""
         best, distance = None, math.inf
@@ -119,8 +126,8 @@ class GluePairs:
                         best, distance = (pair, edge), d
         if best:
             used.add(id(best[1]))
-            return best[0]
-        return self._orphans.setdefault(number, GluePair(number))
+            return best
+        return self._orphans.setdefault(number, GluePair(number)), None
 
     def assign(self, alphabet: LabelAlphabet) -> None:
         everything = self.pairs + sorted(self._orphans.values(), key=lambda p: _numeric(p.number))
@@ -136,25 +143,34 @@ class GluePairs:
                 writer.writerow([pair.label, pair.number, pair.status, " ".join(e.piece for e in pair.edges)])
 
 
-class CardstockColors:
-    """Fill colour per material id: the YAML `color:` if given, else a named default."""
+class Materials:
+    """Per material id from the YAML: name and fill colour (the `color:` if given, else a
+    named default), plus the source PDF for provenance."""
 
     def __init__(self, config: Path):
         raw = yaml.safe_load(config.read_text(encoding="utf-8"))
+        self.project = str(raw["project"])
+        self.pdf = str(raw["source"]["pdf"])
+        self.names = {str(m["id"]): str(m["name"]) for m in raw["materials"]}
         self.colors = {str(m["id"]): str(m.get("color") or DEFAULT_COLORS.get(str(m["id"]).lower(), FALLBACK_COLOR))
                        for m in raw["materials"]}
 
-    def __getitem__(self, material: str) -> str:
+    def color(self, material: str) -> str:
         return self.colors.get(material, FALLBACK_COLOR)
+
+    def name(self, material: str) -> str:
+        return self.names.get(material, material)
 
 
 class ExportWriter:
-    """Rewrites the review SVG into the export SVG."""
+    """Rewrites the review SVG into the export SVG, following the export contract
+    (report/reference.qmd): every fact a consumer needs is a data-* attribute on the
+    piece group or on each path and text, never only a style or the element order."""
 
     PIECE_ID = re.compile(r"piece-(\d+)-\d+$")
 
-    def __init__(self, pairs: GluePairs, colors: CardstockColors, alphabet: LabelAlphabet = LabelAlphabet()):
-        self.pairs, self.colors, self.alphabet = pairs, colors, alphabet
+    def __init__(self, pairs: GluePairs, materials: Materials, alphabet: LabelAlphabet = LabelAlphabet()):
+        self.pairs, self.materials, self.alphabet = pairs, materials, alphabet
 
     def export(self, source: Path, target: Path) -> dict[str, int]:
         tree = ET.parse(source)
@@ -164,23 +180,31 @@ class ExportWriter:
         title = root.find(f"{{{SVG}}}title")
         if title is not None:
             title.text = f"{title.text} (export)"
+        root.set("data-contract", CONTRACT)
+        root.set("data-units", "mm")
+        root.set("data-project", self.materials.project)
         offsets = {page.get("id"): (float(page.get("x")), float(page.get("y")))
                    for page in root.iter(f"{{{INKSCAPE}}}page")}
 
         texts, used = [], set()
         pieces = [g for g in root.iter(f"{{{SVG}}}g") if g.get("data-material") is not None]
         for piece in pieces:
-            self._fill(piece)
             match = self.PIECE_ID.match(piece.get("id", ""))
-            ox, oy = offsets.get(f"page-{int(match.group(1)):02d}", (0.0, 0.0)) if match else (0.0, 0.0)
+            page = int(match.group(1)) if match else 0
+            ox, oy = offsets.get(f"page-{page:02d}", (0.0, 0.0))
+            self._describe(piece, page, ox, oy)
             for text in piece.iter(f"{{{SVG}}}text"):
                 number = (text.text or "").strip()
-                pair = self.pairs.find(piece.get("id"), number,
-                                       float(text.get("x")) - ox, float(text.get("y")) - oy, used)
+                pair, edge = self.pairs.find(piece.get("id"), number,
+                                             float(text.get("x")) - ox, float(text.get("y")) - oy, used)
+                if edge:
+                    text.set("data-edge", edge.side)  # tab or plain edge, from the edge table
                 texts.append((text, pair))
         self.pairs.assign(self.alphabet)
         for text, pair in texts:
             text.set("data-pdf-number", text.text or "")
+            text.set("data-label", pair.label)
+            text.set("data-pair-status", pair.status)
             text.text = pair.label
             for attribute in ("fill", "data-review"):  # the review's orange "unsure" mark
                 text.attrib.pop(attribute, None)
@@ -192,11 +216,19 @@ class ExportWriter:
                 "pairs": len({id(pair) for _, pair in texts}),
                 "longest": max((len(pair.label) for _, pair in texts), default=0)}
 
-    def _fill(self, piece: ET.Element) -> None:
-        """Fill the piece with its cardstock: outline and holes become one even-odd path,
-        so holes stay open, and the numbers turn white on a dark card to stay readable."""
-        color = self.colors[piece.get("data-material")]
+    def _describe(self, piece: ET.Element, page: int, ox: float, oy: float) -> None:
+        """Provenance and material on the piece group; operation on every path and text.
+        The cardstock fills the piece: outline and holes become one even-odd path, so
+        holes stay open, and the numbers turn white on a dark card to stay readable."""
+        material = piece.get("data-material")
+        color = self.materials.color(material)
         piece.set(LABEL, piece.get(LABEL, "").split(" ⚠")[0])
+        piece.set("data-piece", piece.get("id"))
+        piece.set("data-material-name", self.materials.name(material))
+        piece.set("data-color", color)
+        piece.set("data-source-pdf", self.materials.pdf)
+        piece.set("data-source-page", str(page))
+        piece.set("data-page-origin-mm", f"{ox:.3f} {oy:.3f}")
         for group in piece.iter(f"{{{SVG}}}g"):
             operation = group.get("data-operation")
             if operation == "cut":
@@ -206,8 +238,75 @@ class ExportWriter:
                     for extra in paths[1:]:
                         group.remove(extra)
                 group.set("style", _style(group.get("style", ""), fill=color, **{"fill-rule": "evenodd"}))
-            elif operation == "draw" and _luminance(color) < 0.35:
-                group.set("style", _style(group.get("style", ""), fill="#ffffff"))
+                for path in group.findall(f"{{{SVG}}}path"):
+                    path.set("data-operation", "cut")
+            elif operation == "score":
+                for fold in group.iter(f"{{{SVG}}}g"):
+                    for path in fold.findall(f"{{{SVG}}}path"):
+                        path.set("data-operation", "score")
+                        path.set("data-fold", fold.get("data-fold", ""))
+                        path.attrib.pop("data-review", None)
+            elif operation == "draw":
+                for text in group.findall(f"{{{SVG}}}text"):
+                    text.set("data-operation", "draw")
+                if _luminance(color) < 0.35:
+                    group.set("style", _style(group.get("style", ""), fill="#ffffff"))
+
+
+class ExportContract:
+    """Checks a file against the export contract, as an independent consumer would:
+    only data-* attributes, no reliance on styles or element order."""
+
+    def __init__(self, path: Path):
+        self.root = ET.parse(path).getroot()
+
+    def errors(self) -> list[str]:
+        root, problems = self.root, []
+        if root.get("data-contract") != CONTRACT:
+            problems.append(f"root data-contract is {root.get('data-contract')!r}, expected {CONTRACT!r}")
+        if root.get("data-units") != "mm" or not str(root.get("width", "")).endswith("in"):
+            problems.append("root needs data-units=\"mm\" and a width/height in inches")
+        for tag in ("clipPath", "mask", "use", "symbol", "image"):
+            if root.find(f".//{{{SVG}}}{tag}") is not None:
+                problems.append(f"unsupported element <{tag}>")
+        seen, labels = set(), {}
+        for piece in root.iter(f"{{{SVG}}}g"):
+            if piece.get("data-piece") is None:
+                if piece.get("transform"):
+                    problems.append(f"group {piece.get('id')} has a transform")
+                continue
+            pid = piece.get("data-piece")
+            if pid in seen:
+                problems.append(f"{pid}: piece id is not unique")
+            seen.add(pid)
+            for key in ("data-material", "data-color", "data-source-pdf", "data-source-page", "data-page-origin-mm"):
+                if not piece.get(key):
+                    problems.append(f"{pid}: missing {key}")
+            if piece.get("transform"):
+                problems.append(f"{pid}: piece group has a transform")
+            leaves = [e for e in piece.iter() if e.tag in (f"{{{SVG}}}path", f"{{{SVG}}}text")]
+            cuts = [e for e in leaves if e.get("data-operation") == "cut"]
+            if len(cuts) != 1:
+                problems.append(f"{pid}: {len(cuts)} cut paths, expected exactly 1")
+            for leaf in leaves:
+                operation = leaf.get("data-operation")
+                if operation not in ("cut", "score", "draw"):
+                    problems.append(f"{pid}: {leaf.tag.split('}')[1]} without data-operation")
+                if operation == "score" and leaf.get("data-fold") not in ("mountain", "valley"):
+                    problems.append(f"{pid}: score path without data-fold mountain/valley")
+                if operation == "draw":
+                    if not leaf.get("data-label") or leaf.get("data-label") != (leaf.text or ""):
+                        problems.append(f"{pid}: label text and data-label differ")
+                    labels.setdefault(leaf.get("data-label"), []).append(leaf.get("data-pair-status"))
+                if leaf.get("transform") and not (leaf.tag == f"{{{SVG}}}text"
+                                                  and leaf.get("transform").startswith("rotate(")):
+                    problems.append(f"{pid}: transform other than a text rotate")
+        if not seen:
+            problems.append("no piece groups (g with data-piece)")
+        for label, statuses in labels.items():
+            if len(statuses) > 2:
+                problems.append(f"label {label} is on {len(statuses)} edges")
+        return problems
 
 
 def _style(style: str, **changes: str) -> str:
@@ -231,21 +330,30 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Write the cut-ready export SVG with short edge labels and cardstock fills.")
     parser.add_argument("--config", type=Path, default=Path("data/bowser/bowser.yaml"), help="project YAML manifest")
     parser.add_argument("--output", type=Path, help="model folder (default: the YAML's folder)")
+    parser.add_argument("--svg", type=Path, help="review SVG to export (default: <folder>/<project>.svg)")
+    parser.add_argument("--check", type=Path, metavar="EXPORT", help="only check an export SVG against the contract")
     args = parser.parse_args()
+    if args.check:
+        problems = ExportContract(args.check).errors()
+        print("\n".join(problems) or f"{args.check}: follows {CONTRACT}")
+        return 1 if problems else 0
     folder = args.output or args.config.parent
     project = args.config.stem
-    source, edges = folder / f"{project}.svg", folder / f"{project}-edges.csv"
+    source, edges = args.svg or folder / f"{project}.svg", folder / f"{project}-edges.csv"
     for path in (source, edges):
         if not path.is_file():
             parser.error(f"{path} not found; run make first")
     pairs = GluePairs.read(edges)
     target = folder / f"{project}-export.svg"
-    counts = ExportWriter(pairs, CardstockColors(args.config)).export(source, target)
+    counts = ExportWriter(pairs, Materials(args.config)).export(source, target)
     pairs.write(folder / f"{project}-labels.csv")
+    problems = ExportContract(target).errors()
     print(f"{target}: {counts['pieces']} pieces filled, {counts['labels']} numbers -> "
           f"{counts['pairs']} labels of at most {counts['longest']} characters; "
           f"key in {folder / f'{project}-labels.csv'}")
-    return 0
+    for problem in problems:
+        print(f"contract: {problem}", file=sys.stderr)
+    return 1 if problems else 0
 
 
 if __name__ == "__main__":
