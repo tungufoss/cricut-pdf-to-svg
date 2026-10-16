@@ -9,6 +9,9 @@
 #   make number NUMBER=20  every piece carrying that number, PDF beside trace, in data/<project>/review.png
 #   make fix        data/<project>/<project>-check.json for app/number-check.html: check each unpaired number
 #                   against the scan, accept or type the right one; Save writes <project>-corrections.csv
+#   make export     last step: data/<project>/<project>-export.svg with short edge labels (2A instead
+#                   of 558, one per glue pair) and pieces filled in their cardstock colour; the key
+#                   from label to PDF number goes to <project>-labels.csv
 #   make install    install Python dependencies (Poppler's pdftoppm comes from the OS)
 #   make clean      remove generated files (keeps the PDF and YAML)
 
@@ -17,10 +20,10 @@ CONFIG  ?= data/bowser/bowser.yaml
 PROJECT ?= $(basename $(notdir $(CONFIG)))
 OUT     ?= $(patsubst %/,%,$(dir $(CONFIG)))
 DPI     ?= 180
-SOURCES := $(wildcard src/lowpoly_pdf_to_svg/*.py)
+SOURCES := $(filter-out %/export.py,$(wildcard src/lowpoly_pdf_to_svg/*.py))
 CONVERT  = $(PYTHON) -m src.lowpoly_pdf_to_svg --config $(CONFIG) --output $(OUT) --dpi $(DPI)
 
-.PHONY: all page redo piece number fix install clean
+.PHONY: all page redo piece number fix export install clean
 
 all: $(OUT)/$(PROJECT).svg
 
@@ -49,11 +52,16 @@ fix:
 	@test -f $(OUT)/$(PROJECT)-misreads.csv || { echo "run make first"; exit 2; }
 	$(PYTHON) -m src.lowpoly_pdf_to_svg.fixer --config $(CONFIG) --dpi $(DPI)
 
+export: $(OUT)/$(PROJECT)-export.svg
+
+$(OUT)/$(PROJECT)-export.svg: $(OUT)/$(PROJECT).svg $(CONFIG) src/lowpoly_pdf_to_svg/export.py
+	$(PYTHON) -m src.lowpoly_pdf_to_svg.export --config $(CONFIG) --output $(OUT)
+
 install:
 	$(PYTHON) -m pip install -r requirements.txt
 
 clean:
-	rm -rf $(OUT)/previews $(OUT)/$(PROJECT).svg $(OUT)/$(PROJECT)-edges.csv $(OUT)/$(PROJECT)-misreads.csv $(OUT)/README.md $(OUT)/pieces $(OUT)/cache $(OUT)/review.png $(OUT)/$(PROJECT)-check.json output/$(PROJECT)
+	rm -rf $(OUT)/previews $(OUT)/$(PROJECT).svg $(OUT)/$(PROJECT)-export.svg $(OUT)/$(PROJECT)-labels.csv $(OUT)/$(PROJECT)-edges.csv $(OUT)/$(PROJECT)-misreads.csv $(OUT)/README.md $(OUT)/pieces $(OUT)/cache $(OUT)/review.png $(OUT)/$(PROJECT)-check.json output/$(PROJECT)
 
 # Results site (Quarto website in report/, R with tidyverse, xml2 and DT).
 #   make report     render report/_site/index.html from the current output

@@ -15,6 +15,7 @@ Each stage is a class in `src/lowpoly_pdf_to_svg/`:
 | Edge pairs | `edges.py` | Links each number to the line it marks (a plain cut edge, or the fold of a glue tab) and pairs the two copies. Writes `<project>-edges.csv` and the summary `README.md` (the model folder's status page): a good pair is one tab and one plain edge of the same length. |
 | Model | `model.py` | `Piece`, `Fold`, `Label` and `PageLayout`, in page pixels. |
 | Write | `svg.py` | One Inkscape SVG for the whole project: document size in inches for Cricut Design Space, drawing coordinates in millimetres. |
+| Export | `export.py` | Last step, run with `make export` once review and fixes are done. Writes `<project>-export.svg` and the label key `<project>-labels.csv`. |
 
 ## Reviewing in Inkscape
 
@@ -27,6 +28,14 @@ Each stage is a class in `src/lowpoly_pdf_to_svg/`:
 Numbers the reader is unsure of are orange (`data-review="ocr"`), and their piece is labelled `⚠ check numbers`. On the Bowser template about 56% of numbers are read with confidence, and a spot check put those at roughly 90% correct; the orange ones are wrong more often. Folds that had to be stretched far to reach the cut have `data-review="unsnapped"` and the piece is labelled `⚠ check folds`. Search for either with Edit > Find.
 
 The numbers are text, so you can correct one by double-clicking it. For the Cricut pen, turn them into single-stroke paths with Extensions > Text > Hershey Text before export. Before uploading to Design Space, delete the Source and Review layers, then assign Score to the fold paths and Draw/Pen to the number paths and attach them to each cut outline.
+
+## Exporting for the Cricut
+
+`make export` is the last step, after the review and `make fix` rounds. It reads the finished `<project>.svg` and `<project>-edges.csv` and writes `<project>-export.svg` beside them; the review file is not changed, so the check page, the fix loop and the 3D fold keep working on the PDF numbers.
+
+- **Short labels.** Every glue pair gets its own two-character label, such as `2A`, in place of the PDF number, so the pen draws two characters instead of three. Both edges of a pair carry the same label and no other edge does; a number the edge check left unpaired gets a label of its own. The alphabet leaves out look-alikes (0/O, 1/I, Q) and 6/9, since labels sit at any angle; two characters cover up to 900 pairs, beyond that labels grow to three. `<project>-labels.csv` lists each label with its PDF number, edge status and pieces, and each label in the SVG keeps `data-pdf-number`.
+- **Cardstock fill.** Each piece's cut outline is filled with the `color:` of its material in the YAML (named defaults for red, green, yellow, black and a few others when it is missing); holes stay open. Labels turn white on dark card.
+- Only the Pieces layer is kept, with its cardstock sublayers and each piece's Cut, Score and Draw groups; Source and Review are dropped and the review marks (orange numbers, `⚠ check` names) removed.
 
 ## Intended workflow
 
