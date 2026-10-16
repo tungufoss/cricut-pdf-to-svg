@@ -227,10 +227,17 @@ function render() {
   list.innerHTML = "";
   list.classList.toggle("wide", filter === "pieces");
   if (filter === "pieces") { reviewPiece(list); return; }
-  const shown = D.cards.filter(c => filter === "all" || (filter === "todo" ? !done(c) : c.kind === filter));
+  const shown = D.cards.filter(c => matches(c, filter));
   document.getElementById("count").textContent =
     `${D.cards.filter(done).length} of ${D.cards.length} checked, ${shown.length} shown`;
+  labelFilters();
+  const head = document.createElement("h2");
+  head.style.margin = "0";
+  head.textContent = `${FILTERS[filter]}: ${shown.length} card${shown.length === 1 ? "" : "s"}`;
+  list.appendChild(head);
+  if (!shown.length) list.insertAdjacentHTML("beforeend", "<p class=\"meta\">Nothing here.</p>");
   for (const c of shown.slice(0, 200)) list.appendChild(card(c));
+  window.scrollTo(0, 0);
 }
 
 function card(c) {
@@ -468,6 +475,16 @@ document.addEventListener("keydown", e => {
 });
 function count() {
   document.getElementById("count").textContent = `${D.cards.filter(done).length} of ${D.cards.length} checked`;
+}
+// Each list button is a filter: the page shows only that list's cards, and its button counts them.
+const FILTERS = {pieces: "Piece review", todo: "To do", doubt: "Doubtful fixes", suggested: "Suggested",
+  open: "Open", auto: "Fixed for you", all: "All"};
+const matches = (c, f) => f === "all" || (f === "todo" ? !done(c) : c.kind === f);
+function labelFilters() {
+  document.querySelectorAll("header [data-f]").forEach(b => {
+    const f = b.dataset.f;
+    b.textContent = f === "pieces" ? FILTERS[f] : `${FILTERS[f]} (${D.cards.filter(c => matches(c, f)).length})`;
+  });
 }
 document.querySelectorAll("header [data-f]").forEach(b => b.addEventListener("click", () => {
   filter = b.dataset.f;
