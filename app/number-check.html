@@ -10,6 +10,7 @@ button{font:inherit;padding:5px 10px;border:1px solid var(--line);border-radius:
 button.on{background:var(--ink);color:#fff}
 button.save{background:var(--accent);color:#fff;border-color:var(--accent)}
 main{padding:16px;display:grid;gap:14px;max-width:1100px;margin:auto}
+main.wide{max-width:none}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
 .card.done{border-color:var(--ok);box-shadow:inset 4px 0 0 var(--ok)}
 .head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px}
@@ -34,7 +35,7 @@ select{font:inherit;padding:3px;border:1px solid var(--line);border-radius:6px}
 .row{display:flex;gap:6px;align-items:center}
 input{font:inherit;width:70px;padding:4px 6px;border:1px solid var(--line);border-radius:6px}
 input.set{border-color:var(--ok);background:#eef8f0}
-.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(440px,92vw),1fr));gap:14px}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,92vw),1fr));gap:14px}
 .review{display:grid;gap:10px;align-content:start}
 .review .scan{width:100%;height:auto;aspect-ratio:1}
 .nav{display:flex;gap:8px;align-items:center;justify-content:flex-end}
@@ -221,8 +222,10 @@ const done = c => c.kind === "auto" || (c.kind === "doubt" ? c.panels.some(p => 
   : c.panels.some(p => answers[key(p)] !== undefined && answers[key(p)] !== ""));
 
 function render() {
+  if (!D) return;   // nothing opened yet; the filter applies once a model loads
   const list = document.getElementById("list");
   list.innerHTML = "";
+  list.classList.toggle("wide", filter === "pieces");
   if (filter === "pieces") { reviewPiece(list); return; }
   const shown = D.cards.filter(c => filter === "all" || (filter === "todo" ? !done(c) : c.kind === filter));
   document.getElementById("count").textContent =
@@ -321,7 +324,7 @@ function reviewPiece(list) {
   document.getElementById("count").textContent = `pair ${at + 1} of ${order.length} · ${reviewed} of ${D.pieces.length} pieces reviewed`;
   const nav = document.createElement("div");
   nav.className = "card nav";
-  nav.innerHTML = `<span class="meta">${unit.length > 1 ? "A piece and its mirror twin: they should match, mirrored." : "This piece has no mirror twin."}</span>
+  nav.innerHTML = `<span class="meta">${unit.length > 1 ? `<b>${unit[0].piece}</b> and its mirror twin <b>${unit[1].piece}</b>, side by side: they should match, mirrored.` : "This piece has no mirror twin."}</span>
     <button data-a="back">← Back</button><button data-a="skip">Skip</button><button class="next" data-a="ok">OK → next</button>`;
   const go = step => { at += step; list.innerHTML = ""; reviewPiece(list); window.scrollTo(0, 0); };
   nav.querySelector("[data-a=back]").addEventListener("click", () => go(-1));
