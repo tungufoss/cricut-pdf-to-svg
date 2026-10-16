@@ -213,12 +213,14 @@ class PieceFixes:
                 printed = kind_of(piece.id, a, b) if kind_of else None
                 piece.folds.append(Fold(a, b, printed or FoldKind(row.kind or "valley")))
             else:
-                keep = [f for f in piece.folds
-                        if not ((near(f.a, a) and near(f.b, b)) or (near(f.a, b) and near(f.b, a)))]
-                if len(keep) == len(piece.folds):
+                # only the closest match goes: a fold added by hand on top of a traced one survives
+                gap = lambda f: min(math.dist(f.a, a) + math.dist(f.b, b), math.dist(f.a, b) + math.dist(f.b, a))
+                hits = [f for f in piece.folds
+                        if (near(f.a, a) and near(f.b, b)) or (near(f.a, b) and near(f.b, a))]
+                if not hits:
                     missed.append(row)
                     continue
-                piece.folds = keep
+                piece.folds.remove(min(hits, key=gap))
             changed.add(piece.id)
         for piece_id, (piece, mm) in pieces.items():
             before = (len(piece.outline), len(piece.folds))

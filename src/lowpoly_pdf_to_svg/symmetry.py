@@ -21,6 +21,7 @@ import csv
 from dataclasses import dataclass
 from pathlib import Path
 
+import cv2
 import numpy as np
 
 from .model import Label, PageLayout
@@ -187,6 +188,11 @@ class Symmetry:
                                          "bx_mm": round(float(mb[0]), 2), "by_mm": round(float(mb[1]), 2)})
                         continue
                     if _to_outline(corners, (ma + mb) / 2) <= ON_CUT_MM or np.linalg.norm(mb - ma) < 2.0:
+                        continue
+                    # A fold runs inside its piece; one landing outside is the twin's glue tab or a bad fit.
+                    polygon = corners.astype(np.float32).reshape(-1, 1, 2)
+                    inside = lambda p: cv2.pointPolygonTest(polygon, (float(p[0]), float(p[1])), True)
+                    if inside((ma + mb) / 2) <= ON_CUT_MM or min(inside(ma), inside(mb)) < -ON_CUT_MM:
                         continue
                     gaps.append({"piece": target, "twin": source, "kind": kind, "issue": "missing",
                                  "ax_mm": round(float(ma[0]), 2), "ay_mm": round(float(ma[1]), 2),

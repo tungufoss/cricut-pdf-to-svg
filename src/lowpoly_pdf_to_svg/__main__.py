@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 import datetime
 import pickle
 import shutil
@@ -159,7 +160,13 @@ def main() -> int:
     mirrors = output / f"{project.name}-mirrors.csv"
     off = symmetry.write(mirrors, records)
     print(f"Wrote {mirrors}: {off} lines differ in length from their mirror line")
-    gaps = symmetry.fold_gaps()
+    # a fold Helga removed by hand is not suggested again from the twin
+    dropped = [(r.piece, r.a, r.b) for r in piece_fixes.rows if r.action == "drop"]
+    undone = lambda g: any(piece == g["piece"] and min(
+        math.dist(a, (g["ax_mm"], g["ay_mm"])) + math.dist(b, (g["bx_mm"], g["by_mm"])),
+        math.dist(b, (g["ax_mm"], g["ay_mm"])) + math.dist(a, (g["bx_mm"], g["by_mm"]))) <= 4.0
+        for piece, a, b in dropped)
+    gaps = [g for g in symmetry.fold_gaps() if not (g["issue"] == "missing" and undone(g))]
     with (output / f"{project.name}-mirror-folds.csv").open("w", newline="", encoding="utf-8") as handle:
         table_out = csv.DictWriter(handle, ["piece", "twin", "issue", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm"])
         table_out.writeheader()
