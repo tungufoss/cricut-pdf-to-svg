@@ -26,6 +26,6 @@ $(OUT)/$(PROJECT)-3d.obj: $(OUT)/$(PROJECT).svg src/lowpoly_pdf_to_svg/fold3d.py
 install:
 	$(PYTHON) -m pip install -r requirements-fold3d.txt
 
-view: $(OUT)/$(PROJECT)-3d.obj
+view:   # no rebuild: the fold takes about half an hour, run `make -f fold3d.mk` first
 	@echo "Open http://localhost:$(PORT)/app/fold3d-viewer.html?json=../$(OUT)/$(PROJECT)-3d.json&svg=../$(OUT)/$(PROJECT).svg"
 	$(PYTHON) -m http.server $(PORT) --bind 127.0.0.1
