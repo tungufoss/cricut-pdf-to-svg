@@ -1,0 +1,328 @@
+---
+title: "Beyond Visual Fidelity: A Benchmark for Fabrication-Aware Vectorization of Papercraft Templates"
+# Alternative: "From Raster Templates to Fabrication-Ready Vectors: Benchmarking Semantic Vectorization for Papercraft"
+categories:
+  - Digital fabrication
+  - Vectorization
+  - Benchmark
+author:
+  - name: Helga
+    # orcid: "0000-0000-0000-0000"
+    affiliation: "University of Iceland"
+date: last-modified
+date-format: long
+citation:
+  type: article-journal
+  container-title: "Target venue (to be decided)"
+abstract: |
+  Raster-to-vector conversion is commonly evaluated by how closely the vectors reproduce the
+  appearance of the source image. For digital fabrication this is not sufficient: a papercraft
+  template also encodes cut boundaries, fold lines, pieces, physical dimensions, edge labels and
+  the relationships between matching edges, and a vectorization can look almost identical to the
+  source while still being unsuitable for cutting. This work makes three contributions. First, we
+  introduce a benchmark for evaluating raster-to-vector conversion of papercraft templates,
+  including fabrication-relevant ground-truth annotations. Second, we propose a fabrication-aware
+  evaluation framework that complements conventional visual and geometric similarity measures
+  with measures of topology, semantics, dimensional accuracy and structural consistency. Third, we
+  empirically investigate the relationship between conventional vectorization quality and
+  fabrication correctness, examining whether visually accurate vector representations are
+  necessarily suitable for downstream physical fabrication.
+keywords:
+  - fabrication-aware vectorization
+  - raster-to-vector conversion
+  - digital fabrication
+  - papercraft
+  - benchmark
+  - SVG
+---
+
+::: {.callout-note collapse="true"}
+## About this draft
+
+Seeded from Helga's paper-1 skeleton, draft abstracts and the research plan (2026-10-15).
+Headings follow the skeleton's recommended structure. Notes in callouts like this one are to-dos
+and come out before submission. Results tables are empty on purpose: nothing is measured yet.
+Work items are tracked in issues #7, #10 and #11 (label `paper-1`).
+:::
+
+# Introduction
+
+## Motivation
+
+Raster-to-vector conversion is commonly evaluated according to how accurately a vector
+representation reproduces the appearance of the source image. For digital fabrication, however,
+visual similarity is not sufficient. A papercraft template contains fabrication information such
+as cut boundaries, fold or score lines, individual pieces, physical dimensions, edge labels and
+relationships between matching edges.
+
+A vectorization can therefore look almost identical to the source while still being unsuitable
+for fabrication: a cut contour is not completely closed, a fold line is classified as a cut line,
+two matching edges have different lengths, the physical scale changes, or a label is associated
+with the wrong edge.
+
+## Research gap
+
+Existing vectorization research primarily evaluates raster similarity, geometric distance,
+contour accuracy and primitive complexity. These measures do not explicitly capture whether the
+resulting vector representation is *fabrication-ready*. Papercraft provides a useful experimental
+domain because the source documents contain both graphical information and explicit fabrication
+semantics.
+
+> There is a lack of benchmark datasets and evaluation methods for assessing raster-to-vector
+> conversion when the objective is physical fabrication rather than visual reproduction.
+
+The aim of this study is to develop and evaluate a benchmark framework for fabrication-aware
+vectorization using papercraft templates as the application domain. It investigates whether
+conventional vectorization metrics adequately represent the properties required for successful
+digital fabrication.
+
+## Research questions and hypotheses
+
+- **RQ1 (reconstruction).** How accurately can existing raster-to-vector methods reconstruct the
+  geometry of papercraft templates?
+- **RQ2 (fabrication semantics).** To what extent do conventional vectorization metrics capture
+  fabrication-relevant errors in reconstructed papercraft templates?
+- **RQ3 (fabrication-aware evaluation).** Do fabrication-aware metrics provide additional
+  information about vectorization quality beyond conventional visual and geometric metrics?
+
+- **H1.** Vectorization methods with similar visual reconstruction accuracy will differ in
+  fabrication-relevant correctness; visual fidelity $\neq$ fabrication correctness.
+- **H2.** Conventional raster-based similarity metrics will not fully capture topological,
+  semantic and dimensional errors relevant to fabrication.
+- **H3.** A composite fabrication-aware evaluation will distinguish fabrication-ready
+  vectorizations more effectively than visual similarity metrics alone.
+
+## Contributions
+
+- **C1, benchmark.** A curated dataset of papercraft templates with raster inputs and manually
+  validated vector ground truth: piece boundaries, cut geometry, fold geometry, physical
+  dimensions and edge labels.
+- **C2, evaluation framework.** Metrics for properties required for digital fabrication: contour
+  closure, topology, dimensional accuracy, cut/fold classification and matching-edge consistency.
+- **C3, empirical comparison.** A comparison of existing raster-to-vector approaches on the
+  benchmark. The purpose is not a new state-of-the-art vectorizer but to ask how differently
+  existing methods behave when evaluated for fabrication rather than visual reproduction.
+- **C4, visual versus fabrication quality.** An analysis of whether IoU or Hausdorff distance
+  predicts closed contours, matching-edge consistency and dimensional correctness.
+
+# Related work
+
+## Raster-to-vector conversion
+
+Contour extraction [@suzuki1985], line simplification [@douglas1973], curve fitting and
+general-purpose tracing [@selinger2003potrace].
+
+## Technical drawing vectorization
+
+@hilaire2006, @noris2013, @bessmeltsev2019 and @egiazarian2020. Papercraft resembles technical
+drawings, but differs because graphical elements encode fabrication operations.
+
+## Modern image vectorization
+
+DiffVG [@li2020diffvg], LIVE [@ma2022live] and StarVector [@rodriguez2023starvector] establish
+the broader state of image-to-vector research.
+
+::: {.callout-note}
+Keep this subsection short.
+:::
+
+## Vectorization evaluation
+
+Conventional metrics are IoU, Hausdorff distance, raster reconstruction error, primitive count
+and path complexity. These metrics primarily measure graphical reconstruction rather than
+fabrication validity.
+
+## Digital fabrication requirements
+
+The properties that matter for fabrication are closed geometry, scale, topology, operation
+semantics and dimensional consistency, which leads directly into the proposed framework.
+
+# Fabrication-aware vectorization framework
+
+The theoretical proposition is that vector quality has two components,
+$Q_{vector} = (Q_{visual}, Q_{fabrication})$, rather than $Q_{vector} = Q_{visual}$
+(@fig-framework).
+
+::: {#fig-framework}
+
+```text
+Source template
+      |
+      v
+Vectorization
+      |
+      v
+Vector representation
+      |
+      +---------------+
+      v               v
+Visual quality    Fabrication quality
+ IoU, distance     topology
+ pixel error       semantics
+ complexity        dimensions
+                   validity
+```
+
+Visual and fabrication quality are assessed separately on the same vector representation.
+:::
+
+## Visual fidelity
+
+## Fabrication correctness
+
+## Proposed metrics
+
+See @sec-fab-metrics.
+
+# Benchmark and method
+
+## Papercraft dataset
+
+Between 30 and 100 papercraft pages, varying in number of pieces, geometric complexity, fold
+density, line styles, labels, page size and raster quality.
+
+::: {.callout-note}
+Today there are 21 Bowser pages from one designer, under a personal-use licence and without
+ground truth. Synthetic templates (unfolded low-poly meshes rendered with chosen line styles,
+then rasterized with controlled degradation) give exact ground truth; real templates serve as the
+realism check. The paper must state how the licence allows the real pages to be used.
+:::
+
+## Ground-truth annotation
+
+Each template has a manually validated SVG with one group per piece, holding `cut`, `fold` and
+`labels` groups, plus JSON metadata for piece dimensions, edge labels and edge matches. The paper
+must say how ground truth was made: bootstrapping real pages from the pipeline output biases the
+comparison towards baseline D, so every gold page gets an independent full check.
+
+## Vectorization baselines
+
+- **A, simple contour pipeline.** Threshold, contour detection [@suzuki1985], Douglas–Peucker
+  [@douglas1973], SVG. A transparent classical baseline.
+- **B, general-purpose vectorizer.** Potrace [@selinger2003potrace].
+- **C, technical-drawing vectorization.** An existing method with runnable code, for example
+  @egiazarian2020; a classical line-extraction method if that is not practical.
+- **D, fabrication-aware pipeline.** `lowpoly-pdf-to-svg`, if far enough along. The paper still
+  works without D.
+
+Baselines A to C produce untyped paths, so one shared post-classifier labels each path as cut or
+fold from the dash pattern of the source under it. It is part of the evaluation protocol, not of
+any method, so F3 and F5 are scored the same way for every method.
+
+## Conventional metrics
+
+Raster IoU, $IoU = |R_{GT} \cap R_{pred}| / |R_{GT} \cup R_{pred}|$; Hausdorff distance
+$H(A, B)$; mean geometric deviation; number of vector primitives; SVG file size.
+
+## Fabrication-aware metrics {#sec-fab-metrics}
+
+| | Metric | Definition |
+|:--|:--|:--|
+| F1 | Closed contour validity | $F_{closed} = \text{correctly closed pieces} / \text{total pieces}$ |
+| F2 | Dimensional error | $E_{dim} = \lvert L_{pred} - L_{GT} \rvert / L_{GT}$, in % and mm |
+| F3 | Cut/fold semantic accuracy | precision, recall, F1 |
+| F4 | Topological correctness | missing or extra connections, wrong junctions or holes, disconnected paths |
+| F5 | Matching-edge consistency | $E_{match} = \lvert L(e_i) - L(e_j) \rvert$ for edges that should join |
+| F6 | Vector complexity | paths, nodes, Bézier control points, SVG size |
+
+: Fabrication-aware metrics. {#tbl-fab-metrics tbl-colwidths="[6,28,66]"}
+
+## Experimental procedure
+
+Each predicted piece is matched to a ground-truth piece by overlap before per-piece metrics are
+computed. All metrics are written as one tidy table (`template, page, method, piece, metric,
+value`), and the analysis asks whether conventional metrics agree with fabrication-aware ones,
+for example $r(IoU, F_{closed})$, $r(IoU, E_{match})$ and $r(Hausdorff, E_{dim})$.
+
+# Results
+
+::: {.callout-note}
+Expected pattern, not a claim: two vectorizations with similar visual quality can differ sharply
+in fabrication quality. A vectorization with IoU 0.97 and one open contour is unusable for
+cutting; one with IoU 0.94, closed contours, correct scale and correct folds is
+fabrication-ready. Conventional evaluation prefers the first, fabrication-aware evaluation the
+second.
+:::
+
+## Conventional vectorization performance
+
+| Method | IoU | Hausdorff | Mean error | Paths |
+|---|---:|---:|---:|---:|
+| A | | | | |
+| B | | | | |
+| C | | | | |
+
+: Geometric reconstruction performance. {#tbl-conventional}
+
+## Fabrication-aware performance
+
+| Method | Closed pieces | Cut/fold F1 | Dimensional error | Edge consistency |
+|---|---:|---:|---:|---:|
+| A | | | | |
+| B | | | | |
+| C | | | | |
+
+: Fabrication-aware performance. {#tbl-fabrication}
+
+## Metric relationships
+
+Main results section: correlations, scatterplots and disagreement cases.
+
+## Failure cases
+
+High IoU but an open contour; low geometric error but a fold classified as a cut; visually
+identical but at the wrong physical scale.
+
+## Physical validation (optional)
+
+Five templates, two or three methods, the same machine and cardstock. Recorded: successful cut,
+successful fold, assembly completion, edge gaps and alignment errors.
+
+| Template | Method | Digital score | Assembly success | Gap |
+|---|---|---:|---:|---:|
+| P1 | A | | | |
+| P1 | B | | | |
+
+: Physical validation. {#tbl-physical}
+
+# Discussion
+
+## Visual fidelity versus fabrication correctness
+
+Return to the central proposition, visual fidelity $\neq$ fabrication correctness, and explain
+which errors conventional metrics miss.
+
+## Implications for vectorization
+
+Evaluation should depend on the intended downstream use. For display,
+$Q \approx \text{visual fidelity}$; for fabrication,
+$Q = f(\text{geometry}, \text{topology}, \text{semantics}, \text{dimensions})$.
+
+## Implications for digital fabrication
+
+Automatic PDF conversion, Cricut, laser cutting, plotters, CNC workflows and technical drawings.
+
+## Limitations
+
+A relatively small dataset; a papercraft-specific domain; few vectorization baselines; limited
+physical fabrication experiments; possible dependence on template conventions; manual
+ground-truth annotation.
+
+## Future work
+
+Semantic reconstruction (cut/fold classification, piece detection, OCR); joint reasoning over
+geometry, OCR, topology and edge matching; uncertainty-guided human-in-the-loop correction;
+learned vectorization; material-aware nesting; larger physical experiments testing whether
+fabrication-aware metrics predict assembly success.
+
+# Conclusion
+
+Assuming the results support them: papercraft is a useful benchmark domain for fabrication-aware
+vectorization; conventional visual and geometric metrics do not completely characterize
+fabrication correctness; and vectorization intended for physical manufacture should explicitly
+evaluate geometry, topology, semantics and dimensions.
+
+# References {.unnumbered}
+
+::: {#refs}
+:::

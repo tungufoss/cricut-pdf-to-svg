@@ -38,12 +38,13 @@ class EdgeRow:
 
 
 class EdgeTable:
-    COLUMNS = ["number", "piece", "side", "length_mm", "x_mm", "y_mm", "ocr_trusted", "ocr_conf", "ocr_alternatives",
-               "partner_piece", "partner_side", "partner_length_mm", "length_diff_mm", "status"]
+    COLUMNS = ["number", "piece", "side", "length_mm", "x_mm", "y_mm", "ocr_trusted", "ocr_conf", "ocr_alternatives", "corrected",
+               "partner_piece", "partner_side", "partner_length_mm", "length_diff_mm", "status", "line_mm", "checks"]
 
     def __init__(self):
         self.rows: list[EdgeRow] = []
         self.layouts: list[PageLayout] = []
+        self.checks = None  # TraceChecks: faults in the trace that touch each unsolved number's line
 
     def add(self, layout: PageLayout, mm_per_px: float) -> None:
         self.layouts.append(layout)
@@ -69,13 +70,18 @@ class EdgeTable:
                 "ocr_trusted": "yes" if row.label.trusted else "no",
                 "ocr_conf": f"{row.label.conf:.0f}",
                 "ocr_alternatives": " ".join(row.label.alternatives),
+                "corrected": "yes" if row.label.corrected else "",
                 "partner_piece": partner.piece if partner else "",
                 "partner_side": partner.side if partner else "",
                 "partner_length_mm": f"{partner.length_mm:.1f}" if partner else "",
                 "length_diff_mm": f"{abs(row.length_mm - partner.length_mm):.1f}" if partner else "",
+                "line_mm": " ".join(f"{v * row.mm_per_px:.1f}" for p in row.label.edge for v in p) if row.label.edge else "",
                 "status": ("extra copy: likely misread" if len(others) > 1 and partner is None and
                            any(id(o) in partners for o in others) else self._status(row, partner, len(others))),
             })
+        if self.checks is not None:
+            for r in records:
+                r["checks"] = "; ".join(self.checks.at(r)) if r["status"] != "ok" else ""
         return sorted(records, key=lambda r: (int(r["number"]) if r["number"].isdigit() else 10**6, r["piece"]))
 
     @staticmethod
@@ -162,16 +168,19 @@ class EdgeTable:
         return (rank == 0 and diff <= SURE_MM and options_a == options_b == 1 and right["number"] not in clean and
                 (wrong["number"] in clean or wrong["_row"].label.conf < SURE_CONF <= right["_row"].label.conf))
 
-    def write_misreads(self, path: Path, applied: list[dict] = ()) -> list[dict]:
-        """Open suggestions, after the ones already applied (sure = "applied")."""
+    def write_misreads(self, path: Path, applied: list[dict] = (), extra: list[dict] = ()) -> list[dict]:
+        """Open suggestions, after the ones already applied (sure = "applied"). `extra` adds
+        suggestions from other evidence (mirror twins) for numbers not already suggested."""
         found = self.misreads()
+        listed = {(f["piece"], f["x_mm"], f["y_mm"]) for f in found}
+        found += [f for f in extra if (f["piece"], f["x_mm"], f["y_mm"]) not in listed]
         with path.open("w", newline="", encoding="utf-8") as handle:
             writer = csv.DictWriter(handle, MISREAD_COLUMNS, extrasaction="ignore")
             writer.writeheader()
             writer.writerows([*applied, *found])
         return found
 
-    def write_report(self, path: Path, project: str, generated: str = "", applied: int = 0) -> None:
+    def write_report(self, path: Path, project: str, generated: str = "", applied: int = 0, symmetry=None) -> None:
         """The model folder's README: what is in it, how far the conversion got, and
         which edge pairs agree and which need a look."""
         records = self.records()
@@ -238,6 +247,27 @@ class EdgeTable:
             if bad:
                 listed = ", ".join(f"{r['number']} ({r['status']})" for r in bad)
                 lines.append(f"| {piece} | {len(rows) - len(bad)} | {len(bad)} | {listed} |")
+        doubtful = [r for r in records if r["corrected"] and r["status"] != "ok"]
+        corrected = sum(1 for r in records if r["corrected"])
+        lines += ["", "## Hand corrections that still do not pair", "",
+                  f"{corrected} numbers were set by hand; {len(doubtful)} of them still do not form a clean pair, "
+                  "so the correction, its partner or the traced line is likely off. They come first on the check page.", "",
+                  "| piece | number | side | mm | status | partner | partner mm |", "|---|---|---|---:|---|---|---:|"]
+        for r in doubtful:
+            lines.append(f"| {r['piece']} | {r['number']} | {r['side']} | {r['length_mm']} | {r['status']} | "
+                         f"{r['partner_piece']} {r['partner_side']} | {r['partner_length_mm']} |")
+        if symmetry:
+            mirror, off = symmetry
+            paired = sum(len(t.lines) for t in mirror.twins)
+            lines += ["", "## Mirror twins", "",
+                      f"The model is symmetric: {len(mirror.twins)} pairs of pieces are mirror images "
+                      f"({2 * len(mirror.twins)} of {sum(len(l.pieces) for l in self.layouts)} pieces), found by the "
+                      f"lengths of their numbered lines: {sum(t.exact for t in mirror.twins)} exact mirrors (outline and "
+                      f"tabs match) and {sum(not t.exact for t in mirror.twins)} mirror variations (same body, tabs on "
+                      "other edges). Of their {paired} mirrored lines, {off} differ in length from "
+                      f"their mirror line by more than 1 mm, so one of the two was traced off (`{project}-mirrors.csv`). "
+                      "A twin's clean glue pair also predicts the number on the mirror line; those predictions are "
+                      "applied when clear-cut, and otherwise go to the check page with `mirror` as the reason.", ""]
         found = self.misreads(records)
         lines += ["", "## Likely misreads", "",
                   f"{applied} clear-cut misreads were fixed without asking (marked `applied` in "

@@ -14,67 +14,214 @@ main{padding:16px;display:grid;gap:14px;max-width:1100px;margin:auto}
 .card.done{border-color:var(--ok);box-shadow:inset 4px 0 0 var(--ok)}
 .head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .why{color:var(--muted)}
+.folded{color:var(--ok)}
 .panels{display:flex;gap:14px;flex-wrap:wrap}
-.panel{display:grid;gap:6px;width:260px}
-.panel img{width:260px;height:260px;border:1px solid var(--line);border-radius:6px;image-rendering:auto}
+.panel{display:grid;gap:6px;width:320px}
+.scan{position:relative;width:320px;height:320px;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.scan img,.scan svg{position:absolute;inset:0;width:100%;height:100%}
+.scan{cursor:crosshair;touch-action:none}
+.handle{cursor:grab}
+.scan.drawing{outline:3px solid #c000ff}
+.trace{fill:none;stroke:#0096ff;stroke-width:.25}
+.corner{fill:#fff;stroke:#0050ff;stroke-width:.2}
+.fold{stroke:#00a032;stroke-width:.25}
+.found{stroke:#ff7800;stroke-width:.5;opacity:.85}
+.drawn{stroke:#c000ff;stroke-width:.55}
+.hint{font-size:12px;color:#ff7800}
+select{font:inherit;padding:3px;border:1px solid var(--line);border-radius:6px}
 .meta{font-size:13px;color:var(--muted)}
 .read{font-size:20px;font-weight:600}
 .row{display:flex;gap:6px;align-items:center}
 input{font:inherit;width:70px;padding:4px 6px;border:1px solid var(--line);border-radius:6px}
 input.set{border-color:var(--ok);background:#eef8f0}
+.review{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.review .scan{width:min(680px,92vw);height:min(680px,92vw)}
+.side{display:grid;gap:8px;max-width:340px}
+.tools{display:flex;gap:6px;flex-wrap:wrap}
+.dropped{stroke:#e00000;stroke-width:.35}
+.added{stroke:#c000ff}
+.num{font-weight:700;paint-order:stroke;stroke:#fff}
+button.next{background:var(--ok);color:#fff;border-color:var(--ok);font-weight:600}
 </style></head><body>
 <header><h1 id="title">Number check</h1>
-<button id="open">Open model folder</button><label class="meta">or load <input type="file" id="file" accept=".json" style="width:auto"></label>
+<button id="open">Open data folder</button><select id="model" hidden></select><button id="change" class="meta">Other folder…</button><label class="meta">or load <input type="file" id="file" accept=".json" style="width:auto"></label>
 <span id="count"></span>
-<button data-f="todo" class="on">To do</button><button data-f="suggested">Suggested</button>
+<button data-f="pieces">Piece review</button><button data-f="todo" class="on">To do</button><button data-f="doubt">Doubtful fixes</button><button data-f="suggested">Suggested</button>
 <button data-f="open">Open</button><button data-f="auto">Fixed for you</button><button data-f="all">All</button>
 <button class="save" id="save">Save corrections</button></header>
-<main id="list"><p>Run <code>make fix</code>, then open the model folder (such as <code>data/bowser</code>).
-It needs the <code>&lt;project&gt;-check.json</code> that <code>make fix</code> writes there. Save writes
+<main id="list"><p>Run <code>make fix</code>, then open this repository's <code>data</code> folder and pick a model
+(any folder holding a <code>&lt;project&gt;-check.json</code> from <code>make fix</code>). The page remembers the folder,
+so next time Open only asks to allow it again. Save writes
 <code>&lt;project&gt;-corrections.csv</code> into the same folder, and the next build applies it.
 Without folder access (Firefox), load the JSON file instead and Save downloads the CSV.</p></main>
 <script>
-let D = null, folder = null, store = "", answers = {}, saved = [];
+let D = null, folder = null, store = "", answers = {}, saved = [], lines = {}, pieceFixes = {}, order = null, at = 0;
 const key = p => `${p.piece}@${p.x},${p.y}`;
 let filter = "todo";
 
 function parseCsv(text) {
-  const [head, ...rows] = text.trim().split(/\r?\n/);
-  const cols = head.split(",");
-  return rows.filter(Boolean).map(r => Object.fromEntries(r.split(",").map((v, i) => [cols[i], v])));
+  // Quoted fields (a note with commas or line breaks) are read whole.
+  const rows = [[]];
+  let field = "", quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) { if (c === '"' && text[i + 1] === '"') { field += c; i++; } else if (c === '"') quoted = false; else field += c; }
+    else if (c === '"') quoted = true;
+    else if (c === ",") { rows.at(-1).push(field); field = ""; }
+    else if (c === "\n") { rows.at(-1).push(field.replace(/\r$/, "")); field = ""; rows.push([]); }
+    else field += c;
+  }
+  if (field || rows.at(-1).length) rows.at(-1).push(field);
+  const [cols, ...body] = rows.filter(r => r.length > 1 || r[0]);
+  return body.map(r => Object.fromEntries(cols.map((c, i) => [c, r[i] ?? ""])));
 }
-function start(data, corrections) {
-  D = data; saved = corrections; store = "fix-" + D.project; answers = {};
+const csvField = v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v;
+function start(data, corrections, drawn = [], reviewed = []) {
+  D = data; saved = corrections; store = "fix-" + D.project; answers = {}; lines = {}; pieceFixes = {}; order = null;
+  for (const r of reviewed) {
+    const f = pieceFixes[r.piece] ??= {ok: false, add: [], drop: [], move: [], note: "", log: [], numbers: []};
+    if (r.action === "ok") f.ok = true;
+    else if (r.action === "note") f.note = r.note;
+    else if (r.action === "number") f.numbers.push({x: +r.ax_mm, y: +r.ay_mm, number: r.kind});
+    else if (r.action === "move") f.move.push({a: [+r.ax_mm, +r.ay_mm], b: [+r.bx_mm, +r.by_mm]});
+    else (r.action === "add" ? f.add : f.drop).push({kind: r.kind, a: [+r.ax_mm, +r.ay_mm], b: [+r.bx_mm, +r.by_mm]});
+  }
   for (const s of saved) answers[`${s.piece}@${s.x_mm},${s.y_mm}`] = s.number;
+  for (const l of drawn) lines[`${l.piece}@${l.x_mm},${l.y_mm}`] =
+    {kind: l.kind, a: [+l.ax_mm, +l.ay_mm], b: [+l.bx_mm, +l.by_mm], piece: l.piece, x: l.x_mm, y: l.y_mm, read: l.number};
   try { Object.assign(answers, JSON.parse(localStorage.getItem(store) || "{}")); } catch (e) {}
-  document.getElementById("title").textContent = D.project[0].toUpperCase() + D.project.slice(1) + " number check";
+  try { Object.assign(lines, JSON.parse(localStorage.getItem(store + "-lines") || "{}")); } catch (e) {}
+  try { Object.assign(pieceFixes, JSON.parse(localStorage.getItem(store + "-pieces") || "{}")); } catch (e) {}
+  document.getElementById("title").textContent = "Number check: " + D.project;
   document.title = document.getElementById("title").textContent;
   render();
 }
-document.getElementById("open").addEventListener("click", async () => {
+// The chosen data folder is remembered (IndexedDB holds the handle) so the picker is a one-time step.
+const db = () => new Promise((ok, fail) => { const r = indexedDB.open("number-check", 1);
+  r.onupgradeneeded = () => r.result.createObjectStore("handles"); r.onsuccess = () => ok(r.result); r.onerror = fail; });
+const recall = async () => { try { const d = await db(); return await new Promise(ok => {
+  const r = d.transaction("handles").objectStore("handles").get("data"); r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); }); } catch (e) { return null; } };
+const keep = async h => { try { (await db()).transaction("handles", "readwrite").objectStore("handles").put(h, "data"); } catch (e) {} };
+const checkIn = async dir => { for await (const [name, h] of dir.entries()) if (h.kind === "file" && name.endsWith("-check.json")) return h; return null; };
+let models = {};
+async function loadModel(dir) {
+  const h = await checkIn(dir);
+  const check = JSON.parse(await (await h.getFile()).text());
+  let corrections = [];
+  let drawn = [];
+  try { corrections = parseCsv(await (await (await dir.getFileHandle(check.project + "-corrections.csv")).getFile()).text()); } catch (e) {}
+  try { drawn = parseCsv(await (await (await dir.getFileHandle(check.project + "-lines.csv")).getFile()).text()); } catch (e) {}
+  let reviewed = [];
+  try { reviewed = parseCsv(await (await (await dir.getFileHandle(check.project + "-pieces.csv")).getFile()).text()); } catch (e) {}
+  folder = dir;
+  start(check, corrections, drawn, reviewed);
+}
+async function openData(root) {
+  models = {};
+  if (await checkIn(root)) models[root.name] = root;
+  else for await (const [name, h] of root.entries()) if (h.kind === "directory" && await checkIn(h)) models[name] = h;
+  const names = Object.keys(models).sort();
+  if (!names.length) { alert(`No model with a -check.json in ${root.name}. Run make fix first.`); return; }
+  const pick = document.getElementById("model");
+  pick.innerHTML = names.map(n => `<option>${n}</option>`).join("");
+  pick.hidden = names.length < 2;
+  await loadModel(models[names[0]]);
+}
+document.getElementById("model").addEventListener("change", e => loadModel(models[e.target.value]));
+async function choose(reuse) {
   if (!window.showDirectoryPicker) { alert("This browser cannot open folders; load the -check.json file instead."); return; }
-  folder = await showDirectoryPicker({mode: "readwrite"});
-  let check = null, corrections = [];
-  for await (const [name, handle] of folder.entries()) {
-    if (name.endsWith("-check.json")) check = JSON.parse(await (await handle.getFile()).text());
-  }
-  if (!check) { alert("No -check.json in that folder. Run make fix first."); return; }
-  try {
-    const h = await folder.getFileHandle(check.project + "-corrections.csv");
-    corrections = parseCsv(await (await h.getFile()).text());
-  } catch (e) {}
-  start(check, corrections);
-});
+  const last = await recall();
+  if (reuse && last && await last.requestPermission({mode: "readwrite"}) === "granted") { await openData(last); return; }
+  const root = await showDirectoryPicker({mode: "readwrite", id: "number-check-data", ...(last ? {startIn: last} : {})});
+  await keep(root);
+  await openData(root);
+}
+document.getElementById("open").addEventListener("click", () => choose(true));
+document.getElementById("change").addEventListener("click", () => choose(false));
 document.getElementById("file").addEventListener("change", async e => {
   const f = e.target.files[0];
   if (f) { folder = null; start(JSON.parse(await f.text()), []); }
 });
-const remember = () => { try { localStorage.setItem(store, JSON.stringify(answers)); } catch (e) {} };
-const done = c => c.kind === "auto" || c.panels.some(p => answers[key(p)] !== undefined && answers[key(p)] !== "");
+const remember = () => { try { localStorage.setItem(store, JSON.stringify(answers));
+  localStorage.setItem(store + "-lines", JSON.stringify(lines));
+  localStorage.setItem(store + "-pieces", JSON.stringify(pieceFixes)); } catch (e) {} };
+const SNAP_PX = 7;     // a dragged or clicked end snaps to a traced point this close on screen; Shift turns it off
+const DRAG = "Drag the purple ends of the line onto the right corners; they snap to nearby blue points (hold Shift to place freely).";
+const CLICK = "Click the two ends of this number's line on the scan; clicks snap to nearby blue points (hold Shift to place freely).";
+const mmLength = l => Math.hypot(l.b[0] - l.a[0], l.b[1] - l.a[1]).toFixed(1);
+// The scan with the trace on top: outline corners (blue), folds (green), the line found for the
+// number (orange) and a hand-drawn line (purple). Clicks in draw mode snap to traced points.
+function scan(p, onDrawn) {
+  const [left, top, side] = p.box, t = (D.traces || {})[p.piece] || {outline: [], folds: []};
+  const wrap = document.createElement("div");
+  wrap.className = "scan";
+  const r = side / 160;
+  const outline = t.outline.map(q => q.join(",")).join(" ");
+  const own = lines[key(p)];
+  wrap.innerHTML = `<img src="${p.image}" alt="scan around ${p.read}">
+    <svg viewBox="${left} ${top} ${side} ${side}" style="stroke-width:${side / 120}">
+      <polygon class="trace" points="${outline}" style="stroke-width:${r * 0.7}"/>
+      ${t.folds.map(f => `<line class="fold" x1="${f[0]}" y1="${f[1]}" x2="${f[2]}" y2="${f[3]}" stroke-dasharray="${r * 2} ${r}" style="stroke-width:${r * 0.7}"/>`).join("")}
+      ${p.line && p.line.length === 4 ? `<line class="found" x1="${p.line[0]}" y1="${p.line[1]}" x2="${p.line[2]}" y2="${p.line[3]}" style="stroke-width:${r * 1.4};opacity:${own ? .35 : .85}"/>` : ""}
+      ${t.outline.map(q => `<circle class="corner" cx="${q[0]}" cy="${q[1]}" r="${r * 1.6}" style="stroke-width:${r * 0.6}"/>`).join("")}
+      ${t.folds.flatMap(f => [[f[0], f[1]], [f[2], f[3]]]).map(q => `<circle cx="${q[0]}" cy="${q[1]}" r="${r}" fill="#00a032"/>`).join("")}
+      <circle cx="${p.x}" cy="${p.y}" r="3.5" fill="none" stroke="#dc00a0" style="stroke-width:${r}"/>
+      <g class="clicks"></g>
+    </svg>`;
+  const svg = wrap.querySelector("svg"), clicks = wrap.querySelector(".clicks");
+  const points = [...t.outline, ...t.folds.flatMap(f => [[f[0], f[1]], [f[2], f[3]]])];
+  const toMM = e => { const q = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse()); return [q.x, q.y]; };
+  const snap = (q, e) => {
+    const mmPerPx = side / svg.getBoundingClientRect().width;
+    let at = q, best = e && e.shiftKey ? 0 : SNAP_PX * mmPerPx;
+    for (const c of points) { const d = Math.hypot(c[0] - q[0], c[1] - q[1]); if (d < best) { best = d; at = c; } }
+    return at.map(v => +(+v).toFixed(2));
+  };
+  // The line for this number has a handle at each end: drag one onto the right corner.
+  // With no line yet (or after Draw line), click its two ends instead.
+  const found = p.line && p.line.length === 4 ? {a: p.line.slice(0, 2), b: p.line.slice(2)} : null;
+  let line = own ? {a: own.a, b: own.b} : found, picked = line ? null : [], dragging = null;
+  const draw = () => {
+    clicks.innerHTML = line ? `<line x1="${line.a[0]}" y1="${line.a[1]}" x2="${line.b[0]}" y2="${line.b[1]}" stroke="#c000ff" style="stroke-width:${r * 1.5}"/>
+      ${[line.a, line.b].map(q => `<circle class="handle" cx="${q[0]}" cy="${q[1]}" r="${r * 3}" fill="#c000ff" fill-opacity=".35" stroke="#c000ff" style="stroke-width:${r * 0.8}"/>`).join("")}`
+      : (picked || []).map(q => `<circle cx="${q[0]}" cy="${q[1]}" r="${r * 2.2}" fill="#c000ff"/>`).join("");
+  };
+  draw();
+  wrap.start = () => { line = null; picked = []; wrap.classList.add("drawing"); draw(); };
+  svg.addEventListener("pointerdown", e => {
+    const q = toMM(e);
+    if (line) {
+      const ends = [line.a, line.b].map(c => Math.hypot(c[0] - q[0], c[1] - q[1]));
+      const i = ends[0] <= ends[1] ? 0 : 1;
+      if (ends[i] <= r * 6) { dragging = i; svg.setPointerCapture(e.pointerId); e.preventDefault(); }
+      return;
+    }
+    picked.push(snap(q, e));
+    wrap.dispatchEvent(new CustomEvent("picked", {detail: picked.length}));
+    draw();
+    if (picked.length === 2) { const [a, b] = picked; picked = null; wrap.classList.remove("drawing"); onDrawn(a, b); }
+  });
+  svg.addEventListener("pointermove", e => {
+    if (dragging === null) return;
+    const q = snap(toMM(e), e);
+    line = dragging === 0 ? {a: q, b: line.b} : {a: line.a, b: q};
+    draw();
+  });
+  svg.addEventListener("pointerup", () => {
+    if (dragging === null) return;
+    dragging = null;
+    onDrawn(line.a, line.b);
+  });
+  return wrap;
+}
+let touched = new Set();
+const done = c => c.kind === "auto" || (c.kind === "doubt" ? c.panels.some(p => touched.has(key(p)))
+  : c.panels.some(p => answers[key(p)] !== undefined && answers[key(p)] !== ""));
 
 function render() {
   const list = document.getElementById("list");
   list.innerHTML = "";
+  if (filter === "pieces") { reviewPiece(list); return; }
   const shown = D.cards.filter(c => filter === "all" || (filter === "todo" ? !done(c) : c.kind === filter));
   document.getElementById("count").textContent =
     `${D.cards.filter(done).length} of ${D.cards.length} checked, ${shown.length} shown`;
@@ -85,26 +232,50 @@ function card(c) {
   const el = document.createElement("div");
   el.className = "card" + (done(c) ? " done" : "");
   const [a, b] = c.panels;
-  const title = c.kind === "auto" ? `Read ${a.read}, fixed to ${c.suggested} without asking (type to override)`
+  const title = c.kind === "doubt" ? `You set ${a.read}, but it still does not pair: ${c.why}. Check every copy below.`
+    : c.kind === "auto" ? `Read ${a.read}, fixed to ${c.suggested} without asking (type to override)`
     : c.kind === "suggested" ? `Read ${a.read}, probably ${c.suggested}` : `${a.read}: ${c.why}`;
-  el.innerHTML = `<div class="head"><b>${title}</b><span class="why">${c.kind !== "open" ? c.why : ""}</span></div><div class="panels"></div>`;
+  el.innerHTML = `<div class="head"><b>${title}</b><span class="why">${["suggested", "auto"].includes(c.kind) ? c.why : ""}${c.folded ? ` · <b class="folded" title="the folded 3D model: ${c.folded}">${c.folded.includes("closes") ? "3D fold agrees, the pieces meet" : "3D model agrees by shape"}</b>` : ""}</span></div><div class="panels"></div>`;
   const panels = el.querySelector(".panels");
   c.panels.forEach((p, i) => {
     const div = document.createElement("div");
     div.className = "panel";
-    const label = i === 0 ? (c.kind === "suggested" ? "this number" : "this number") : (c.kind === "suggested" ? "matching line" : "its pair");
-    div.innerHTML = `<img src="${p.image}" alt="scan around ${p.read}">
-      <div><span class="read">${p.read}</span> <span class="meta">${label}: ${p.piece}, ${p.side} ${p.length} mm</span></div>
-      <div class="row"><button data-a="keep">✓ as read</button><span class="meta">should be</span><input inputmode="numeric"></div>`;
+    const label = c.kind === "doubt" ? (i === 0 ? "your fix" : "other copy") : i === 0 ? "this number" : (c.kind === "open" ? "its pair" : "matching line");
+    div.innerHTML = `<div class="slot"></div><div class="meta how"></div>
+      <div><span class="read">${p.read}</span> <span class="meta">${label}: ${p.piece}, ${p.side === "none" ? "no line found" : `${p.side} ${p.length} mm`}</span></div>
+      ${p.checks ? `<div class="hint">Trace check: ${p.checks}</div>` : ""}
+      <div class="row"><button data-a="keep">✓ as read</button><span class="meta">should be</span><input inputmode="numeric"><button data-a="none" title="a mark that is not an edge number, such as folds meeting at a corner">Not a number</button></div>
+      <div class="row"><button data-a="draw" title="clear the line, then click its two ends on the scan">New line</button><select><option value="cut">cut edge</option><option value="fold">fold (tab side)</option></select>
+        <button data-a="undraw">Clear</button><span class="meta drawn-info"></span></div>`;
+    const kind = div.querySelector("select");
+    const info = () => { const l = lines[key(p)]; div.querySelector(".drawn-info").textContent = l ? `drawn: ${l.kind} ${mmLength(l)} mm` : ""; };
+    kind.value = (lines[key(p)] || {}).kind || (p.side === "tab" ? "fold" : "cut");
+    const place = () => {
+      const view = scan(p, (a, b) => {
+        lines[key(p)] = {kind: kind.value, a, b, piece: p.piece, x: p.x, y: p.y, read: p.read};
+        remember(); place(); info(); count(); });
+      div.querySelector(".slot").replaceChildren(view);
+      const how = div.querySelector(".how");
+      how.textContent = lines[key(p)] || (p.line && p.line.length === 4) ? DRAG : CLICK;
+      view.addEventListener("picked", e => { how.textContent = e.detail === 1 ? "Now click the other end of the line." : DRAG; });
+      return view;
+    };
+    let view = place();
+    info();
+    div.querySelector("[data-a=draw]").addEventListener("click", () => {
+      view = place(); view.start(); div.querySelector(".how").textContent = CLICK; });
+    div.querySelector("[data-a=undraw]").addEventListener("click", () => { delete lines[key(p)]; remember(); view = place(); info(); count(); });
+    kind.addEventListener("change", () => { if (lines[key(p)]) { lines[key(p)].kind = kind.value; remember(); info(); } });
     const input = div.querySelector("input");
     const value = answers[key(p)];
     if (value !== undefined) { input.value = value; input.classList.toggle("set", value !== ""); }
-    const set = v => { answers[key(p)] = v; remember(); input.value = v; input.classList.toggle("set", v !== ""); el.classList.toggle("done", done(c)); count(); };
+    const set = v => { touched.add(key(p)); answers[key(p)] = v; remember(); input.value = v; input.classList.toggle("set", v !== ""); el.classList.toggle("done", done(c)); count(); };
     input.addEventListener("change", () => set(input.value.trim()));
     div.querySelector("[data-a=keep]").addEventListener("click", () => set(p.read));
+    div.querySelector("[data-a=none]").addEventListener("click", () => set("x"));
     panels.appendChild(div);
   });
-  if (c.kind !== "open") {
+  if (c.kind === "suggested" || c.kind === "auto") {
     const row = document.createElement("div");
     row.className = "row";
     row.style.marginTop = "8px";
@@ -117,6 +288,159 @@ function card(c) {
   }
   return el;
 }
+// Piece review: one whole piece at a time, those needing the most work first (shuffled among
+// equals). Click two points to add a fold the trace missed; in remove mode click a fold to drop
+// it; click a number to correct it. OK saves into the folder and moves to the next piece.
+const fixOf = id => { const f = pieceFixes[id] ??= {ok: false, add: [], drop: []}; f.move ??= []; f.note ??= ""; f.log ??= []; f.numbers ??= []; return f; };
+const movedIn = (f, c) => { const m = (f.move || []).find(m => Math.hypot(m.a[0] - c[0], m.a[1] - c[1]) < 0.3); return m ? m.b : c; };
+const segDist = (q, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy || 1;
+  const t = Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / l));
+  return Math.hypot(q[0] - a[0] - t * dx, q[1] - a[1] - t * dy); };
+let mode = "add", foldKind = "valley";
+function pieceOrder() {
+  const list = [...(D.pieces || [])].map(p => ({p, r: Math.random()}));
+  list.sort((u, v) => (fixOf(u.p.piece).ok - fixOf(v.p.piece).ok) || (v.p.score - u.p.score) || (u.r - v.r));
+  return list.map(u => u.p);
+}
+function reviewPiece(list) {
+  if (!D.pieces) { list.innerHTML = "<p>This check file has no pieces; run <code>make fix</code> again.</p>"; return; }
+  order ??= pieceOrder();
+  at = Math.max(0, Math.min(at, order.length - 1));
+  const q = order[at], f = fixOf(q.piece), t = D.traces[q.piece] || {outline: [], folds: []};
+  const reviewed = D.pieces.filter(p => fixOf(p.piece).ok).length;
+  document.getElementById("count").textContent = `piece ${at + 1} of ${order.length} · ${reviewed} reviewed`;
+  const [left, top, side] = q.box, r = side / 220;
+  // Dragged corners take the folds that end at them along.
+  const at_ = c => movedIn(f, c);
+  const outline = t.outline.map(at_);
+  const folds = t.folds.map(g => [...at_([g[0], g[1]]), ...at_([g[2], g[3]])]);
+  const same = (d, g) => { const a = at_(d.a), b = at_(d.b);
+    return Math.min(Math.hypot(a[0] - g[0], a[1] - g[1]) + Math.hypot(b[0] - g[2], b[1] - g[3]),
+                    Math.hypot(a[0] - g[2], a[1] - g[3]) + Math.hypot(b[0] - g[0], b[1] - g[1])) < 0.5; };
+  const isDropped = i => f.drop.some(d => same(d, folds[i]));
+  // Folds the mirror twin has here and this piece lacks, not yet added.
+  const pending = (q.suggest || []).filter(g => !f.add.some(h => same({a: h.a, b: h.b}, [...g.a, ...g.b])));
+  const el = document.createElement("div");
+  el.className = "card review";
+  el.innerHTML = `<div class="scan"><img src="${q.image}" alt="scan of ${q.piece}">
+    <svg viewBox="${left} ${top} ${side} ${side}">
+      <polygon class="trace" points="${outline.map(c => c.join(",")).join(" ")}" style="stroke-width:${r * 0.8}"/>
+      ${t.folds.map((g, i) => `<line class="${isDropped(i) ? "dropped" : "fold"}" x1="${folds[i][0]}" y1="${folds[i][1]}" x2="${folds[i][2]}" y2="${folds[i][3]}" stroke-dasharray="${r * 3} ${r * 1.5}" style="stroke-width:${r * 1.1}"/>`).join("")}
+      ${f.add.map(g => `<line class="added" x1="${g.a[0]}" y1="${g.a[1]}" x2="${g.b[0]}" y2="${g.b[1]}" stroke-dasharray="${g.kind === "mountain" ? `${r * 4} ${r * 1.5} ${r} ${r * 1.5}` : `${r * 3} ${r * 1.5}`}" style="stroke-width:${r * 1.6}"/>`).join("")}
+      ${outline.map((c, i) => `<circle class="corner" data-i="${i}" cx="${c[0]}" cy="${c[1]}" r="${r * (mode === "move" ? 2.6 : 1.6)}" style="stroke-width:${r * 0.6}${f.move.some(m => m.b === c) ? ";fill:#c000ff" : ""}"/>`).join("")}
+      ${pending.map((g, i) => `<line class="suggest" data-s="${i}" x1="${g.a[0]}" y1="${g.a[1]}" x2="${g.b[0]}" y2="${g.b[1]}" stroke="#ff7800" stroke-opacity=".8" stroke-dasharray="${r * 2} ${r * 2}" style="stroke-width:${r * 2.2}"/>`).join("")}
+      ${q.labels.map(l => { const gone = answers[`${q.piece}@${l.x},${l.y}`] === "x";
+        return `<g class="label" data-k="${l.x},${l.y}"><circle cx="${l.x}" cy="${l.y}" r="${r * 6}" fill="${gone ? "#e00000" : "#5060d0"}" fill-opacity=".12" stroke="${gone ? "#e00000" : "#5060d0"}" style="stroke-width:${r * 0.7}"/>
+          ${gone ? `<text x="${l.x}" y="${+l.y + r * 3}" text-anchor="middle" font-size="${r * 9}" fill="#e00000">✕</text>` : ""}</g>`; }).join("")}
+      ${f.numbers.map((n, i) => `<g class="newnum" data-n="${i}"><circle cx="${n.x}" cy="${n.y}" r="${r * 6}" fill="#c000ff" fill-opacity=".15" stroke="#c000ff" style="stroke-width:${r * 0.7}"/>
+          <text class="num" x="${n.x}" y="${n.y + r * 3}" text-anchor="middle" font-size="${r * 8}" fill="#c000ff" style="stroke-width:${r * 1.5}">${n.number}</text></g>`).join("")}
+      <g class="clicks"></g>
+    </svg></div>
+    <div class="side"><div><span class="read">${q.piece}</span> <span class="meta">${t.outline.length} corners, ${t.folds.length} traced folds${f.ok ? " · reviewed" : ""}</span></div>
+      <div class="meta">${q.why.length ? q.why.map(w => `<div class="hint">${w}</div>`).join("") : "Nothing flagged; check the corners and folds look complete."}</div>
+      <div class="tools"><button data-m="add">Add fold</button><select><option value="valley">valley (dashed)</option><option value="mountain">mountain (dash-dot)</option></select><button data-m="drop">Remove fold</button><button data-m="move">Move corner</button><button data-m="number">Numbers</button></div>
+      ${pending.length ? `<div class="tools"><button data-a="twin">Add the twin's ${pending.length} fold${pending.length > 1 ? "s" : ""}</button></div>` : ""}
+      <div class="meta how"></div>
+      <label class="meta">Note for edits the page cannot make<textarea rows="3" style="width:100%;font:inherit">${f.note.replace(/</g, "&lt;")}</textarea></label>
+      <div class="tools"><button data-a="undo">Undo</button><button data-a="back">← Back</button><button data-a="skip">Skip</button><button class="next" data-a="ok">OK → next</button></div>
+      <div class="meta">Green dashes are traced folds, purple ones you added, red ones you removed, orange ones the mirror twin has (click one to add it); purple corners you moved. Enter = OK.</div></div>`;
+  list.appendChild(el);
+  const svg = el.querySelector("svg"), clicks = el.querySelector(".clicks"), how = el.querySelector(".how");
+  const kind = el.querySelector("select");
+  kind.value = foldKind; kind.addEventListener("change", () => { foldKind = kind.value; });
+  el.querySelector("textarea").addEventListener("input", e => { f.note = e.target.value; remember(); });
+  const HOW = {add: "Click the two ends of the missing fold; ends snap to blue corners (Shift places freely).",
+    drop: "Click a fold to remove it, or a purple one to take it back.",
+    move: "Drag a blue corner to where the printed cut really turns; its folds follow.",
+    number: "Click a circled number to remove it (not a number), or an empty spot to add a number the reader missed."};
+  const setMode = (m, redraw) => { mode = m; if (redraw) { changed(); return; }
+    el.querySelectorAll("[data-m]").forEach(b => b.classList.toggle("on", b.dataset.m === m)); how.textContent = HOW[m]; };
+  setMode(mode);
+  el.querySelectorAll("[data-m]").forEach(b => b.addEventListener("click", () => setMode(b.dataset.m, true)));
+  const points = [...outline, ...folds.flatMap(g => [[g[0], g[1]], [g[2], g[3]]]), ...f.add.flatMap(g => [g.a, g.b])];
+  const toMM = e => { const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse()); return [p.x, p.y]; };
+  const mmPerPx = () => side / svg.getBoundingClientRect().width;
+  const snap = (p, e) => { let best = e.shiftKey ? 0 : SNAP_PX * mmPerPx(), hit = p;
+    for (const c of points) { const d = Math.hypot(c[0] - p[0], c[1] - p[1]); if (d < best) { best = d; hit = c; } }
+    return hit.map(v => +(+v).toFixed(2)); };
+  const round = p => p.map(v => +v.toFixed(2));
+  let picked = [], dragging = null;
+  function changed() { remember(); list.innerHTML = ""; reviewPiece(list); }
+  svg.addEventListener("pointerdown", e => {
+    if (mode !== "move") return;
+    const p = toMM(e);
+    const i = outline.map((c, i) => ({i, d: Math.hypot(c[0] - p[0], c[1] - p[1])})).sort((u, v) => u.d - v.d)[0];
+    if (!i || i.d > SNAP_PX * 1.5 * mmPerPx()) return;
+    dragging = {i: i.i, from: t.outline[i.i], dot: svg.querySelector(`.corner[data-i="${i.i}"]`)};
+    svg.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  svg.addEventListener("pointermove", e => {
+    if (!dragging) return;
+    const p = toMM(e);
+    dragging.to = round(p);
+    dragging.dot.setAttribute("cx", p[0]); dragging.dot.setAttribute("cy", p[1]);
+    const shown = outline.slice(); shown[dragging.i] = p;
+    svg.querySelector(".trace").setAttribute("points", shown.map(c => c.join(",")).join(" "));
+  });
+  svg.addEventListener("pointerup", () => {
+    if (!dragging) return;
+    const {from, to} = dragging; dragging = null;
+    if (!to) return;
+    const m = f.move.find(m => Math.hypot(m.a[0] - from[0], m.a[1] - from[1]) < 0.3);
+    if (m) m.b = to; else f.move.push({a: from, b: to});
+    f.log.push("move"); changed();
+  });
+  svg.addEventListener("click", e => {
+    if (mode === "move") return;
+    const p = toMM(e);
+    if (mode === "number") {
+      const label = e.target.closest(".label"), added = e.target.closest(".newnum");
+      if (added) { f.numbers.splice(+added.dataset.n, 1); changed(); return; }
+      if (label) {
+        const k = `${q.piece}@${label.dataset.k}`;
+        if (answers[k] === "x") delete answers[k]; else { answers[k] = "x"; touched.add(k); }
+        changed(); return;
+      }
+      const v = prompt("Which number is printed here? (your best guess)");
+      if (v && v.trim()) { f.numbers.push({x: +p[0].toFixed(2), y: +p[1].toFixed(2), number: v.trim()}); f.log.push("numbers"); changed(); }
+      return;
+    }
+    const reach0 = SNAP_PX * mmPerPx() * 1.5;
+    const near = points.some(c => Math.hypot(c[0] - p[0], c[1] - p[1]) <= reach0);
+    const hint = pending.findIndex(g => segDist(p, g.a, g.b) <= reach0);
+    if (mode === "add" && !picked.length && !near && hint >= 0) {
+      const g = pending[hint]; f.add.push({kind: g.kind, a: g.a, b: g.b}); f.log.push("add"); changed(); return;
+    }
+    if (mode === "drop") {
+      const reach = SNAP_PX * mmPerPx() * 1.5;
+      const added = f.add.findIndex(g => segDist(p, g.a, g.b) <= reach);
+      if (added >= 0) { f.add.splice(added, 1); changed(); return; }
+      const g = folds.map(g => ({g, d: segDist(p, g.slice(0, 2), g.slice(2))})).sort((u, v) => u.d - v.d)[0];
+      if (!g || g.d > reach) return;
+      const i = f.drop.findIndex(d => same(d, g.g));
+      if (i >= 0) f.drop.splice(i, 1); else { f.drop.push({a: [g.g[0], g.g[1]], b: [g.g[2], g.g[3]]}); f.log.push("drop"); }
+      changed(); return;
+    }
+    picked.push(snap(p, e));
+    if (picked.length === 2) { f.add.push({kind: foldKind, a: picked[0], b: picked[1]}); f.log.push("add"); changed(); return; }
+    clicks.innerHTML = `<circle cx="${picked[0][0]}" cy="${picked[0][1]}" r="${r * 2.5}" fill="#c000ff"/>`;
+    how.textContent = "Now click the other end of the fold.";
+  });
+  const go = step => { at += step; list.innerHTML = ""; reviewPiece(list); window.scrollTo(0, 0); };
+  el.querySelector("[data-a=undo]").addEventListener("click", () => {
+    if (picked.length) { picked = []; clicks.innerHTML = ""; setMode(mode); return; }
+    const last = f.log.pop();
+    if (last) f[last].pop(); changed(); });
+  el.querySelector("[data-a=twin]")?.addEventListener("click", () => {
+    for (const g of pending) { f.add.push({kind: g.kind, a: g.a, b: g.b}); f.log.push("add"); } changed(); });
+  el.querySelector("[data-a=back]").addEventListener("click", () => go(-1));
+  el.querySelector("[data-a=skip]").addEventListener("click", () => go(1));
+  el.querySelector("[data-a=ok]").addEventListener("click", () => { f.ok = true; remember(); save(true); go(1); });
+}
+document.addEventListener("keydown", e => {
+  if (filter === "pieces" && e.key === "Enter" && !["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName)) {
+    const ok = document.querySelector("[data-a=ok]"); if (ok) { e.preventDefault(); ok.click(); } }
+});
 function count() {
   document.getElementById("count").textContent = `${D.cards.filter(done).length} of ${D.cards.length} checked`;
 }
@@ -125,26 +449,55 @@ document.querySelectorAll("header [data-f]").forEach(b => b.addEventListener("cl
   document.querySelectorAll("header [data-f]").forEach(x => x.classList.toggle("on", x === b));
   render();
 }));
-document.getElementById("save").addEventListener("click", async () => {
+async function save(quiet) {
   if (!D) return;
   const reads = {};
   for (const c of D.cards) for (const p of c.panels) reads[key(p)] = p;
+  for (const q of D.pieces || []) for (const l of q.labels) reads[`${q.piece}@${l.x},${l.y}`] ??= {piece: q.piece, x: l.x, y: l.y, read: l.read};
   for (const s of saved) reads[`${s.piece}@${s.x_mm},${s.y_mm}`] ??= {piece: s.piece, x: s.x_mm, y: s.y_mm, read: s.read};
-  const lines = ["piece,x_mm,y_mm,read,number"];
+  const rows = ["piece,x_mm,y_mm,read,number"];
   for (const [k, v] of Object.entries(answers)) {
     const p = reads[k];
-    if (p && v !== "") lines.push([p.piece, p.x, p.y, p.read, v].join(","));
+    if (p && v !== "") rows.push([p.piece, p.x, p.y, p.read, v].join(","));
   }
-  const text = lines.join("\n") + "\n";
-  const name = D.project + "-corrections.csv";
-  if (folder) {
-    const w = await (await folder.getFileHandle(name, {create: true})).createWritable();
-    await w.write(text); await w.close();
-    document.getElementById("count").textContent += ` (saved ${lines.length - 1} to ${name})`;
-    return;
+  const drawn = ["piece,x_mm,y_mm,number,kind,ax_mm,ay_mm,bx_mm,by_mm"];
+  for (const l of Object.values(lines)) drawn.push([l.piece, l.x, l.y, l.read, l.kind, ...l.a, ...l.b].join(","));
+  const reviewed = ["piece,action,kind,ax_mm,ay_mm,bx_mm,by_mm,note"];
+  for (const [piece, f] of Object.entries(pieceFixes)) {
+    for (const m of f.move || []) reviewed.push([piece, "move", "", ...m.a, ...m.b, ""].join(","));
+    for (const n of f.numbers || []) reviewed.push([piece, "number", n.number, n.x, n.y, "", "", ""].join(","));
+    if (f.note) reviewed.push([piece, "note", "", "", "", "", "", csvField(f.note)].join(","));
+    for (const l of f.add) reviewed.push([piece, "add", l.kind, ...l.a, ...l.b, ""].join(","));
+    for (const l of f.drop) reviewed.push([piece, "drop", "", ...movedIn(f, l.a), ...movedIn(f, l.b), ""].join(","));
+    if (f.ok) reviewed.push([piece, "ok", "", "", "", "", "", ""].join(","));
   }
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([text], {type: "text/csv"}));
-  a.download = name; a.click();
-});
+  const files = [[D.project + "-corrections.csv", rows], [D.project + "-lines.csv", drawn], [D.project + "-pieces.csv", reviewed]];
+  const download = (name, text) => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], {type: "text/csv"}));
+    a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  };
+  if (quiet && !folder) return;
+  let where = folder ? `the ${folder.name} folder` : "your Downloads folder";
+  for (const [name, list] of files) {
+    const text = list.join("\n") + "\n";
+    try {
+      if (!folder) throw new Error("no folder open");
+      if (folder.requestPermission && await folder.requestPermission({mode: "readwrite"}) !== "granted")
+        throw new Error("the browser did not allow writing to the folder");
+      const w = await (await folder.getFileHandle(name, {create: true})).createWritable();
+      await w.write(text); await w.close();
+    } catch (e) {
+      // Writing into the folder can be refused (file:// pages, permissions); download instead.
+      if (quiet) { document.getElementById("count").textContent = `Could not save into ${folder.name}: ${e.message}. Press Save.`; return; }
+      if (folder) where = `your Downloads folder (writing to ${folder.name} failed: ${e.message}); move the files into the model folder`;
+      download(name, text);
+    }
+  }
+  const note = `Saved ${rows.length - 1} numbers, ${drawn.length - 1} lines and ${Object.values(pieceFixes).filter(f => f.ok).length} reviewed pieces to ${where}.`;
+  if (quiet) return;
+  document.getElementById("count").textContent += " " + note;
+  alert(note);
+}
+document.getElementById("save").addEventListener("click", () => save(false));
 </script></body></html>

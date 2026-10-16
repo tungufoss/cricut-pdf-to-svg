@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import datetime
 import pickle
 import shutil
@@ -10,12 +11,14 @@ import sys
 from pathlib import Path
 
 from .config import Project
-from .corrections import Correction, Corrections
+from .checks import TraceChecks
+from .corrections import Correction, Corrections, LineFixes, PieceFixes
 from .detect import PageDetector
 from .edges import EdgeTable
 from .ocr import EdgeNumberReader, read_paper
 from .render import PageRenderer
 from .svg import InkscapeSvgWriter
+from .symmetry import Symmetry
 
 
 def main() -> int:
@@ -90,6 +93,20 @@ def main() -> int:
         applied, missed = corrections.apply([(layout, page.mm_per_px) for page, layout, _ in results])
         print(f"applied {applied} hand corrections" + (f", {len(missed)} matched no number: "
               + ", ".join(f"{c.piece} {c.read}->{c.number}" for c in missed) if missed else ""))
+    # Folds added or dropped and corners moved on the piece review; the numbers on those pieces look for their line again.
+    piece_fixes = PieceFixes.load(output / f"{project.name}-pieces.csv")
+    if piece_fixes.rows:
+        changed, missed = piece_fixes.apply([(layout, page.mm_per_px) for page, layout, _ in results])
+        for page, layout, _ in results:
+            for piece in layout.pieces:
+                if piece.id in changed:
+                    for label in piece.labels:
+                        detector._mark_edge(label, piece, 1 / page.mm_per_px)
+        print(f"changed {len(changed)} pieces by hand (folds, corners)" + (f", {len(missed)} rows matched no fold or corner" if missed else ""))
+    lines = LineFixes.load(output / f"{project.name}-lines.csv")
+    if lines.rows:
+        applied, missed = lines.apply([(layout, page.mm_per_px) for page, layout, _ in results])
+        print(f"applied {applied} hand-drawn lines" + (f", {len(missed)} matched no number" if missed else ""))
     # Clear-cut misreads are fixed without asking; the rest wait for the number check page.
     measured = [(layout, page.mm_per_px) for page, layout, _ in results]
     first = EdgeTable()
@@ -97,8 +114,19 @@ def main() -> int:
         first.add(layout, mm)
     sure = [m for m in first.misreads() if m["sure"] == "yes"]
     Corrections([Correction(m["piece"], float(m["x_mm"]), float(m["y_mm"]), m["read"], m["suggested"])
-                 for m in sure]).apply(measured)
+                 for m in sure], by_hand=False).apply(measured)
     print(f"fixed {len(sure)} clear-cut misreads without asking")
+    # Mirror twins predict numbers from the clean pairs on the other side of the model.
+    symmetry = Symmetry(measured)
+    second = EdgeTable()
+    for layout, mm in measured:
+        second.add(layout, mm)
+    predicted = symmetry.predictions(second.records())
+    mirrored = [m for m in predicted if m["sure"] == "yes"]
+    Corrections([Correction(m["piece"], float(m["x_mm"]), float(m["y_mm"]), m["read"], m["suggested"])
+                 for m in mirrored], by_hand=False).apply(measured)
+    print(f"{len(symmetry.twins)} mirror twins; fixed {len(mirrored)} numbers from their twins without asking")
+    sure += mirrored
     labels = [label for _, layout, _ in results for piece in layout.pieces for label in piece.labels]
 
     writer = InkscapeSvgWriter(f"{project.name.title()} papercraft")
@@ -114,12 +142,31 @@ def main() -> int:
     table = EdgeTable()
     for layout, mm in measured:
         table.add(layout, mm)
+    checks = TraceChecks(measured)
+    checks.scale(table.records())
+    table.checks = checks
+    found = checks.write(output / f"{project.name}-checks.csv")
+    print(f"Wrote {output / (project.name + '-checks.csv')}: "
+          + (", ".join(f"{n} {c}" for c, n in found.most_common()) or "no trace faults"))
     edges = output / f"{project.name}-edges.csv"
     statuses = table.write(edges)
+    records = table.records()
+    asked = symmetry.predictions(records)
     misreads = table.write_misreads(output / f"{project.name}-misreads.csv",
-                                    applied=[dict(m, sure="applied") for m in sure])
+                                    applied=[dict(m, sure="applied") for m in sure], extra=asked)
+    mirrors = output / f"{project.name}-mirrors.csv"
+    off = symmetry.write(mirrors, records)
+    print(f"Wrote {mirrors}: {off} lines differ in length from their mirror line")
+    gaps = symmetry.fold_gaps()
+    with (output / f"{project.name}-mirror-folds.csv").open("w", newline="", encoding="utf-8") as handle:
+        table_out = csv.DictWriter(handle, ["piece", "twin", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm"])
+        table_out.writeheader()
+        table_out.writerows(gaps)
+    print(f"Wrote {output / (project.name + '-mirror-folds.csv')}: {len(gaps)} folds whose mirror twin has them "
+          f"on {len({g['piece'] for g in gaps})} pieces")
     print(f"Wrote {output / (project.name + '-misreads.csv')}: {len(misreads)} likely misreads left to check")
-    table.write_report(output / "README.md", project.name, datetime.date.today().isoformat(), applied=len(sure))
+    table.write_report(output / "README.md", project.name, datetime.date.today().isoformat(), applied=len(sure),
+                       symmetry=(symmetry, off))
     print(f"Wrote {edges}: " + ", ".join(f"{n} {s}" for s, n in statuses.most_common()))
     target = output / f"{project.name}.svg"
     writer.write(target)
