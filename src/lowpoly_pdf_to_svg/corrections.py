@@ -128,8 +128,13 @@ class LineFixes:
                 missed.append(row)
                 continue
             mm = pieces[row.piece][1]
-            label.edge = ((row.a[0] / mm, row.a[1] / mm), (row.b[0] / mm, row.b[1] / mm))
-            label.tab = row.kind == "fold"
+            a, b = (row.a[0] / mm, row.a[1] / mm), (row.b[0] / mm, row.b[1] / mm)
+            label.edge = (a, b)
+            # A line drawn as cut that lies on a fold (one added later on the piece review, say)
+            # is that fold: the number sits on the tab side.
+            on = lambda p, q: math.dist(p, q) <= FOLD_MM / mm
+            label.tab = row.kind == "fold" or any((on(f.a, a) and on(f.b, b)) or (on(f.a, b) and on(f.b, a))
+                                                  for f in pieces[row.piece][0].folds)
             applied += 1
         return applied, missed
 
