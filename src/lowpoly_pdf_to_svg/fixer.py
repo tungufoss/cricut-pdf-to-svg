@@ -113,8 +113,8 @@ class CheckData:
         return cards
 
     def pieces(self) -> list[dict]:
-        """One entry per traced piece for the piece review: the scan of the whole piece, its numbers
-        with their status, and how much work it likely needs (unpaired numbers count most)."""
+        """One entry per traced piece for the piece review: the scan of the whole piece and how much
+        its corners and folds likely need fixing (trace faults, untraced ink, numbers with no fold)."""
         faults: dict[str, list[str]] = {}
         path = self.folder / f"{self.project}-checks.csv"
         if path.is_file():
@@ -128,13 +128,16 @@ class CheckData:
         found = []
         for piece, trace in self.traces.items():
             labels = numbers.get(piece, [])
-            open_ = [l for l in labels if l["status"] != "ok"]
+            # Geometry only: trace faults, untraced line ink, and numbers that found no fold or line.
+            lost = [l for l in labels if l["status"] in ("no tab", "line not found")]
             loose = self._loose(piece, trace, labels)
-            score = 3 * len(open_) + len(faults.get(piece, [])) + int(loose.sum() * self.mm_per_px / 2 // LOOSE_MM)
-            why = [f"{l['read']}: {l['status']}" for l in open_] + faults.get(piece, [])
             ink_mm = loose.sum() * self.mm_per_px / 2   # ink pixels over a line about 2 px wide
+            why = faults.get(piece, [])[:]
             if ink_mm > LOOSE_MM:
                 why.append(f"about {ink_mm:.0f} mm of line ink inside the piece is not traced (orange): a missed fold?")
+            if lost:
+                why.append(f"{len(lost)} number(s) found no fold to sit on: a fold may be missing")
+            score = 2 * len(faults.get(piece, [])) + int(ink_mm // LOOSE_MM) + 2 * len(lost)
             xs, ys = [q[0] for q in trace["outline"]], [q[1] for q in trace["outline"]]
             side = max(max(xs) - min(xs), max(ys) - min(ys)) + 2 * PIECE_MARGIN_MM
             image, box = self._patch(piece, (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, side, PIECE_PX, loose)

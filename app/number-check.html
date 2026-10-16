@@ -325,18 +325,15 @@ function reviewPiece(list) {
       ${t.folds.map((g, i) => `<line class="${isDropped(i) ? "dropped" : "fold"}" x1="${folds[i][0]}" y1="${folds[i][1]}" x2="${folds[i][2]}" y2="${folds[i][3]}" stroke-dasharray="${r * 3} ${r * 1.5}" style="stroke-width:${r * 1.1}"/>`).join("")}
       ${f.add.map(g => `<line class="added" x1="${g.a[0]}" y1="${g.a[1]}" x2="${g.b[0]}" y2="${g.b[1]}" stroke-dasharray="${g.kind === "mountain" ? `${r * 4} ${r * 1.5} ${r} ${r * 1.5}` : `${r * 3} ${r * 1.5}`}" style="stroke-width:${r * 1.6}"/>`).join("")}
       ${outline.map((c, i) => `<circle class="corner" data-i="${i}" cx="${c[0]}" cy="${c[1]}" r="${r * (mode === "move" ? 2.6 : 1.6)}" style="stroke-width:${r * 0.6}${f.move.some(m => m.b === c) ? ";fill:#c000ff" : ""}"/>`).join("")}
-      ${q.labels.map(l => { const v = answers[`${q.piece}@${l.x},${l.y}`]; const ok = l.status === "ok";
-        return `<g class="label" data-k="${l.x},${l.y}" style="cursor:pointer"><circle cx="${l.x}" cy="${l.y}" r="${r * 7}" fill="${ok ? "#1b8a3a" : "#e00000"}" fill-opacity=".18" stroke="${ok ? "#1b8a3a" : "#e00000"}" style="stroke-width:${r * 0.8}"/>
-          ${v !== undefined && v !== "" ? `<text class="num" x="${l.x}" y="${+l.y - r * 8}" text-anchor="middle" font-size="${r * 9}" fill="#c000ff" style="stroke-width:${r * 2}">${v === "x" ? "✕" : v}</text>` : ""}</g>`; }).join("")}
       <g class="clicks"></g>
     </svg></div>
-    <div class="side"><div><span class="read">${q.piece}</span> <span class="meta">${q.labels.length} numbers, ${t.folds.length} traced folds${f.ok ? " · reviewed" : ""}</span></div>
-      <div class="meta">${q.why.length ? q.why.map(w => `<div class="hint">${w}</div>`).join("") : "Nothing flagged; check the folds look complete."}</div>
+    <div class="side"><div><span class="read">${q.piece}</span> <span class="meta">${t.outline.length} corners, ${t.folds.length} traced folds${f.ok ? " · reviewed" : ""}</span></div>
+      <div class="meta">${q.why.length ? q.why.map(w => `<div class="hint">${w}</div>`).join("") : "Nothing flagged; check the corners and folds look complete."}</div>
       <div class="tools"><button data-m="add">Add fold</button><select><option value="valley">valley (dashed)</option><option value="mountain">mountain (dash-dot)</option></select><button data-m="drop">Remove fold</button><button data-m="move">Move corner</button></div>
       <div class="meta how"></div>
       <label class="meta">Note for edits the page cannot make<textarea rows="3" style="width:100%;font:inherit">${f.note.replace(/</g, "&lt;")}</textarea></label>
       <div class="tools"><button data-a="undo">Undo</button><button data-a="back">← Back</button><button data-a="skip">Skip</button><button class="next" data-a="ok">OK → next</button></div>
-      <div class="meta">Green dashes are traced folds, purple ones you added, red ones you removed; purple corners you moved. Numbers: green circle paired, red not; click one to correct it. Enter = OK.</div></div>`;
+      <div class="meta">Green dashes are traced folds, purple ones you added, red ones you removed; purple corners you moved. Enter = OK.</div></div>`;
   list.appendChild(el);
   const svg = el.querySelector("svg"), clicks = el.querySelector(".clicks"), how = el.querySelector(".how");
   const kind = el.querySelector("select");
@@ -385,13 +382,6 @@ function reviewPiece(list) {
   svg.addEventListener("click", e => {
     if (mode === "move") return;
     const p = toMM(e);
-    const label = e.target.closest(".label");
-    if (label) {
-      const l = q.labels.find(x => `${x.x},${x.y}` === label.dataset.k), k = `${q.piece}@${l.x},${l.y}`;
-      const v = prompt(`Number read as ${l.read} (${l.status}). What does it say? (x = not a number, empty = as read)`, answers[k] ?? l.read);
-      if (v !== null) { answers[k] = v.trim() === l.read ? l.read : v.trim(); touched.add(k); changed(); }
-      return;
-    }
     if (mode === "drop") {
       const reach = SNAP_PX * mmPerPx() * 1.5;
       const added = f.add.findIndex(g => segDist(p, g.a, g.b) <= reach);
