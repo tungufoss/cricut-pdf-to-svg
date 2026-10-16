@@ -1,11 +1,11 @@
 """Debug view of one piece: cut it out of the project SVG, lay it over its scan, and
 colour each edge number by how its glue pair checked out.
 
-    python -m src.lowpoly_pdf_to_svg.piece --config data/bowser/bowser.yaml piece-05-08
+    python -m src.lowpoly_pdf_to_svg.piece --config data/example/example.yaml piece-01-02
 
-writes data/bowser/pieces/piece-05-08.svg (open it in a browser or Inkscape),
+writes data/example/pieces/piece-01-02.svg (open it in a browser or Inkscape),
 piece-05-08.md (the piece's rows of the edge table, with each partner), and
-data/bowser/review.png (the PDF patch and the trace side by side).
+data/example/review.png (the PDF patch and the trace side by side).
 
 """
 
@@ -236,7 +236,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Write a debug SVG and table for one piece.")
     parser.add_argument("piece", nargs="?", help="piece id, such as piece-05-08")
     parser.add_argument("--number", help="write review.png with every piece carrying this number instead")
-    parser.add_argument("--config", type=Path, default=Path("data/bowser/bowser.yaml"), help="project YAML manifest")
+    parser.add_argument("--config", type=Path, default=Path("data/example/example.yaml"), help="project YAML manifest")
     args = parser.parse_args()
     folder, project = args.config.parent, args.config.stem
     if not (args.piece or args.number):

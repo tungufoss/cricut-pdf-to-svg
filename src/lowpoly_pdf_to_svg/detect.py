@@ -75,8 +75,9 @@ class PageDetector:
         # Which fold each line style means; set per template in the project YAML.
         self.folds = folds or {"dash_dot": FoldKind.MOUNTAIN, "dashed": FoldKind.VALLEY}
 
-    def detect(self, page: PageImage, material: str) -> PageLayout:
-        px = self.px = 1.0 / page.mm_per_px
+    def _masks(self, page: PageImage):
+        """Split the page ink into solid cut lines, number glyphs and fold dashes."""
+        px = 1.0 / page.mm_per_px
         rgb = page.rgb.astype(np.int32)
         r, g, b = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
         gray = (0.299 * r + 0.587 * g + 0.114 * b).astype(np.int32)
@@ -97,6 +98,24 @@ class PageDetector:
         solid = is_long[labels].astype(np.uint8)
         glyph = (is_glyph[labels] | text_core).astype(np.uint8)
         dash = (ink.astype(bool) & ~is_long[labels] & ~glyph.astype(bool)).astype(np.uint8)
+        return gray, red, ink, text_core, labels, is_long, solid, glyph, dash
+
+    def fold_kind(self, page: PageImage, a: Point, b: Point) -> FoldKind | None:
+        """Style of the printed fold between a and b (page px), or None when too little
+        dash ink lies along it to tell (a fold drawn where the scan shows none)."""
+        if getattr(self, "_dash_page", None) is not page:
+            self._dash_page, self._dash = page, self._masks(page)[-1]
+        px = 1.0 / page.mm_per_px
+        steps = max(2, int(math.dist(a, b) * 2))
+        xs = np.linspace(a[0], b[0], steps).round().astype(int).clip(0, self._dash.shape[1] - 1)
+        ys = np.linspace(a[1], b[1], steps).round().astype(int).clip(0, self._dash.shape[0] - 1)
+        if cv2.dilate(self._dash, _kernel(3))[ys, xs].mean() < 0.3:
+            return None
+        return self._fold_kind(self._dash, a, b, px)
+
+    def detect(self, page: PageImage, material: str) -> PageLayout:
+        px = self.px = 1.0 / page.mm_per_px
+        gray, red, ink, text_core, labels, is_long, solid, glyph, dash = self._masks(page)
 
         # The right margin holds the credit and "Print on ... paper"; it is read, not traced.
         footer_x = gray.shape[1] - round(self.s.footer_mm * px)
