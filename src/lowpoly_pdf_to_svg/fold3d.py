@@ -753,6 +753,12 @@ class Reconstruction:
         self.grown_dropped = solver.dropped.copy()
         self.grown_dropped[len(keep):] = False
         x = solver.solve(x, rounds=3, max_nfev=200, reweight=True)
+        # A glue let go while building often gaped only because a piece placed early sat in a
+        # poor pose. With every piece in place, try them all again: the Cauchy weights still
+        # ease off any that truly cannot close.
+        solver.dropped[:len(keep)] = False
+        solver.robust[:] = 1.0
+        x = solver.solve(x, rounds=4, max_nfev=300, reweight=True)
         self._drop_gaping(solver, x)
         self.log(f"rebuilt with {len(keep)} glues, {int((~solver.dropped).sum())} close")
         self.solver, self.x = solver, x
