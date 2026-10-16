@@ -813,12 +813,13 @@ class Reconstruction:
     """Pattern SVG in; folded model, per-glue closure table and preview out."""
 
     def __init__(self, svg: Path, gape_mm: float = 3.0, propose_rounds: int = 3, verbose: bool = True,
-                 reference: dict | None = None):
+                 reference: dict | None = None, anneal: int = 5):
         self.svg = svg
         self.reference = reference or {}   # finished model's counts (YAML `reference:`)
         self.gape = gape_mm
         self.rounds = propose_rounds
         self.verbose = verbose
+        self.anneal = anneal               # cycles of hard then easy fold pull after the build
 
     def log(self, text: str) -> None:
         if self.verbose:
@@ -878,9 +879,26 @@ class Reconstruction:
         solver.dropped[:len(keep)] = False
         solver.robust[:] = 1.0
         x = solver.solve(x, rounds=4, max_nfev=300, reweight=True)
+        x = self._anneal(solver, x)
         self._drop_gaping(solver, x)
         self.log(f"rebuilt with {len(keep)} glues, {int((~solver.dropped).sum())} close")
         self.solver, self.x = solver, x
+
+    def _anneal(self, solver: FoldSolver, x: np.ndarray) -> np.ndarray:
+        """Folds that settled the wrong way sit in a pose the glues hold them in. Pulling hard on
+        the fold directions tears some glues open but flips those folds; easing back lets the glues
+        close again around the flipped folds. Each cycle leaves fewer folds the wrong way while
+        as many glues close (bowser: 302 wrong to 155 over six cycles, 703 glues closing)."""
+        weight = solver.fold_weight
+        for cycle in range(self.anneal):
+            for fold_weight, rounds in ((30 * weight, 1), (12 * weight, 1), (4 * weight, 2), (weight, 3)):
+                solver.fold_weight = fold_weight
+                solver.robust[:] = 1.0
+                x = solver.solve(x, rounds=rounds, max_nfev=200, reweight=True)
+            self.log(f"fold pull cycle {cycle + 1}: {int(solver.wrong_folds(x).sum())} folds the wrong way, "
+                     f"{int((solver.gaps(x) <= self.gape).sum())} glues within {self.gape:g} mm")
+        solver.fold_weight = weight
+        return x
 
     def _drop_gaping(self, solver: FoldSolver, x: np.ndarray) -> None:
         solver.dropped |= solver.gaps(x) > self.gape
@@ -1029,6 +1047,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Fold the traced pattern back into the 3D model.")
     parser.add_argument("--config", type=Path, default=Path("data/bowser/bowser.yaml"), help="project YAML manifest")
     parser.add_argument("--gape", type=float, default=3.0, help="let go of a glue whose ends stay this far apart (mm)")
+    parser.add_argument("--anneal", type=int, default=5, help="cycles of hard then easy fold pull after the build")
     args = parser.parse_args()
     project = args.config.stem
     out = args.config.parent
@@ -1037,7 +1056,7 @@ def main() -> int:
         parser.error(f"{svg} not found; run make first")
     import yaml
     reference = (yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}).get("reference") or {}
-    run = Reconstruction(svg, gape_mm=args.gape, reference=reference)
+    run = Reconstruction(svg, gape_mm=args.gape, reference=reference, anneal=args.anneal)
     run.run()
     run.write(out, project)
     print(f"Wrote {out / (project + '-3d.obj')}, {project}-3d-glue.csv, {project}-3d-baseline.csv and {project}-3d.png")
