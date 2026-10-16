@@ -16,6 +16,7 @@ from pathlib import Path
 from .model import PageLayout
 
 MATCH_MM = 2.0
+NOT_A_NUMBER = "x"     # the number check page's answer for marks that are no number (a fan of fold ends)
 COLUMNS = ["piece", "x_mm", "y_mm", "read", "number"]
 
 
@@ -46,7 +47,7 @@ class Corrections:
         pieces = {piece.id: (piece, mm) for layout, mm in layouts for piece in layout.pieces}
         for row in self.rows:
             label = self._nearest(pieces, row)
-            if label is not None:
+            if label is not None and row.number != NOT_A_NUMBER:
                 found[id(label)] = row.number
         return found
 
@@ -67,6 +68,10 @@ class Corrections:
             label = self._nearest(pieces, row)
             if label is None:
                 missed.append(row)
+                continue
+            if row.number == NOT_A_NUMBER:
+                pieces[row.piece][0].labels.remove(label)
+                applied += 1
                 continue
             label.text, label.confident, label.conf = row.number, True, 100.0
             label.corrected = label.corrected or self.by_hand

@@ -13,6 +13,7 @@ stray artwork so it shows up on the Review layer instead of silently disappearin
 
 from __future__ import annotations
 
+import collections
 import math
 from dataclasses import dataclass
 
@@ -234,8 +235,10 @@ class PageDetector:
             if not 0 <= along <= length:
                 continue
             across = abs(float((centre - a) @ np.array([-u[1], u[0]])))
-            # A lone digit's box says nothing about which way it reads, so its angle is not trusted.
-            turned = label.glyphs != 1 and abs(float(reading @ u)) <= math.cos(math.radians(25))
+            # A box not clearly longer than wide (a lone digit, or two staggered digits) says nothing
+            # about which way the number reads, so its angle is not trusted then.
+            turned = (label.glyphs != 1 and getattr(label, "elongation", 2.0) >= 1.8
+                      and abs(float(reading @ u)) <= math.cos(math.radians(25)))
             score = across + (2 * px if turned else 0)
             if score < best_score:
                 best, best_score = (tuple(a), tuple(b), tab), score
@@ -664,22 +667,106 @@ class PageDetector:
     # -- labels -----------------------------------------------------------------
 
     def _labels(self, gray: np.ndarray, text_core: np.ndarray, glyph: np.ndarray, px: float):
-        """Group glyphs into numbers; keep each one's crop, centre, direction and size."""
+        """Group glyphs into numbers; keep each one's crop, centre, direction and size.
+        Two numbers printed against each other merge into one group about two digits high;
+        their digits stand in two rows, so such a group is split into one number per row."""
         grouped = cv2.dilate(glyph, _kernel(round(px)))
         count, groups, stats, _ = cv2.connectedComponentsWithStats(grouped, connectivity=8)
+        found = []
         for i in range(1, count):
             x, y, w, h, _ = stats[i]
             mask = groups[y:y + h, x:x + w] == i
-            ys, xs = np.nonzero(mask & text_core[y:y + h, x:x + w])
+            core = mask & text_core[y:y + h, x:x + w]
+            ys, xs = np.nonzero(core)
             if len(xs) < 5:
                 continue
-            (cx, cy), (rw, rh), angle = cv2.minAreaRect(np.column_stack([xs, ys]).astype(np.float32))
-            if rw < rh:  # make the long side the reading direction
-                angle, rw, rh = angle + 90, rh, rw
-            ink = np.where(mask, 255 - gray[y:y + h, x:x + w], 0).clip(0, 255).astype(np.uint8)
-            _, _, parts, _ = cv2.connectedComponentsWithStats((mask & text_core[y:y + h, x:x + w]).astype(np.uint8))
-            yield Label((int(x), int(y), int(w), int(h)), (float(cx + x), float(cy + y)), float(angle), float(rh), ink,
-                        glyphs=int((parts[1:, cv2.CC_STAT_AREA] >= 5).sum()))
+            _, size, _ = cv2.minAreaRect(np.column_stack([xs, ys]).astype(np.float32))
+            found.append((x, y, mask, core, min(size)))
+        height = float(np.median([f[4] for f in found])) if found else 0.0
+        for x, y, mask, core, across in found:
+            parts, part_of, sizes, _ = cv2.connectedComponentsWithStats(core.astype(np.uint8), connectivity=8)
+            glyphs = [j for j in range(1, parts) if sizes[j, cv2.CC_STAT_AREA] >= 5]
+            rows = self._rows(part_of, glyphs, sizes) if across > 1.6 * height else [glyphs]
+            for row in rows:
+                own = mask
+                if len(rows) > 1:
+                    own = cv2.dilate(np.isin(part_of, row).astype(np.uint8), _kernel(3)).astype(bool) & mask
+                label = self._label(gray, text_core, own, x, y, len(row), crop=len(rows) > 1)
+                if label is not None:
+                    yield label
+
+    @staticmethod
+    def _label(gray: np.ndarray, text_core: np.ndarray, mask: np.ndarray, x: int, y: int, glyphs: int,
+               crop: bool = False) -> Label | None:
+        ys, xs = np.nonzero(mask & text_core[y:y + mask.shape[0], x:x + mask.shape[1]])
+        if len(xs) < 5:
+            return None
+        (cx, cy), (rw, rh), angle = cv2.minAreaRect(np.column_stack([xs, ys]).astype(np.float32))
+        if rw < rh:  # make the long side the reading direction
+            angle, rw, rh = angle + 90, rh, rw
+        if not crop:
+            ink = np.where(mask, 255 - gray[y:y + mask.shape[0], x:x + mask.shape[1]], 0).clip(0, 255).astype(np.uint8)
+            return Label((x, y, mask.shape[1], mask.shape[0]), (float(cx + x), float(cy + y)), float(angle), float(rh), ink,
+                         glyphs=glyphs, elongation=float(rw / max(rh, 1e-6)))
+        # Crop to this number's own pixels, so a split-off neighbour is not read with it.
+        top, left = int(ys.min()), int(xs.min())
+        h, w = int(ys.max()) - top + 1, int(xs.max()) - left + 1
+        pad = 2
+        top, left = max(top - pad, 0), max(left - pad, 0)
+        h, w = min(h + 2 * pad, mask.shape[0] - top), min(w + 2 * pad, mask.shape[1] - left)
+        window = mask[top:top + h, left:left + w]
+        ink = np.where(window, 255 - gray[y + top:y + top + h, x + left:x + left + w], 0).clip(0, 255).astype(np.uint8)
+        return Label((x + left, y + top, w, h), (float(cx + x), float(cy + y)), float(angle), float(rh), ink, glyphs=glyphs,
+                     elongation=float(rw / max(rh, 1e-6)))
+
+    @staticmethod
+    def _rows(part_of: np.ndarray, glyphs: list[int], sizes: np.ndarray, min_area: int = 25) -> list[list[int]]:
+        """Glyphs in rows of text. A digit is taller than wide, so the digits' long axes give the
+        direction across the text; glyphs whose extents along it overlap stand in one row.
+        Specks too small to be a digit join the nearest row."""
+        if len(glyphs) < 2:
+            return [glyphs]
+        pixels = {j: np.column_stack(np.nonzero(part_of == j)[::-1]).astype(np.float32) for j in glyphs}
+        doubled, heights = [], []
+        for j, p in pixels.items():
+            if len(p) < 20:
+                continue
+            _, (w, h), angle = cv2.minAreaRect(p)
+            if max(w, h) >= 1.3 * max(min(w, h), 1):
+                tall = angle + (90 if w < h else 0)  # direction of the long side, degrees
+                doubled.append(np.exp(2j * np.radians(tall)))
+                heights.append(max(w, h))
+        if not doubled:
+            return [glyphs]
+        across = np.angle(np.mean(doubled)) / 2
+        normal = np.array([np.cos(across), np.sin(across)])
+        spans = {j: (float((p @ normal).min()), float((p @ normal).max())) for j, p in pixels.items()}
+        parent = {j: j for j in glyphs}
+        def root(j):
+            while parent[j] != j:
+                j = parent[j]
+            return j
+        for m, a in enumerate(glyphs):
+            for b in glyphs[m + 1:]:
+                (a0, a1), (b0, b1) = spans[a], spans[b]
+                if min(a1, b1) - max(a0, b0) >= 0.5 * min(a1 - a0, b1 - b0):
+                    parent[root(a)] = root(b)
+        grouped = collections.defaultdict(list)
+        for j in glyphs:
+            grouped[root(j)].append(j)
+        rows = list(grouped.values())
+        big = [r for r in rows if sum(sizes[j, cv2.CC_STAT_AREA] for j in r) >= min_area]
+        if len(big) < 2:
+            return [glyphs]
+        centre = lambda r: np.mean([sum(spans[j]) / 2 for j in r])
+        # Rows of one number sit on one line; two stacked numbers are a whole digit height apart.
+        lines = sorted(centre(r) for r in big)
+        if min(b - a for a, b in zip(lines, lines[1:])) < 0.8 * float(np.median(heights)):
+            return [glyphs]
+        for r in rows:
+            if r not in big:
+                min(big, key=lambda k: abs(centre(k) - centre(r))).extend(r)
+        return big
 
     @staticmethod
     def _centerlines(mask: np.ndarray, min_length: int, offset: tuple[int, int] = (0, 0)) -> list[list[Point]]:

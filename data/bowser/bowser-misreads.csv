@@ -12,13 +12,14 @@ piece-20-07,103.0,234.5,edge,38.9,66,100,68,piece-20-08,57.3,223.1,tab,38.9,0.0,
 piece-21-03,102.7,41.2,tab,34.8,476,95,479,piece-21-01,124.0,18.2,edge,34.8,0.0,OCR's other reading; the read number already pairs elsewhere,applied
 piece-22-04,61.0,152.4,tab,36.8,568,100,588,piece-22-01,152.3,17.8,edge,36.8,0.0,OCR's other reading; the read number already pairs elsewhere,applied
 piece-23-05,115.4,194.9,edge,38.6,233,100,236,piece-23-03,107.4,163.3,tab,38.6,0.0,OCR's other reading; the read number already pairs elsewhere,applied
+piece-06-01,54.0,127.6,tab,47.3,368,0,356,piece-06-04,156.9,109.7,edge,47.2,0.1,OCR's other reading,applied
 piece-07-04,80.9,31.0,tab,58.2,818,75,616,piece-07-01,25.3,96.7,edge,58.1,0.1,OCR's other reading,applied
 piece-08-05,178.2,254.9,edge,48.1,353,41,303,piece-08-06,23.1,231.9,tab,48.2,0.1,OCR's other reading; the read number already pairs elsewhere,applied
 piece-09-05,181.0,112.0,edge,44.3,826,-1,326,piece-09-07,131.7,251.6,tab,44.2,0.1,OCR's other reading,applied
 piece-11-04,191.7,164.1,tab,26.6,766,100,768,piece-14-03,183.2,5.9,edge,26.4,0.1,OCR's other reading; the read number already pairs elsewhere,applied
-piece-16-03,202.5,179.1,edge,12.1,860,-1,380,piece-16-02,151.5,28.0,tab,12.2,0.1,OCR's other reading,applied
+piece-16-03,202.5,179.1,edge,12.1,880,-1,380,piece-16-02,151.5,28.0,tab,12.2,0.1,OCR's other reading,applied
 piece-17-04,127.7,6.7,edge,29.0,546,-1,648,piece-12-07,112.0,114.9,tab,29.1,0.1,OCR's other reading,applied
-piece-17-05,162.3,193.4,edge,48.2,280,-1,260,piece-12-09,40.2,136.2,tab,48.3,0.1,OCR's other reading,applied
+piece-17-05,162.3,193.4,edge,48.2,280,-1,260,piece-12-09,40.2,136.2,tab,48.3,0.1,OCR's other reading; the read number already pairs elsewhere,applied
 piece-17-07,48.7,167.7,edge,42.0,444,-1,944,piece-17-06,99.7,100.8,tab,42.1,0.1,OCR's other reading; the read number already pairs elsewhere,applied
 piece-18-03,48.7,9.3,tab,17.0,152,80,102,piece-18-06,18.9,247.6,edge,17.1,0.1,OCR's other reading; the read number already pairs elsewhere,applied
 piece-19-04,177.9,43.0,tab,15.5,469,100,459,piece-24-12,166.0,142.3,edge,15.3,0.1,OCR's other reading; the read number already pairs elsewhere,applied
@@ -37,8 +38,10 @@ piece-21-06,103.1,162.5,tab,39.5,43,-1,435,piece-21-07,126.6,167.9,edge,39.5,0.1
 piece-16-04,53.0,67.1,edge,24.0,181,89,161,piece-16-05,11.9,138.6,tab,23.5,0.6,mirror: twin piece-17-04 pairs 712 with piece-17-05,applied
 piece-18-02,141.1,100.4,tab,36.6,186,94,185,piece-18-04,154.9,91.7,edge,36.6,0.0,mirror: twin piece-19-02 pairs 544 with piece-19-03,applied
 piece-23-01,70.4,17.5,edge,36.8,235,100,997,piece-23-03,151.0,161.4,tab,36.8,0.0,mirror: twin piece-22-01 pairs 588 with piece-22-04,applied
-piece-09-06,100.0,245.0,tab,14.9,281,87,860,piece-08-02,15.2,11.1,edge,14.8,0.1,mirror: twin piece-09-07 pairs 314 with piece-08-05,applied
+piece-09-06,100.0,245.0,tab,14.9,281,87,880,piece-08-02,15.2,11.1,edge,14.8,0.1,mirror: twin piece-09-07 pairs 314 with piece-08-05,applied
 piece-10-03,11.3,67.2,tab,49.6,369,78,359,piece-10-07,26.0,232.3,edge,49.6,0.0,mirror: twin piece-10-01 pairs 705 with piece-10-06,applied
+piece-16-03,190.6,148.7,tab,22.4,386,0,368,piece-16-10,177.6,266.6,edge,22.6,0.2,mirror: twin piece-17-03 pairs 732 with piece-17-09,applied
+piece-04-03,49.8,91.5,tab,29.4,406,85,405,piece-04-01,8.5,51.6,edge,29.4,0.0,mirror: twin piece-05-01 pairs 47 with piece-05-02,applied
 piece-21-03,83.8,117.6,edge,39.1,464,-1,484,piece-21-01,125.9,99.6,tab,38.8,0.3,mirror: twin piece-20-02 pairs 124 with piece-20-03,applied
 piece-15-08,105.0,263.0,tab,52.0,536,96,939,piece-15-10,41.3,239.5,edge,51.6,0.3,mirror: twin piece-14-06 pairs 171 with piece-14-10,applied
 piece-22-01,147.5,37.3,tab,28.1,606,100,608,piece-22-03,22.1,145.9,edge,28.0,0.1,mirror: twin piece-23-01 pairs 245 with piece-23-04,applied
@@ -48,10 +51,10 @@ piece-09-01,190.4,98.8,tab,54.1,685,93,885,piece-09-03,88.5,120.3,edge,53.9,0.2,
 piece-19-02,99.4,33.2,tab,54.5,686,77,538,piece-13-03,166.7,17.0,edge,54.3,0.2,mirror: twin piece-18-02 pairs 184 with piece-13-02,applied
 piece-13-03,183.6,199.3,tab,50.8,695,95,696,piece-12-11,96.1,189.1,edge,50.7,0.1,mirror: twin piece-13-02 pairs 761 with piece-11-11,applied
 piece-10-05,204.1,186.1,edge,56.0,752,90,762,piece-11-11,61.3,258.6,tab,56.1,0.1,mirror: twin piece-09-01 pairs 649 with piece-12-11,applied
+piece-11-10,195.8,196.6,tab,40.0,768,73,758,piece-16-08,128.3,224.4,edge,40.0,0.0,mirror: twin piece-12-10 pairs 558 with piece-17-08,applied
 piece-15-01,37.6,65.7,tab,23.1,887,94,637,piece-15-03,47.0,62.7,edge,22.7,0.3,mirror: twin piece-14-03 pairs 287 with piece-14-02,applied
 piece-15-10,41.3,239.5,edge,51.6,939,-1,536,piece-15-08,105.0,263.0,tab,52.0,0.3,mirror: twin piece-14-10 pairs 171 with piece-14-06,applied
 piece-23-03,151.0,161.4,tab,36.8,997,87,235,piece-23-01,70.4,17.5,edge,36.8,0.0,mirror: twin piece-22-04 pairs 588 with piece-22-01,applied
-piece-04-03,49.8,91.5,tab,29.4,406,85,405,piece-04-01,8.5,51.6,edge,29.4,0.0,OCR's other reading,no
 piece-09-06,69.8,239.4,edge,46.8,999,-1,668,piece-08-02,10.5,41.7,tab,46.8,0.0,OCR's other reading,no
 piece-11-01,178.9,3.7,edge,50.4,000,100,00,piece-11-02,8.6,107.6,tab,50.5,0.0,a digit dropped or added,no
 piece-15-01,11.8,25.8,edge,30.9,260,81,290,piece-14-03,196.1,22.9,tab,30.8,0.0,OCR's other reading; the read number already pairs elsewhere,yes
@@ -61,29 +64,28 @@ piece-08-04,122.3,124.4,edge,26.3,328,100,376,piece-16-07,179.8,187.6,tab,26.2,0
 piece-08-05,189.8,158.2,edge,46.6,326,73,325,piece-09-07,136.8,268.2,tab,46.7,0.1,OCR's other reading; the read number already pairs elsewhere,yes
 piece-12-04,53.7,60.6,tab,9.5,17,-1,4,piece-12-05,24.6,153.1,edge,9.5,0.1,OCR's other reading; the read number already pairs elsewhere,no
 piece-12-07,122.2,108.1,edge,14.8,208,74,206,piece-12-02,136.7,7.5,tab,14.8,0.1,OCR's other reading,no
-piece-13-03,154.0,30.7,tab,54.3,698,52,593,piece-13-04,31.4,248.2,edge,54.2,0.1,OCR's other reading,no
 piece-13-03,199.7,152.2,edge,51.6,648,-1,548,piece-12-11,147.7,187.6,tab,51.7,0.1,OCR's other reading; the read number already pairs elsewhere,yes
 piece-17-06,75.4,113.0,edge,59.2,628,-1,698,piece-10-04,106.3,137.6,tab,59.3,0.1,one digit differs; the read number already pairs elsewhere,no
 piece-08-01,62.5,113.2,tab,23.6,588,-1,689,piece-08-04,130.3,229.0,edge,23.4,0.2,OCR's other reading; the read number already pairs elsewhere,yes
 piece-16-03,167.6,142.0,tab,44.6,869,-1,369,piece-14-06,82.0,216.1,edge,44.8,0.2,OCR's other reading; the read number already pairs elsewhere,yes
 piece-18-02,145.1,26.1,tab,37.2,182,55,192,piece-18-04,199.7,55.1,edge,37.0,0.2,OCR's other reading,no
 piece-04-03,65.2,177.6,tab,37.6,456,-1,406,piece-12-03,163.1,40.2,edge,37.9,0.3,OCR's other reading; the read number already pairs elsewhere,no
-piece-04-07,142.9,187.4,edge,32.5,731,-1,781,piece-24-07,80.3,158.6,tab,32.8,0.3,OCR's other reading,no
+piece-04-07,142.9,187.4,edge,32.5,731,-1,781,piece-24-07,80.3,158.6,tab,32.8,0.3,OCR's other reading; the read number already pairs elsewhere,no
 piece-11-02,59.7,10.2,edge,23.9,48,100,95,piece-18-03,44.5,27.6,tab,23.5,0.3,OCR's other reading,no
 piece-15-06,10.8,164.8,edge,17.6,206,100,208,piece-14-07,195.7,165.3,tab,17.9,0.3,OCR's other reading,no
 piece-09-03,57.8,117.3,tab,42.8,658,95,657,piece-09-01,160.9,61.0,edge,42.3,0.4,one digit differs,no
-piece-11-03,56.4,67.2,edge,23.0,786,84,716,piece-17-03,22.6,126.7,tab,22.6,0.4,one digit differs,no
 piece-09-05,193.8,198.6,edge,51.3,286,79,562,piece-09-04,116.5,198.0,tab,51.8,0.5,OCR's other reading,no
 piece-24-08,44.2,101.1,tab,13.3,288,100,286,piece-16-04,98.7,122.7,edge,13.8,0.5,OCR's other reading; the read number already pairs elsewhere,no
+piece-11-07,84.4,123.5,tab,29.0,14,94,18,piece-24-03,116.7,62.0,edge,29.7,0.6,one digit differs; the read number already pairs elsewhere,no
 piece-15-06,44.6,102.7,edge,18.5,582,100,562,piece-15-07,57.4,102.8,tab,17.9,0.6,OCR's other reading; the read number already pairs elsewhere,no
 piece-18-03,58.7,19.8,edge,10.8,90,30,3,piece-12-04,47.9,44.3,tab,10.2,0.6,OCR's other reading,no
 piece-23-03,151.0,161.4,tab,36.8,235,100,265,piece-07-08,58.1,215.1,edge,36.2,0.6,OCR's other reading,no
 piece-04-07,115.9,179.9,edge,23.4,784,0,786,piece-24-04,70.2,82.4,tab,24.1,0.7,OCR's other reading,no
-piece-24-03,116.7,62.0,edge,29.7,18,100,618,piece-07-01,7.8,21.6,tab,29.0,0.7,a digit dropped or added; the read number already pairs elsewhere,no
 piece-04-07,171.2,199.8,tab,28.9,422,100,482,piece-21-03,74.7,117.5,edge,28.0,0.9,one digit differs; the read number already pairs elsewhere,no
 piece-15-07,45.2,149.1,tab,18.7,580,100,58,piece-11-05,169.6,93.4,edge,17.8,0.9,a digit dropped or added; the read number already pairs elsewhere,no
-piece-06-06,188.4,251.9,tab,38.3,316,100,318,piece-07-07,60.7,148.7,edge,37.4,1.0,OCR's other reading,no
 piece-11-02,8.6,107.6,tab,50.5,00,100,000,piece-11-01,178.9,3.7,edge,50.4,0.0,mirror: twin piece-12-03 pairs 148 with piece-12-01,yes
+piece-11-03,71.8,26.4,tab,31.0,13,100,18,piece-24-03,116.7,62.0,edge,29.7,1.3,mirror: twin piece-12-02 pairs 499 with piece-24-09,no
+piece-24-03,116.7,62.0,edge,29.7,18,100,13,piece-11-03,71.8,26.4,tab,31.0,1.3,mirror: twin piece-24-09 pairs 499 with piece-12-02,no
 piece-05-01,128.3,203.4,tab,24.4,46,91,48,piece-11-02,59.7,10.2,edge,23.9,0.5,mirror: twin piece-04-03 pairs 150 with piece-12-03,no
 piece-18-03,44.5,27.6,tab,23.5,95,100,85,piece-24-11,54.8,133.0,edge,23.3,0.3,mirror: twin piece-19-04 pairs 701 with piece-24-12,no
 piece-24-05,38.5,74.4,tab,32.6,281,90,261,piece-24-05,22.5,97.0,edge,32.6,0.0,mirror: twin piece-24-06 pairs 632 with piece-24-06,no
@@ -102,16 +104,11 @@ piece-19-06,8.2,219.8,edge,49.1,556,13,555,piece-17-10,194.4,230.6,tab,51.3,2.2,
 piece-09-04,116.5,198.0,tab,51.8,562,83,296,piece-09-05,142.7,73.8,edge,51.7,0.1,mirror: twin piece-09-03 pairs 656 with piece-09-02,no
 piece-15-07,57.4,102.8,tab,17.9,562,100,582,piece-15-06,44.6,102.7,edge,18.5,0.6,mirror: twin piece-14-08 pairs 201 with piece-14-07,no
 piece-04-06,22.0,268.9,tab,27.5,570,68,578,piece-04-08,197.7,249.5,edge,27.4,0.1,mirror: twin piece-05-06 pairs 217 with piece-05-08,no
-piece-13-04,31.4,248.2,edge,54.2,593,54,698,piece-13-03,154.0,30.7,tab,54.3,0.1,mirror: twin piece-13-01 pairs 334 with piece-13-02,no
+piece-13-04,31.4,248.2,edge,54.2,593,54,883,piece-13-03,154.0,30.7,tab,54.3,0.1,mirror: twin piece-13-01 pairs 334 with piece-13-02,no
 piece-07-02,112.7,96.2,edge,70.6,685,95,555,piece-07-03,151.1,81.7,tab,71.3,0.6,mirror: twin piece-07-10 pairs 264 with piece-07-06,no
 piece-09-01,131.7,21.9,tab,55.2,693,89,883,piece-09-03,68.5,29.3,edge,55.3,0.0,mirror: twin piece-10-05 pairs 329 with piece-09-04,no
-piece-16-08,128.3,224.4,edge,40.0,716,-1,768,piece-11-10,195.8,196.6,tab,40.0,0.0,mirror: twin piece-17-08 pairs 558 with piece-12-10,no
-piece-24-03,119.2,25.7,tab,42.0,755,0,760,piece-11-07,88.5,87.2,edge,43.3,1.3,mirror: twin piece-24-09 pairs 500 with piece-12-07,no
 piece-11-06,130.1,57.2,tab,42.8,757,75,756,piece-14-01,82.2,11.3,edge,42.8,0.0,mirror: twin piece-12-06 pairs 596 with piece-15-02,no
-piece-11-07,88.5,87.2,edge,43.3,760,90,755,piece-24-03,119.2,25.7,tab,42.0,1.3,mirror: twin piece-12-07 pairs 500 with piece-24-09,no
-piece-11-10,195.8,196.6,tab,40.0,768,73,716,piece-16-08,128.3,224.4,edge,40.0,0.0,mirror: twin piece-12-10 pairs 558 with piece-17-08,no
 piece-24-07,80.3,158.6,tab,32.8,781,91,731,piece-04-07,142.9,187.4,edge,32.5,0.3,mirror: twin piece-24-04 pairs 64 with piece-05-07,no
-piece-09-03,68.5,29.3,edge,55.3,883,95,693,piece-09-01,131.7,21.9,tab,55.2,0.0,mirror: twin piece-09-04 pairs 329 with piece-10-05,no
 piece-15-08,105.0,263.0,tab,52.0,939,100,536,piece-15-10,41.3,239.5,edge,51.6,0.3,mirror: twin piece-14-06 pairs 171 with piece-14-10,yes
 piece-23-01,70.4,17.5,edge,36.8,997,100,235,piece-23-03,151.0,161.4,tab,36.8,0.0,mirror: twin piece-22-01 pairs 588 with piece-22-04,yes
 piece-17-08,132.0,168.8,tab,31.4,999,95,556,piece-17-05,152.6,125.9,edge,29.0,2.4,mirror: twin piece-16-08 pairs 196 with piece-16-05,no

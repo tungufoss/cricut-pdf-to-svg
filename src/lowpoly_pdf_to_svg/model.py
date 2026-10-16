@@ -41,6 +41,7 @@ class Label:
     alternatives: list[str] = field(default_factory=list)  # other likely readings, best first
     corrected: bool = False              # text set by hand on the number check page
     glyphs: int = 0                      # separate ink blobs; 1 means a lone digit
+    elongation: float = 2.0              # long over short side of the ink's box; near 1 the angle is a guess
     paired: bool = False                 # the same number is printed exactly twice
     edge: tuple[Point, Point] | None = None  # the cut edge or tab fold this number marks
     tab: bool = False                    # edge is a glue-tab fold, so this side carries the tab

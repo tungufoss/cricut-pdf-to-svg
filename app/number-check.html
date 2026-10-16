@@ -209,7 +209,7 @@ function card(c) {
     div.innerHTML = `<div class="slot"></div><div class="meta how"></div>
       <div><span class="read">${p.read}</span> <span class="meta">${label}: ${p.piece}, ${p.side === "none" ? "no line found" : `${p.side} ${p.length} mm`}</span></div>
       ${p.checks ? `<div class="hint">Trace check: ${p.checks}</div>` : ""}
-      <div class="row"><button data-a="keep">✓ as read</button><span class="meta">should be</span><input inputmode="numeric"></div>
+      <div class="row"><button data-a="keep">✓ as read</button><span class="meta">should be</span><input inputmode="numeric"><button data-a="none" title="a mark that is not an edge number, such as folds meeting at a corner">Not a number</button></div>
       <div class="row"><button data-a="draw" title="clear the line, then click its two ends on the scan">New line</button><select><option value="cut">cut edge</option><option value="fold">fold (tab side)</option></select>
         <button data-a="undraw">Clear</button><span class="meta drawn-info"></span></div>`;
     const kind = div.querySelector("select");
@@ -237,6 +237,7 @@ function card(c) {
     const set = v => { touched.add(key(p)); answers[key(p)] = v; remember(); input.value = v; input.classList.toggle("set", v !== ""); el.classList.toggle("done", done(c)); count(); };
     input.addEventListener("change", () => set(input.value.trim()));
     div.querySelector("[data-a=keep]").addEventListener("click", () => set(p.read));
+    div.querySelector("[data-a=none]").addEventListener("click", () => set("x"));
     panels.appendChild(div);
   });
   if (c.kind === "suggested" || c.kind === "auto") {
@@ -273,17 +274,28 @@ document.getElementById("save").addEventListener("click", async () => {
   const drawn = ["piece,x_mm,y_mm,number,kind,ax_mm,ay_mm,bx_mm,by_mm"];
   for (const l of Object.values(lines)) drawn.push([l.piece, l.x, l.y, l.read, l.kind, ...l.a, ...l.b].join(","));
   const files = [[D.project + "-corrections.csv", rows], [D.project + "-lines.csv", drawn]];
+  const download = (name, text) => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], {type: "text/csv"}));
+    a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  };
+  let where = folder ? `the ${folder.name} folder` : "your Downloads folder";
   for (const [name, list] of files) {
     const text = list.join("\n") + "\n";
-    if (folder) {
+    try {
+      if (!folder) throw new Error("no folder open");
+      if (folder.requestPermission && await folder.requestPermission({mode: "readwrite"}) !== "granted")
+        throw new Error("the browser did not allow writing to the folder");
       const w = await (await folder.getFileHandle(name, {create: true})).createWritable();
       await w.write(text); await w.close();
-    } else {
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([text], {type: "text/csv"}));
-      a.download = name; a.click();
+    } catch (e) {
+      // Writing into the folder can be refused (file:// pages, permissions); download instead.
+      if (folder) where = `your Downloads folder (writing to ${folder.name} failed: ${e.message}); move the files into the model folder`;
+      download(name, text);
     }
   }
-  document.getElementById("count").textContent += ` (saved ${rows.length - 1} numbers and ${drawn.length - 1} lines)`;
+  const note = `Saved ${rows.length - 1} numbers and ${drawn.length - 1} lines to ${where}.`;
+  document.getElementById("count").textContent += " " + note;
+  alert(note);
 });
 </script></body></html>
