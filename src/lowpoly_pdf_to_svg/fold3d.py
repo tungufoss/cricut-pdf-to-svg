@@ -747,6 +747,28 @@ class CornerAdjuster:
         solver = self.recon.solver
         return {int(v) for k, p, q in solver.glue if not solver.dropped[k] for v in (p, q)}
 
+    @staticmethod
+    def carry(path: Path, moves: list[dict], match_mm: float = 0.05) -> list[dict]:
+        """The build moves corners of the raw trace, so a run on an SVG that already has the
+        last moves must keep them: a corner that now sits where an earlier row put it keeps that
+        row, and moves on from the earlier row's start if it moves again. A run on the same SVG
+        again replaces its own rows."""
+        if not path.exists():
+            return moves
+        with path.open(newline="", encoding="utf-8") as handle:
+            earlier = list(csv.DictReader(handle))
+        point = lambda r, k: np.array([float(r[f"{k}x_mm"]), float(r[f"{k}y_mm"])])
+        out, used = [], set()
+        for row in moves:
+            for i, old in enumerate(earlier):
+                if old["piece"] == row["piece"] and min(np.hypot(*(point(old, k) - point(row, "a")))
+                                                        for k in "ab") < match_mm:
+                    row = {**row, "ax_mm": old["ax_mm"], "ay_mm": old["ay_mm"]}
+                    used.add(i)
+                    break
+            out.append(row)
+        return out + [old for i, old in enumerate(earlier) if i not in used]
+
     def unsettled(self) -> set[str]:
         solver = self.recon.solver
         return {self.recon.asm.key[int(h[0])][0] for h in solver.hinge[solver.wrong_folds(self.recon.x)]}
@@ -892,6 +914,7 @@ class Reconstruction:
             writer.writerows(rows)
         self._preview(out / f"{project}-3d.png", x)
         moves, inspect = CornerAdjuster(self).rows()
+        moves = CornerAdjuster.carry(out / f"{project}-3d-moves.csv", moves)
         self._csv(out / f"{project}-3d-moves.csv", moves,
                   ["piece", "action", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm", "note"])
         self._csv(out / f"{project}-3d-inspect.csv", inspect, ["piece", "worst_corner_mm", "reason"])
