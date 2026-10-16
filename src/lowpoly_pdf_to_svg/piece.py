@@ -242,7 +242,7 @@ def main() -> int:
     if not (args.piece or args.number):
         parser.error("give a piece id or --number")
     try:
-        view = PieceView(folder / f"{project}.svg", folder / f"{project}-edges.csv")
+        view = PieceView(folder / f"{project}.svg", folder / f"edge-numbers.csv")
         if args.number:
             count = view.number(args.number, folder / "review.png")
             print(f"Wrote {folder / 'review.png'} with the {count} pieces carrying {args.number}")

@@ -67,7 +67,7 @@ def main() -> int:
                 page, layout = pickle.load(handle)
             results.append((page, layout, material))
             continue
-        stem = f"{project.name}-page-{number:02d}-{material.id}"
+        stem = f"page-{number:02d}-{material.id}"
         page = renderer.render(number, output / "previews" / f"{stem}.png")
         layout = detector.detect(page, material.id)
         layout.paper = read_paper(layout.footer)
@@ -81,7 +81,7 @@ def main() -> int:
     reader = EdgeNumberReader()
     if not reader.available:
         print("warning: tesseract was not found, so edge numbers are left as '?'", file=sys.stderr)
-    corrections = Corrections.load(output / f"{project.name}-corrections.csv")
+    corrections = Corrections.load(output / f"number-corrections.csv")
     new_labels = [label for _, layout, _ in fresh for piece in layout.pieces for label in piece.labels]
     known = corrections.match([(layout, page.mm_per_px) for page, layout, _ in fresh])
     print(f"reading {len(new_labels)} edge numbers ({len(known)} corrected by hand teach the reader) ...", flush=True)
@@ -96,13 +96,13 @@ def main() -> int:
               + ", ".join(f"{c.piece} {c.read}->{c.number}" for c in missed) if missed else ""))
     # Folds added or dropped and corners moved on the piece review, then every piece tidied (near points
     # merged, overlapping lines split); numbers on changed pieces look for their line again.
-    piece_fixes = PieceFixes.load(output / f"{project.name}-pieces.csv")
+    piece_fixes = PieceFixes.load(output / f"piece-edits.csv")
     page_of = {piece.id: page for page, layout, _ in results for piece in layout.pieces}
     changed, missed = piece_fixes.apply([(layout, page.mm_per_px) for page, layout, _ in results],
                                         lambda piece, a, b: detector.fold_kind(page_of[piece], a, b))
     # Corners the folded 3D model says are slightly off (written by the 3D thread); a corner Helga
     # moved by hand keeps her position.
-    nudges = PieceFixes.load(output / f"{project.name}-3d-moves.csv")
+    nudges = PieceFixes.load(output / f"fold3d-moves.csv")
     if nudges.rows:
         hand = [(r.piece, p) for r in piece_fixes.rows if r.action == "move" for p in (r.a, r.b)]
         nudges.rows = [r for r in nudges.rows
@@ -117,7 +117,7 @@ def main() -> int:
                 for label in piece.labels:
                     detector._mark_edge(label, piece, 1 / page.mm_per_px)
     print(f"changed {len(changed)} pieces by hand or from the 3D fold (folds, corners)" + (f", {len(missed)} rows matched no fold or corner" if missed else ""))
-    lines = LineFixes.load(output / f"{project.name}-lines.csv")
+    lines = LineFixes.load(output / f"number-lines.csv")
     if lines.rows:
         applied, missed = lines.apply([(layout, page.mm_per_px) for page, layout, _ in results])
         print(f"applied {applied} hand-drawn lines" + (f", {len(missed)} matched no number" if missed else ""))
@@ -159,16 +159,16 @@ def main() -> int:
     checks = TraceChecks(measured)
     checks.scale(table.records())
     table.checks = checks
-    found = checks.write(output / f"{project.name}-checks.csv")
-    print(f"Wrote {output / (project.name + '-checks.csv')}: "
+    found = checks.write(output / f"trace-faults.csv")
+    print(f"Wrote {output / 'trace-faults.csv'}: "
           + (", ".join(f"{n} {c}" for c, n in found.most_common()) or "no trace faults"))
-    edges = output / f"{project.name}-edges.csv"
+    edges = output / f"edge-numbers.csv"
     statuses = table.write(edges)
     records = table.records()
     asked = symmetry.predictions(records)
-    misreads = table.write_misreads(output / f"{project.name}-misreads.csv",
+    misreads = table.write_misreads(output / f"number-misreads.csv",
                                     applied=[dict(m, sure="applied") for m in sure], extra=asked)
-    mirrors = output / f"{project.name}-mirrors.csv"
+    mirrors = output / f"mirror-mismatches.csv"
     off = symmetry.write(mirrors, records)
     print(f"Wrote {mirrors}: {off} lines differ in length from their mirror line")
     # a fold Helga removed by hand is not suggested again from the twin
@@ -178,14 +178,14 @@ def main() -> int:
         math.dist(b, (g["ax_mm"], g["ay_mm"])) + math.dist(a, (g["bx_mm"], g["by_mm"]))) <= 4.0
         for piece, a, b in dropped)
     gaps = [g for g in symmetry.fold_gaps() if not (g["issue"] == "missing" and undone(g))]
-    with (output / f"{project.name}-mirror-folds.csv").open("w", newline="", encoding="utf-8") as handle:
+    with (output / f"mirror-missing-folds.csv").open("w", newline="", encoding="utf-8") as handle:
         table_out = csv.DictWriter(handle, ["piece", "twin", "issue", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm"])
         table_out.writeheader()
         table_out.writerows(gaps)
     missing = [g for g in gaps if g["issue"] == "missing"]
-    print(f"Wrote {output / (project.name + '-mirror-folds.csv')}: {len(missing)} folds whose mirror twin has them "
+    print(f"Wrote {output / 'mirror-missing-folds.csv'}: {len(missing)} folds whose mirror twin has them "
           f"on {len({g['piece'] for g in missing})} pieces, {len(gaps) - len(missing)} mirror folds in another style")
-    print(f"Wrote {output / (project.name + '-misreads.csv')}: {len(misreads)} likely misreads left to check")
+    print(f"Wrote {output / 'number-misreads.csv'}: {len(misreads)} likely misreads left to check")
     table.write_report(output / "README.md", project.name, datetime.date.today().isoformat(), applied=len(sure),
                        symmetry=(symmetry, off))
     print(f"Wrote {edges}: " + ", ".join(f"{n} {s}" for s, n in statuses.most_common()))

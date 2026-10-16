@@ -779,13 +779,13 @@ class Reconstruction:
     def write(self, out: Path, project: str) -> None:
         out.mkdir(parents=True, exist_ok=True)
         x = self._posed()
-        self._obj(out / f"{project}-3d.obj", x)
+        self._obj(out / f"fold3d.obj", x)
         rows = self.glue_rows()
-        with (out / f"{project}-3d-glue.csv").open("w", newline="", encoding="utf-8") as handle:
+        with (out / f"fold3d-glue.csv").open("w", newline="", encoding="utf-8") as handle:
             writer = csv.DictWriter(handle, list(rows[0]))
             writer.writeheader()
             writer.writerows(rows)
-        self._preview(out / f"{project}-3d.png", x)
+        self._preview(out / "fold3d.png", x)
         counts = collections.Counter(r["status"] for r in rows)
         wrong = int(self.solver.wrong_folds(self.x).sum())
         stretch = np.abs(self.solver.stretch(self.x))
@@ -866,7 +866,7 @@ def main() -> int:
     run = Reconstruction(svg, gape_mm=args.gape)
     run.run()
     run.write(out, project)
-    print(f"Wrote {out / (project + '-3d.obj')}, {project}-3d-glue.csv and {project}-3d.png")
+    print(f"Wrote {out / 'fold3d.obj'}, fold3d-glue.csv and fold3d.png")
     return 0
 
 
