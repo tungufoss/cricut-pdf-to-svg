@@ -20,6 +20,7 @@ website:
   repo-subdir: report
   repo-actions: [edit, issue]
   favicon: img/hi/favicon.svg
+  page-navigation: true
   search:
     location: navbar
     type: overlay
