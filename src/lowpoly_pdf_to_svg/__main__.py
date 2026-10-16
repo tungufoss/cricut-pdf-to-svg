@@ -24,7 +24,7 @@ from .symmetry import Symmetry
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Trace papercraft PDF pages into Cricut-oriented SVGs.")
-    parser.add_argument("--config", type=Path, default=Path("data/bowser/bowser.yaml"), help="project YAML manifest")
+    parser.add_argument("--config", type=Path, default=Path("data/example/example.yaml"), help="project YAML manifest")
     parser.add_argument("--output", type=Path, help="output directory (default: the YAML's folder)")
     parser.add_argument("--dpi", type=int, default=180, help="PDF render resolution (default: 180)")
     parser.add_argument("--page", type=int, action="append", help="convert only this 1-based page; repeatable")

@@ -1,6 +1,6 @@
 """Data for the number check page: data/<project>/<project>-check.json.
 
-    python -m src.lowpoly_pdf_to_svg.fixer --config data/bowser/bowser.yaml
+    python -m src.lowpoly_pdf_to_svg.fixer --config data/example/example.yaml
 
 One card per number that did not pair up: the PDF patch around it beside the patch
 around its partner (the suggested look-alike, or the copy it was paired with).
@@ -235,7 +235,7 @@ class CheckData:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Write the number check data for app/number-check.html.")
-    parser.add_argument("--config", type=Path, default=Path("data/bowser/bowser.yaml"), help="project YAML manifest")
+    parser.add_argument("--config", type=Path, default=Path("data/example/example.yaml"), help="project YAML manifest")
     parser.add_argument("--dpi", type=int, default=180, help="resolution the previews were rendered at")
     args = parser.parse_args()
     folder, project = args.config.parent, args.config.stem
