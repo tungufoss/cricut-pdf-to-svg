@@ -1,0 +1,5 @@
+piece,x_mm,y_mm,side,length_mm,read,ocr_conf,suggested,partner_piece,partner_x_mm,partner_y_mm,partner_side,partner_length_mm,length_diff_mm,why,sure
+piece-01-10,128.4,82.9,edge,18.5,222,12,272,piece-01-05,77.8,55.7,tab,18.7,0.2,OCR's other reading,applied
+piece-01-02,115.6,18.1,tab,19.6,13,26,17,piece-01-09,77.1,96.7,edge,19.5,0.1,one digit differs,no
+piece-01-01,19.2,44.6,tab,19.6,41,-1,47,piece-01-03,135.1,36.2,edge,19.8,0.2,one digit differs,no
+piece-01-07,16.9,90.6,edge,17.0,195,0,198,piece-01-06,104.9,86.8,tab,17.2,0.2,one digit differs,no

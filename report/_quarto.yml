@@ -35,6 +35,8 @@ website:
         href: install.qmd
       - text: Guide
         href: usage.qmd
+      - text: Method
+        href: method.qmd
       - text: Results
         href: sheets.qmd
       - text: Reference
@@ -55,10 +57,18 @@ website:
       - section: "Guide"
         contents:
           - usage.qmd
+      - section: "Method"
+        contents:
+          - method.qmd
       - section: "Results"
         contents:
           - sheets.qmd
           - glue-pairs.qmd
+          - fold3d.qmd
+      - section: "Research"
+        contents:
+          - benchmark.qmd
+          - wip.qmd
       - section: "Reference"
         contents:
           - reference.qmd

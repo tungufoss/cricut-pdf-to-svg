@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import collections
 import csv
+import math
 from dataclasses import dataclass
 from pathlib import Path
 
+import cv2
 import numpy as np
 
 from .model import Fold, FoldKind, Label, PageLayout
@@ -127,14 +129,24 @@ class LineFixes:
                 missed.append(row)
                 continue
             mm = pieces[row.piece][1]
-            label.edge = ((row.a[0] / mm, row.a[1] / mm), (row.b[0] / mm, row.b[1] / mm))
+            a, b = (row.a[0] / mm, row.a[1] / mm), (row.b[0] / mm, row.b[1] / mm)
+            label.edge = (a, b)
+            # Where the line lies decides cut or fold, not the label it was drawn with: on a fold it
+            # is that fold (the number sits on the tab side), along the outline it is a cut edge.
+            piece = pieces[row.piece][0]
             label.tab = row.kind == "fold"
+            if _on_fold(piece, a, b, FOLD_MM / mm):
+                label.tab = True
+            elif _on_outline(piece, a, b, FOLD_MM / mm):
+                label.tab = False
             applied += 1
         return applied, missed
 
 
 PIECE_COLUMNS = ["piece", "action", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm", "note"]
-FOLD_MM = 1.0          # a dropped fold is the traced fold whose two ends lie this close to the row's
+MERGE_MM = 0.8         # corners and fold ends closer than this are one point
+ON_LINE_MM = 0.5       # a point this close to a fold, away from its ends, splits it there
+FOLD_MM = 1.5          # a dropped fold is the traced fold whose two ends lie this close to the row's
 
 
 @dataclass
@@ -167,8 +179,10 @@ class PieceFixes:
                                  (number(r["ax_mm"]), number(r["ay_mm"])), (number(r["bx_mm"]), number(r["by_mm"])))
                         for r in csv.DictReader(handle) if r.get("action") in ("ok", "add", "drop", "move", "number")])
 
-    def apply(self, layouts: list[tuple[PageLayout, float]]) -> tuple[set[str], list[PieceFix]]:
-        """Move corners, add and drop folds; returns (ids of pieces changed, rows that matched nothing)."""
+    def apply(self, layouts: list[tuple[PageLayout, float]], kind_of=None) -> tuple[set[str], list[PieceFix]]:
+        """Move corners, add and drop folds; returns (ids of pieces changed, rows that matched nothing).
+        kind_of(piece id, a, b) reads an added fold's style off the scan (None where no fold is
+        printed); the style picked by hand counts only there."""
         pieces = {piece.id: (piece, mm) for layout, mm in layouts for piece in layout.pieces}
         changed, missed = set(), []
         for row in self.rows:
@@ -185,9 +199,17 @@ class PieceFixes:
                 if not corners:
                     missed.append(row)
                     continue
+                moved = [tuple(piece.outline[corners[0]])]
                 piece.outline[corners[0]] = b
                 for fold in piece.folds:
+                    moved += [tuple(e) for e in (fold.a, fold.b) if near(e, a)]
                     fold.a, fold.b = (b if near(fold.a, a) else fold.a), (b if near(fold.b, a) else fold.b)
+                # a fold running through a point that moved bends with it, so it still splits there
+                through = [f for f in piece.folds if not near(f.a, b) and not near(f.b, b)
+                           and any(_through(f.a, f.b, e, ON_LINE_MM / mm) for e in moved)]
+                for fold in through:
+                    piece.folds.remove(fold)
+                    piece.folds += [Fold(fold.a, b, fold.kind), Fold(b, fold.b, fold.kind)]
             elif row.action == "number":
                 height = 2.0 / mm   # printed digits are about 2 mm tall
                 box = (round(a[0] - height), round(a[1] - height / 2), round(2 * height), round(height))
@@ -196,13 +218,89 @@ class PieceFixes:
             elif row.action == "add":
                 if (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 <= (FOLD_MM / mm) ** 2:
                     continue   # both ends on one point: a slip, not a fold
-                piece.folds.append(Fold(a, b, FoldKind(row.kind or "valley")))
+                printed = kind_of(piece.id, a, b) if kind_of else None
+                piece.folds.append(Fold(a, b, printed or FoldKind(row.kind or "valley")))
             else:
-                keep = [f for f in piece.folds
-                        if not ((near(f.a, a) and near(f.b, b)) or (near(f.a, b) and near(f.b, a)))]
-                if len(keep) == len(piece.folds):
+                # only the closest match goes: a fold added by hand on top of a traced one survives
+                gap = lambda f: min(math.dist(f.a, a) + math.dist(f.b, b), math.dist(f.a, b) + math.dist(f.b, a))
+                hits = [f for f in piece.folds
+                        if (near(f.a, a) and near(f.b, b)) or (near(f.a, b) and near(f.b, a))]
+                if not hits:
                     missed.append(row)
                     continue
-                piece.folds = keep
+                piece.folds.remove(min(hits, key=gap))
             changed.add(piece.id)
+        for piece_id, (piece, mm) in pieces.items():
+            before = (len(piece.outline), len(piece.folds))
+            self.tidy(piece, mm)
+            if (len(piece.outline), len(piece.folds)) != before:
+                changed.add(piece_id)
         return changed, missed
+
+    @staticmethod
+    def tidy(piece, mm: float) -> None:
+        """Clean a piece after hand edits: corners and fold ends that (nearly) coincide become one
+        point, a fold with another point on it is split there, and folds that then repeat each
+        other or run along the cut are dropped, so no two lines overlap."""
+        merge, on_line = MERGE_MM / mm, ON_LINE_MM / mm
+        close = lambda p, q: math.dist(p, q) <= merge
+        outline = []
+        for p in piece.outline:
+            if not outline or not close(p, outline[-1]):
+                outline.append(tuple(p))
+        while len(outline) > 3 and close(outline[0], outline[-1]):
+            outline.pop()
+        piece.outline = outline
+        points = list(outline)
+        snap = lambda p: next((q for q in points if close(p, q)), None) or (points.append(tuple(p)) or tuple(p))
+        folds = [(snap(f.a), snap(f.b), f) for f in piece.folds]
+        parts = []
+        for a, b, fold in folds:
+            if a == b:
+                continue
+            length = math.dist(a, b)
+            u = ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
+            cuts = sorted({t for p in points
+                           for t in [(p[0] - a[0]) * u[0] + (p[1] - a[1]) * u[1]]
+                           if merge < t < length - merge and abs((p[0] - a[0]) * u[1] - (p[1] - a[1]) * u[0]) <= on_line})
+            stops = [a] + [next(p for p in points if abs((p[0] - a[0]) * u[0] + (p[1] - a[1]) * u[1] - t) < 1e-6
+                                and abs((p[0] - a[0]) * u[1] - (p[1] - a[1]) * u[0]) <= on_line) for t in cuts] + [b]
+            parts += [(p, q, fold.kind) for p, q in zip(stops, stops[1:])]
+        kept, seen = [], set()
+        n = len(outline)
+        sides = {frozenset((outline[i], outline[(i + 1) % n])) for i in range(n)}
+        for p, q, kind in parts:
+            key = frozenset((p, q))
+            if key in seen or key in sides:
+                continue
+            seen.add(key)
+            kept.append(Fold(p, q, kind))
+        # a fold that two others already cover by way of a point near it (a slight bend) goes too
+        ends = {e for f in kept for e in (f.a, f.b)}
+        covered = lambda f: any(frozenset((f.a, e)) in seen and frozenset((e, f.b)) in seen
+                                and math.dist(f.a, e) + math.dist(e, f.b) - math.dist(f.a, f.b) <= on_line
+                                for e in ends if e not in (f.a, f.b))
+        piece.folds = [f for f in kept if not covered(f)]
+
+
+def _through(a, b, p, reach: float) -> bool:
+    """p lies on the segment a-b, away from its ends, within reach."""
+    length = math.dist(a, b)
+    if length == 0:
+        return False
+    t = ((p[0] - a[0]) * (b[0] - a[0]) + (p[1] - a[1]) * (b[1] - a[1])) / length
+    side = abs((p[0] - a[0]) * (b[1] - a[1]) - (p[1] - a[1]) * (b[0] - a[0])) / length
+    return reach < t < length - reach and side <= reach
+
+
+def _on_fold(piece, a, b, reach: float) -> bool:
+    """Does a fold of the piece run from a to b (either way round)?"""
+    on = lambda p, q: math.dist(p, q) <= reach
+    return any((on(f.a, a) and on(f.b, b)) or (on(f.a, b) and on(f.b, a)) for f in piece.folds)
+
+
+def _on_outline(piece, a, b, reach: float) -> bool:
+    """Do both ends and the middle of the line lie on the cut outline?"""
+    outline = np.asarray(piece.outline, np.float32).reshape(-1, 1, 2)
+    middle = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+    return all(abs(cv2.pointPolygonTest(outline, (float(p[0]), float(p[1])), True)) <= reach for p in (a, b, middle))

@@ -25,7 +25,6 @@ title: "Reference"
 | `make install` | Install the Python dependencies |
 | `make report` | Render this site into `report/_site` |
 | `make preview` | Serve this site on localhost and re-render on save |
-| `make report-data` | Copy the edge table and summary into `report/data/` for GitHub Pages; commit them to update the public site |
 | `make clean` | Remove generated output |
 
 ## Manifest

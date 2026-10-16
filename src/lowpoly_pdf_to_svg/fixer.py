@@ -1,6 +1,6 @@
 """Data for the number check page: data/<project>/<project>-check.json.
 
-    python -m src.lowpoly_pdf_to_svg.fixer --config data/bowser/bowser.yaml
+    python -m src.lowpoly_pdf_to_svg.fixer --config data/example/example.yaml
 
 One card per number that did not pair up: the PDF patch around it beside the patch
 around its partner (the suggested look-alike, or the copy it was paired with).
@@ -120,13 +120,24 @@ class CheckData:
         if path.is_file():
             for r in csv.DictReader(path.open(encoding="utf-8")):
                 faults.setdefault(r["piece"], []).append(f"{r['check']}: {r['detail']}")
+        path = self.folder / f"{self.project}-3d-inspect.csv"   # pieces the folded 3D model doubts
+        if path.is_file():
+            for r in csv.DictReader(path.open(encoding="utf-8")):
+                faults.setdefault(r["piece"], []).append(f"3D fold: {r['reason']}")
         suggest: dict[str, list[dict]] = {}
         path = self.folder / f"{self.project}-mirror-folds.csv"
         if path.is_file():
             for r in csv.DictReader(path.open(encoding="utf-8")):
+                if r.get("issue", "missing") != "missing":
+                    continue
                 suggest.setdefault(r["piece"], []).append(
                     {"kind": r["kind"], "twin": r["twin"], "a": [float(r["ax_mm"]), float(r["ay_mm"])],
                      "b": [float(r["bx_mm"]), float(r["by_mm"])]})
+        twin: dict[str, str] = {}
+        path = self.folder / f"{self.project}-mirrors.csv"
+        if path.is_file():
+            for r in csv.DictReader(path.open(encoding="utf-8")):
+                twin[r["piece"]], twin[r["twin"]] = r["twin"], r["piece"]
         numbers: dict[str, list[dict]] = {}
         for r in self.edges:
             numbers.setdefault(r["piece"], []).append(
@@ -152,7 +163,7 @@ class CheckData:
             side = max(max(xs) - min(xs), max(ys) - min(ys)) + 2 * PIECE_MARGIN_MM
             image, box = self._patch(piece, (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, side, PIECE_PX, loose)
             found.append({"piece": piece, "score": score, "why": why, "labels": labels, "image": image, "box": box,
-                          "suggest": twins})
+                          "suggest": twins, "twin": twin.get(piece, "")})
         return found
 
     def _loose(self, piece: str, trace: dict, labels: list[dict]) -> np.ndarray:
@@ -224,7 +235,7 @@ class CheckData:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Write the number check data for app/number-check.html.")
-    parser.add_argument("--config", type=Path, default=Path("data/bowser/bowser.yaml"), help="project YAML manifest")
+    parser.add_argument("--config", type=Path, default=Path("data/example/example.yaml"), help="project YAML manifest")
     parser.add_argument("--dpi", type=int, default=180, help="resolution the previews were rendered at")
     args = parser.parse_args()
     folder, project = args.config.parent, args.config.stem
