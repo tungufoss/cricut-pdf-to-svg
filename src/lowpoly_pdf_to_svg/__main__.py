@@ -96,7 +96,9 @@ def main() -> int:
     # Folds added or dropped and corners moved on the piece review; the numbers on those pieces look for their line again.
     piece_fixes = PieceFixes.load(output / f"{project.name}-pieces.csv")
     if piece_fixes.rows:
-        changed, missed = piece_fixes.apply([(layout, page.mm_per_px) for page, layout, _ in results])
+        page_of = {piece.id: page for page, layout, _ in results for piece in layout.pieces}
+        changed, missed = piece_fixes.apply([(layout, page.mm_per_px) for page, layout, _ in results],
+                                            lambda piece, a, b: detector.fold_kind(page_of[piece], a, b))
         for page, layout, _ in results:
             for piece in layout.pieces:
                 if piece.id in changed:

@@ -167,8 +167,10 @@ class PieceFixes:
                                  (number(r["ax_mm"]), number(r["ay_mm"])), (number(r["bx_mm"]), number(r["by_mm"])))
                         for r in csv.DictReader(handle) if r.get("action") in ("ok", "add", "drop", "move", "number")])
 
-    def apply(self, layouts: list[tuple[PageLayout, float]]) -> tuple[set[str], list[PieceFix]]:
-        """Move corners, add and drop folds; returns (ids of pieces changed, rows that matched nothing)."""
+    def apply(self, layouts: list[tuple[PageLayout, float]], kind_of=None) -> tuple[set[str], list[PieceFix]]:
+        """Move corners, add and drop folds; returns (ids of pieces changed, rows that matched nothing).
+        kind_of(piece id, a, b) reads an added fold's style off the scan (None where no fold is
+        printed); the style picked by hand counts only there."""
         pieces = {piece.id: (piece, mm) for layout, mm in layouts for piece in layout.pieces}
         changed, missed = set(), []
         for row in self.rows:
@@ -196,7 +198,8 @@ class PieceFixes:
             elif row.action == "add":
                 if (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 <= (FOLD_MM / mm) ** 2:
                     continue   # both ends on one point: a slip, not a fold
-                piece.folds.append(Fold(a, b, FoldKind(row.kind or "valley")))
+                printed = kind_of(piece.id, a, b) if kind_of else None
+                piece.folds.append(Fold(a, b, printed or FoldKind(row.kind or "valley")))
             else:
                 keep = [f for f in piece.folds
                         if not ((near(f.a, a) and near(f.b, b)) or (near(f.a, b) and near(f.b, a)))]
