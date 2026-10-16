@@ -26,6 +26,7 @@ from pathlib import Path
 import numpy as np
 
 SVG = "{http://www.w3.org/2000/svg}"
+INKSCAPE = "{http://www.inkscape.org/namespaces/inkscape}"
 LABEL_REACH_MM = 3.0     # as detect.py: a number further than this from every line marks none
 LENGTH_TOLERANCE_MM = 1.0  # as edges.py: a clean pair's two lines agree this well
 SNAP_MM = 0.4            # fold ends and outline corners closer than this are one vertex
@@ -63,6 +64,7 @@ class FlatPiece:
     points: list[np.ndarray] = field(default_factory=list)   # vertex id -> 2D position
     faces: list[Face] = field(default_factory=list)
     fold_kind: dict[frozenset, str] = field(default_factory=dict)   # vertex pair -> fold kind
+    page_origin: tuple[float, float] = (0.0, 0.0)                   # its page's corner in document mm
 
     # vertices -------------------------------------------------------------------
     def vertex(self, p, snap: float = SNAP_MM) -> int:
@@ -166,6 +168,8 @@ class PatternReader:
 
     def read(self, path: Path) -> list[FlatPiece]:
         root = ET.parse(path).getroot()
+        origins = {page.get("id"): (float(page.get("x")), float(page.get("y")))
+                   for page in root.iter(f"{INKSCAPE}page")}
         pieces = []
         for group in root.iter(f"{SVG}g"):
             pid = group.get("id", "")
@@ -173,7 +177,8 @@ class PatternReader:
                 continue
             cut = group.find(f"{SVG}g[@id='{pid}-cut']")
             paths = [self._points(p.get("d")) for p in cut.iter(f"{SVG}path")]
-            piece = FlatPiece(pid, group.get("data-material", ""), paths[0], [])
+            piece = FlatPiece(pid, group.get("data-material", ""), paths[0], [],
+                              page_origin=origins.get(f"page-{pid[6:8]}", (0.0, 0.0)))
             for kind in ("mountain", "valley"):
                 for p in group.iter(f"{SVG}g"):
                     if p.get("id") == f"{pid}-{kind}":
@@ -690,6 +695,98 @@ MATERIAL_RGB = {"red": (0.78, 0.16, 0.16), "green": (0.18, 0.49, 0.20), "yellow"
                 "black": (0.2, 0.2, 0.2), "white": (0.95, 0.95, 0.95), "beige": (0.93, 0.86, 0.70)}
 
 
+# -- feeding the folded shape back to the flat pieces ------------------------------
+
+class CornerAdjuster:
+    """Where the folded model had to stretch a face to close its glues, the trace is likely a
+    little off. Flatten each piece again from its folded shape: the 2D corners whose distances
+    best match the folded ones, held lightly to where they were traced. A corner that moves a
+    little becomes a `move` row (bowser-pieces.csv columns, page mm); one that moves a lot, or a
+    piece with a numbered glue that does not close, is listed for a look by eye. A piece with a
+    fold bent the wrong way sits in a pose the solver could not settle, so its stretch says more
+    about the solver than the trace: it gets no moves."""
+
+    MATCH_MM = 1.5    # as corrections.py: a move row takes the outline corner this close to its start
+
+    def __init__(self, recon: "Reconstruction", min_mm: float = 0.2, max_mm: float = 1.0, hold: float = 0.05):
+        self.recon = recon
+        self.min_mm, self.max_mm, self.hold = min_mm, max_mm, hold
+
+    def shifts(self) -> dict[str, dict[int, np.ndarray]]:
+        """Per piece: outline corner id -> how far to move it (document mm, y down)."""
+        from scipy.optimize import least_squares
+
+        asm, x = self.recon.asm, self.recon.x
+        closed = self._closed_vertices()
+        by_piece = collections.defaultdict(list)
+        for a, b, _ in asm.rigid_pairs():
+            by_piece[asm.key[int(a)][0]].append((int(a), int(b)))
+        out = {}
+        for pid, piece in asm.pieces.items():
+            verts = sorted({v for p, vs in asm.faces if p == pid for v in vs})
+            if not verts or not any(v in closed for v in verts):
+                continue          # nothing holds this piece's shape: no evidence either way
+            local = {v: i for i, v in enumerate(verts)}
+            pairs = np.array([(local[a], local[b], np.linalg.norm(x[a] - x[b])) for a, b in by_piece[pid]])
+            start = np.array([asm.flat[v] for v in verts])
+            i, j, d = pairs[:, 0].astype(int), pairs[:, 1].astype(int), pairs[:, 2]
+
+            def fun(f):
+                q = f.reshape(-1, 2)
+                return np.r_[np.linalg.norm(q[i] - q[j], axis=1) - d, self.hold * (q - start).ravel()]
+            fitted = least_squares(fun, start.ravel()).x.reshape(-1, 2)
+            # Drop any shift every corner shares (the piece as a whole sliding), keep the shape change.
+            delta = fitted - start
+            delta -= delta.mean(0)
+            corners = {piece.vertex(c) for c in piece.outline}
+            out[pid] = {asm.key[v][1]: np.array([dx, -dy]) for v, (dx, dy) in zip(verts, delta)
+                        if asm.key[v][1] in corners}
+        return out
+
+    def _closed_vertices(self) -> set[int]:
+        solver = self.recon.solver
+        return {int(v) for k, p, q in solver.glue if not solver.dropped[k] for v in (p, q)}
+
+    def unsettled(self) -> set[str]:
+        solver = self.recon.solver
+        return {self.recon.asm.key[int(h[0])][0] for h in solver.hinge[solver.wrong_folds(self.recon.x)]}
+
+    def rows(self) -> tuple[list[dict], list[dict]]:
+        moves, inspect = [], []
+        unsettled = self.unsettled()
+        shifts = {pid: s for pid, s in self.shifts().items() if pid not in unsettled}
+        open_numbers = collections.defaultdict(list)
+        for r in self.recon.glue_rows():
+            if r["status"] in ("does not close", "let go while building"):
+                for pid in (r["piece"], r["tab_piece"]):
+                    open_numbers[pid].append(f"{r['number']} ({r['gap_mm']} mm)")
+        for pid in sorted(set(shifts) | set(open_numbers)):
+            piece = self.recon.asm.pieces[pid]
+            ox, oy = piece.page_origin
+            sizes = {v: float(np.hypot(*shift)) for v, shift in shifts.get(pid, {}).items()}
+            worst = max(sizes.values(), default=0.0)
+            for v, shift in sorted(shifts.get(pid, {}).items()):
+                size = sizes[v]
+                if not self.min_mm <= size <= self.max_mm or worst > self.max_mm:
+                    continue          # a piece with one corner far off is looked at whole
+                if sum(np.hypot(*(np.asarray(c) - piece.points[v])) < self.MATCH_MM for c in piece.outline) > 1:
+                    continue          # the build would not know which of two near corners to move
+                a = piece.points[v] - (ox, oy)
+                b = a + shift
+                moves.append({"piece": pid, "action": "move", "kind": "", "ax_mm": f"{a[0]:.2f}", "ay_mm": f"{a[1]:.2f}",
+                              "bx_mm": f"{b[0]:.2f}", "by_mm": f"{b[1]:.2f}",
+                              "note": f"3D fold: corner {size:.2f} mm off"})
+            reasons = []
+            if worst > self.max_mm:
+                reasons.append(f"a corner {worst:.1f} mm off, too far to move without a look")
+            if open_numbers[pid]:
+                reasons.append("glue does not close: " + ", ".join(open_numbers[pid]))
+            if reasons:
+                inspect.append({"piece": pid, "worst_corner_mm": f"{worst:.2f}" if pid in shifts else "",
+                                "reason": "; ".join(reasons)})
+        return moves, inspect
+
+
 class Reconstruction:
     """Pattern SVG in; folded model, per-glue closure table and preview out."""
 
@@ -794,6 +891,13 @@ class Reconstruction:
             writer.writeheader()
             writer.writerows(rows)
         self._preview(out / f"{project}-3d.png", x)
+        moves, inspect = CornerAdjuster(self).rows()
+        self._csv(out / f"{project}-3d-moves.csv", moves,
+                  ["piece", "action", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm", "note"])
+        self._csv(out / f"{project}-3d-inspect.csv", inspect, ["piece", "worst_corner_mm", "reason"])
+        self.log(f"corners to move: {len(moves)} in {len({m['piece'] for m in moves})} pieces; "
+                 f"pieces to look at: {len(inspect)}; pieces with a fold bent the wrong way, left as traced: "
+                 f"{len(CornerAdjuster(self).unsettled())}")
         if self.reference:
             self._baseline(out / f"{project}-3d-baseline.csv")
         counts = collections.Counter(r["status"] for r in rows)
@@ -801,6 +905,13 @@ class Reconstruction:
         stretch = np.abs(self.solver.stretch(self.x))
         self.log("glues: " + ", ".join(f"{n} {s}" for s, n in counts.most_common())
                  + f"; folds bent the wrong way: {wrong}; faces stretched up to {stretch.max():.1f} mm")
+
+    @staticmethod
+    def _csv(path: Path, rows: list[dict], columns: list[str]) -> None:
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, columns)
+            writer.writeheader()
+            writer.writerows(rows)
 
     def counts(self) -> dict[str, int]:
         """Triangles of the folded surface, and its corners once every closing glue joins its ends."""

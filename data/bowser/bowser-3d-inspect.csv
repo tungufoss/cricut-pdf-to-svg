@@ -1,0 +1,59 @@
+piece,worst_corner_mm,reason
+piece-04-06,,glue does not close: 579 (4.7 mm)
+piece-04-08,,glue does not close: 579 (4.7 mm)
+piece-05-01,,glue does not close: 10 (11.9 mm)
+piece-05-02,,glue does not close: 18 (14.6 mm)
+piece-06-01,,"glue does not close: 391 (36.6 mm), 28 (4.8 mm), 356 (33.0 mm), 358 (32.6 mm)"
+piece-06-02,,"glue does not close: 28 (4.8 mm), 358 (32.6 mm)"
+piece-06-04,,"glue does not close: 391 (36.6 mm), 356 (33.0 mm)"
+piece-06-05,,glue does not close: 621 (5.0 mm)
+piece-07-01,,"glue does not close: 621 (5.0 mm), 616 (3.8 mm)"
+piece-07-04,,glue does not close: 616 (3.8 mm)
+piece-07-05,1.76,"a corner 1.8 mm off, too far to move without a look"
+piece-07-06,,"glue does not close: 327 (23.8 mm), 294 (14.7 mm), 268 (3.8 mm), 296 (82.5 mm)"
+piece-07-08,1.32,"a corner 1.3 mm off, too far to move without a look"
+piece-07-09,0.74,glue does not close: 268 (3.8 mm)
+piece-07-10,1.46,"a corner 1.5 mm off, too far to move without a look"
+piece-08-04,,"glue does not close: 338 (7.4 mm), 339 (29.8 mm)"
+piece-08-05,,glue does not close: 294 (14.7 mm)
+piece-09-01,2.87,"a corner 2.9 mm off, too far to move without a look"
+piece-09-02,,glue does not close: 677 (3.2 mm)
+piece-09-03,,"glue does not close: 883 (97.0 mm), 677 (3.2 mm)"
+piece-09-04,,"glue does not close: 323 (42.3 mm), 329 (6.4 mm), 322 (3.0 mm)"
+piece-09-05,0.52,"glue does not close: 323 (42.3 mm), 320 (14.7 mm), 321 (4.0 mm), 322 (3.0 mm), 296 (82.5 mm)"
+piece-09-07,,"glue does not close: 327 (23.8 mm), 320 (14.7 mm), 321 (4.0 mm)"
+piece-10-02,,glue does not close: 341 (4.7 mm)
+piece-10-04,,glue does not close: 728 (44.0 mm)
+piece-10-05,,"glue does not close: 338 (7.4 mm), 329 (6.4 mm)"
+piece-11-01,,glue does not close: 26 (16.7 mm)
+piece-11-02,,"glue does not close: 26 (16.7 mm), 10 (11.9 mm)"
+piece-11-08,1.39,"a corner 1.4 mm off, too far to move without a look; glue does not close: 18 (14.6 mm)"
+piece-11-11,,glue does not close: 339 (29.8 mm)
+piece-12-03,2.10,"a corner 2.1 mm off, too far to move without a look"
+piece-12-05,1.85,"a corner 1.8 mm off, too far to move without a look"
+piece-13-03,,"glue does not close: 883 (97.0 mm), 538 (10.6 mm)"
+piece-14-01,1.45,"a corner 1.5 mm off, too far to move without a look"
+piece-15-08,1.31,"a corner 1.3 mm off, too far to move without a look"
+piece-16-03,,glue does not close: 373 (11.4 mm)
+piece-16-06,0.64,"glue does not close: 735 (11.9 mm), 341 (4.7 mm)"
+piece-16-07,,"glue does not close: 377 (29.1 mm), 277 (3.6 mm)"
+piece-17-01,,"glue does not close: 724 (70.3 mm), 728 (44.0 mm)"
+piece-17-03,,glue does not close: 373 (11.4 mm)
+piece-17-06,0.45,"glue does not close: 735 (11.9 mm), 724 (70.3 mm)"
+piece-17-07,0.68,glue does not close: 377 (29.1 mm)
+piece-18-06,1.62,"a corner 1.6 mm off, too far to move without a look"
+piece-19-02,,glue does not close: 538 (10.6 mm)
+piece-20-02,,glue does not close: 117 (5.1 mm)
+piece-20-04,,glue does not close: 117 (5.1 mm)
+piece-20-07,1.11,"a corner 1.1 mm off, too far to move without a look"
+piece-21-02,,glue does not close: 436 (37.6 mm)
+piece-21-06,,glue does not close: 436 (37.6 mm)
+piece-22-02,1.22,"a corner 1.2 mm off, too far to move without a look"
+piece-22-05,2.58,"a corner 2.6 mm off, too far to move without a look"
+piece-23-01,1.40,"a corner 1.4 mm off, too far to move without a look"
+piece-24-01,,glue does not close: 277 (3.6 mm)
+piece-24-03,0.16,"glue does not close: 749 (31.4 mm), 788 (4.8 mm)"
+piece-24-04,,"glue does not close: 749 (31.4 mm), 788 (4.8 mm)"
+piece-24-11,1.07,"a corner 1.1 mm off, too far to move without a look"
+piece-24-14,1.79,"a corner 1.8 mm off, too far to move without a look"
+piece-24-16,1.45,"a corner 1.5 mm off, too far to move without a look"
