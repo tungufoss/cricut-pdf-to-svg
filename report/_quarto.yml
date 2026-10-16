@@ -59,6 +59,11 @@ website:
         contents:
           - sheets.qmd
           - glue-pairs.qmd
+          - fold3d.qmd
+      - section: "Research"
+        contents:
+          - benchmark.qmd
+          - wip.qmd
       - section: "Reference"
         contents:
           - reference.qmd

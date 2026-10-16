@@ -18,10 +18,6 @@ gen <- "generated"
 svg_path <- file.path(out, paste0(project, ".svg"))
 edges_path <- file.path(out, paste0(project, "-edges.csv"))
 summary_md <- file.path(out, "README.md")
-if (!file.exists(edges_path)) {
-  edges_path <- file.path("data", project, paste0(project, "-edges.csv"))
-  summary_md <- file.path("data", project, paste0(project, "-report.md"))
-}
 
 unlink(gen, recursive = TRUE)
 dir.create(file.path(gen, "sheets"), recursive = TRUE)

@@ -30,7 +30,7 @@ if (is.null(edges)) {
 
 ```{r}
 #| label: glue-pairs-table
-#| column: page
+#| column: page-right
 if (!is.null(edges)) {
   glue_pairs(edges) |>
     mutate(across(c(verdict, status, side_a, side_b, ocr_a), factor)) |>
