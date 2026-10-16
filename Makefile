@@ -10,21 +10,24 @@
 #   make fix        data/<project>/<project>-check.json for app/number-check.html: check each unpaired number
 #                   against the scan, accept or type the right one; Save writes <project>-corrections.csv
 #   make install    install Python dependencies (Poppler's pdftoppm comes from the OS)
+#   make example    regenerate data/example/example.pdf from bench/synth.py (needs scipy, shapely, cairosvg)
 #   make clean      remove generated files (keeps the PDF and YAML)
 
 PYTHON  ?= python3
-CONFIG  ?= data/bowser/bowser.yaml
+# The public repository ships a synthetic example; a real model lives in its own folder (or
+# repository) and is passed in, e.g. make CONFIG=/path/to/data/<model>/<model>.yaml
+CONFIG  ?= data/example/example.yaml
 PROJECT ?= $(basename $(notdir $(CONFIG)))
 OUT     ?= $(patsubst %/,%,$(dir $(CONFIG)))
 DPI     ?= 180
 SOURCES := $(wildcard src/lowpoly_pdf_to_svg/*.py)
 CONVERT  = $(PYTHON) -m src.lowpoly_pdf_to_svg --config $(CONFIG) --output $(OUT) --dpi $(DPI)
 
-.PHONY: all page redo piece number fix install clean
+.PHONY: all page redo piece number fix example install clean
 
 all: $(OUT)/$(PROJECT).svg
 
-$(OUT)/$(PROJECT).svg: $(CONFIG) $(SOURCES) $(wildcard $(OUT)/$(PROJECT)-corrections.csv $(OUT)/$(PROJECT)-lines.csv $(OUT)/$(PROJECT)-pieces.csv)
+$(OUT)/$(PROJECT).svg: $(CONFIG) $(SOURCES) $(wildcard $(OUT)/$(PROJECT)-corrections.csv $(OUT)/$(PROJECT)-lines.csv $(OUT)/$(PROJECT)-pieces.csv $(OUT)/$(PROJECT)-3d-moves.csv)
 	$(CONVERT)
 
 page:
@@ -49,6 +52,14 @@ fix:
 	@test -f $(OUT)/$(PROJECT)-misreads.csv || { echo "run make first"; exit 2; }
 	$(PYTHON) -m src.lowpoly_pdf_to_svg.fixer --config $(CONFIG) --dpi $(DPI)
 
+# A synthetic template with exact ground truth: one A4 page, cut lines grey like the real
+# templates (the reader tells numbers from lines by darkness), numbers black.
+EXAMPLE_SEED ?= 7
+example:
+	$(PYTHON) -m bench.synth --out output/example --templates 1 --seed $(EXAMPLE_SEED)
+	$(PYTHON) -c "import cairosvg, pathlib; s = pathlib.Path('output/example/synth-$(shell printf %02d $(EXAMPLE_SEED))-01/page-01.svg'); \
+	  cairosvg.svg2pdf(bytestring=s.read_text().replace('stroke=\"black\"', 'stroke=\"#7f7f7f\"', 1).encode(), write_to='data/example/example.pdf')"
+
 install:
 	$(PYTHON) -m pip install -r requirements.txt
 
@@ -64,13 +75,6 @@ report: $(OUT)/$(PROJECT).svg
 .PHONY: preview
 preview: $(OUT)/$(PROJECT).svg
 	LC_ALL=C.UTF-8 REPORT_OUT=$(abspath $(OUT)) REPORT_PROJECT=$(PROJECT) quarto preview report
-#   make report-data  copy the edge table and summary into report/data/ for GitHub Pages
-#                     (the SVG and scans stay local: the pattern is free for personal use only)
-.PHONY: report-data
-report-data: $(OUT)/$(PROJECT).svg
-	mkdir -p report/data/$(PROJECT)
-	cp $(OUT)/$(PROJECT)-edges.csv report/data/$(PROJECT)/
-	cp $(OUT)/README.md report/data/$(PROJECT)/$(PROJECT)-report.md
 
 # Paper 1 benchmark (bench/): synthetic templates with exact ground truth, existing
 # vectorizers, shared cut/fold classifier, conventional and fabrication-aware metrics.

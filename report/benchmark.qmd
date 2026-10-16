@@ -1,0 +1,96 @@
+---
+title: "Benchmark"
+---
+
+```{r}
+#| label: setup-benchmark
+#| include: false
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(ggplot2)
+  library(readr)
+  library(stringr)
+  library(tidyr)
+})
+library(DT)
+bench <- "../bench"
+results <- if (file.exists(file.path(bench, "results.csv"))) read_csv(file.path(bench, "results.csv"), show_col_types = FALSE)
+methods <- if (file.exists(file.path(bench, "summary", "methods.csv"))) read_csv(file.path(bench, "summary", "methods.csv"), show_col_types = FALSE)
+cors <- if (file.exists(file.path(bench, "summary", "correlations.csv"))) read_csv(file.path(bench, "summary", "correlations.csv"), show_col_types = FALSE)
+```
+
+The paper 1 benchmark (`make bench`, `make bench-report`) asks whether a vectorization that
+looks right is also right to cut. It runs existing raster-to-vector methods on synthetic
+papercraft templates with exact ground truth, at three raster qualities, and scores each result
+with conventional visual metrics (raster IoU, chamfer and Hausdorff distance) and the
+fabrication-aware metrics F1 to F5 from the paper. The `T-` rows are the ground truth with one
+known defect added (an open contour, folds drawn as cuts, a 2 % scale error, 0.4 mm jitter), so
+the metrics can be checked against errors of known size.
+
+```{r}
+#| label: benchmark-counts
+#| output: asis
+if (is.null(results)) {
+  cat("The benchmark has not been run yet (bench/results.csv is missing).\n")
+} else {
+  cat(sprintf("%d templates, %d pages, %d raster conditions, %d methods.\n",
+              n_distinct(results$template), n_distinct(paste(results$template, results$page)),
+              n_distinct(results$condition), n_distinct(results$method)))
+}
+```
+
+## Visual quality does not predict fabrication quality
+
+```{r}
+#| label: benchmark-scatter
+#| fig-cap: "Each point is one page and method. Raster IoU (visual) against two fabrication metrics: share of correctly closed pieces (F1) and length difference between edges that are glued together (F5)."
+#| fig-height: 4
+if (!is.null(results)) {
+  results |>
+    filter(metric %in% c("raster_iou", "F1_closed", "F5_match_diff_mm")) |>
+    pivot_wider(names_from = metric, values_from = value) |>
+    pivot_longer(c(F1_closed, F5_match_diff_mm), names_to = "fabrication", values_to = "value") |>
+    mutate(kind = if_else(str_starts(method, "T-"), "perturbed truth", "existing method"),
+           fabrication = recode(fabrication, F1_closed = "F1 closed pieces (share)",
+                                F5_match_diff_mm = "F5 glue-edge mismatch (mm)")) |>
+    ggplot(aes(raster_iou, value, colour = method, shape = kind)) +
+    geom_point(alpha = 0.7) +
+    facet_wrap(~fabrication, scales = "free_y") +
+    labs(x = "raster IoU", y = NULL, colour = NULL, shape = NULL) +
+    theme_minimal()
+}
+```
+
+## Mean per method and condition
+
+```{r}
+#| label: benchmark-methods
+#| column: page-right
+if (!is.null(methods)) {
+  methods |>
+    select(method, condition, raster_iou, chamfer_mm, F1_closed, F2_dim_mm, F3_macro_f1,
+           F4_duplicate_contours, F5_match_diff_mm, controls) |>
+    datatable(rownames = FALSE, filter = "top", class = "compact stripe",
+              options = list(pageLength = 25)) |>
+    formatRound(c("raster_iou", "F1_closed", "F3_macro_f1", "F4_duplicate_contours"), 3) |>
+    formatRound(c("chamfer_mm", "F2_dim_mm", "F5_match_diff_mm"), 3) |>
+    formatRound("controls", 0)
+}
+```
+
+## Spearman correlation between visual and fabrication metrics
+
+```{r}
+#| label: benchmark-correlations
+if (!is.null(cors)) {
+  cors |>
+    filter(!is.na(spearman)) |>
+    ggplot(aes(visual, fabrication, fill = spearman)) +
+    geom_tile(colour = "white") +
+    geom_text(aes(label = sprintf("%.2f", spearman)), size = 3) +
+    facet_wrap(~group) +
+    scale_fill_gradient2(low = "#d61f69", mid = "white", high = "#10099F", limits = c(-1, 1)) +
+    labs(x = NULL, y = NULL, fill = "Spearman") +
+    theme_minimal()
+}
+```

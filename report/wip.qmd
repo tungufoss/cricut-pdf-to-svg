@@ -1,0 +1,47 @@
+---
+title: "Work in progress"
+date: 2026-10-16
+date-format: long
+---
+
+Changes that are built but not merged yet, and the research issues they feed. Each entry
+links its pull request or issue; numbers are from the PR's own run and will move once it
+merges and the site rebuilds.
+
+## Piece review follow-up
+
+[PR #16](https://github.com/tungufoss/lowpoly-pdf-to-svg/pull/16), draft. Stage: fold
+detection and hand corrections.
+
+- A fold added in the piece review takes the mountain or valley style printed under it,
+  read with the same dash classifier as traced folds. The hand pick only counts where no fold
+  is printed. On 6 of the first 15 added folds the pick disagreed with the printed line.
+- After hand edits, every piece is tidied: corners and fold ends within 0.8 mm become one
+  point, a fold with another point on it is split there, and duplicate folds or folds along
+  the cut are dropped.
+- Brings in the full review of all 178 pieces: 46 folds added, 3 dropped, 19 corners moved.
+- Clean number pairs go from 1462 to 1466 of 1575.
+
+## 3D fold-up against the finished model
+
+[PR #18](https://github.com/tungufoss/lowpoly-pdf-to-svg/pull/18), draft. Stage: 3D fold
+check ([3D fold-up](fold3d.qmd)).
+
+- `bowser.yaml` gets a `reference:` block with the finished model's size from its public
+  Sketchfab metadata: 1238 triangles and 633 corners.
+- `make -f fold3d.mk` writes `bowser-3d-baseline.csv`, comparing the folded trace with
+  those counts. Corners stay doubled wherever a glue is missing or misread, so the corner
+  difference measures how much matching is left.
+- On the current trace: 1375 triangles (+137) and 862 corners (+229).
+
+## Research issues
+
+| issue | what | state |
+|---|---|---|
+| [#11](https://github.com/tungufoss/lowpoly-pdf-to-svg/issues/11) | benchmark corpus with ground truth | synthetic templates in [Benchmark](benchmark.qmd); real templates to come |
+| [#7](https://github.com/tungufoss/lowpoly-pdf-to-svg/issues/7) | RQ1: reconstruction against a gold set and baselines | baselines A to C and metrics F1 to F5 run in [Benchmark](benchmark.qmd) |
+| [#10](https://github.com/tungufoss/lowpoly-pdf-to-svg/issues/10) | RQ4: do digital metrics predict physical assembly? | metric correlations in [Benchmark](benchmark.qmd); 3D closure in [3D fold-up](fold3d.qmd); no physical test yet |
+| [#8](https://github.com/tungufoss/lowpoly-pdf-to-svg/issues/8) | RQ2: ablation of joint geometry, text and topology | not started |
+| [#9](https://github.com/tungufoss/lowpoly-pdf-to-svg/issues/9) | RQ3: correction effort, guided vs exhaustive review | not started; corrections are logged |
+
+The paper 1 manuscript lives in `paper/` (`make paper`) and is not published on this site.

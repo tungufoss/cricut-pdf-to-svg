@@ -1,0 +1,19 @@
+project: example
+
+# A synthetic template from bench/synth.py (python -m bench.synth --templates 1 --seed 7):
+# a random low-poly solid unfolded onto one A4 page, drawn in the template style.
+source:
+  pdf: example.pdf
+  page_size: a4
+
+folds:
+  dash_dot: mountain
+  dashed: valley
+
+output:
+  default_sheet: a4
+
+materials:
+  - id: white
+    name: White cardstock
+    pages: [1]

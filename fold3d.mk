@@ -8,7 +8,7 @@
 # Needs data/<project>/<project>.svg from a full `make` first.
 
 PYTHON  ?= python3
-CONFIG  ?= data/bowser/bowser.yaml
+CONFIG  ?= data/example/example.yaml
 PROJECT ?= $(basename $(notdir $(CONFIG)))
 OUT     ?= $(patsubst %/,%,$(dir $(CONFIG)))
 

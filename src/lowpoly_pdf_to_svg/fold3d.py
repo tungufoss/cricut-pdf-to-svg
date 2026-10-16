@@ -9,7 +9,7 @@ Where the model will not close, the glued edge stays open in the result: the
 gap in mm is listed per number, which points at a misread number or a mis-traced
 line. All lengths are millimetres.
 
-    python -m src.lowpoly_pdf_to_svg.fold3d --config data/bowser/bowser.yaml
+    python -m src.lowpoly_pdf_to_svg.fold3d --config data/example/example.yaml
 """
 
 from __future__ import annotations
@@ -1078,7 +1078,7 @@ def _look_alike(number: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Fold the traced pattern back into the 3D model.")
-    parser.add_argument("--config", type=Path, default=Path("data/bowser/bowser.yaml"), help="project YAML manifest")
+    parser.add_argument("--config", type=Path, default=Path("data/example/example.yaml"), help="project YAML manifest")
     parser.add_argument("--gape", type=float, default=3.0, help="let go of a glue whose ends stay this far apart (mm)")
     parser.add_argument("--anneal", type=int, default=5, help="cycles of hard then easy fold pull after the build")
     args = parser.parse_args()
