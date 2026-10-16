@@ -53,8 +53,8 @@ materials:                 # one entry per cardstock colour
 | File | Contents |
 |---|---|
 | `data/<project>/<project>.svg` | One Inkscape SVG, one row of pages per cardstock (not committed); document size in inches, drawing in millimetres |
-| `data/<project>/previews/<project>-page-PP-<material>.png` | Each PDF page as rendered for tracing (not committed) |
-| `data/<project>/<project>-edges.csv` | One row per printed edge number, read by the [glue pairs](glue-pairs.qmd) page |
+| `data/<project>/previews/page-PP-<material>.png` | Each PDF page as rendered for tracing (not committed) |
+| `data/<project>/edge-numbers.csv` | One row per printed edge number, read by the [glue pairs](glue-pairs.qmd) page |
 | `data/<project>/README.md` | Conversion status and edge check; its first paragraph is shown on the home page |
 
 ### Edge table columns

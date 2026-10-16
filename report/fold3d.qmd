@@ -9,7 +9,7 @@ source("R/site.R")
 library(DT)
 gaps <- stat_table("glue-gaps")
 glue_status <- stat_table("glue-status")
-render <- file.path(STATS, paste0(PROJECT, "-3d.png"))
+render <- file.path(STATS, "fold3d.png")
 # The per-edge glue table is only in a local build (`make preview`), never on the public site.
 glue <- if (file.exists("generated/3d-glue.csv")) read_csv("generated/3d-glue.csv", col_types = cols(number = col_character()))
 ```

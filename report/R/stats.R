@@ -3,7 +3,7 @@
 #   Rscript report/R/stats.R data/<project> report/data/<project>
 # It reads a model's own tables (edges, corrections, misreads, mirrors, checks, 3D glue) and
 # writes only counts and binned distributions, so report/data/ holds no traced geometry and no
-# per-edge rows. A 3D preview render (<project>-3d.png), when present, is copied as the one
+# per-edge rows. A 3D preview render (fold3d.png), when present, is copied as the one
 # static image. Review what it wrote before committing it.
 
 suppressPackageStartupMessages({
@@ -22,21 +22,21 @@ project <- basename(normalizePath(src))
 dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 
 read_if <- function(name) {
-  path <- file.path(src, paste0(project, "-", name, ".csv"))
+  path <- file.path(src, paste0(name, ".csv"))
   if (file.exists(path)) read_csv(path, col_types = cols(.default = col_character()), na = c("", "NA"))
 }
 num <- function(x) suppressWarnings(as.numeric(x))
 put <- function(df, name) write_csv(df, file.path(dest, paste0(name, ".csv")), na = "")
 
-edges <- read_if("edges")
-if (is.null(edges)) stop("no ", project, "-edges.csv in ", src)
-corrections <- read_if("corrections")
-misreads <- read_if("misreads")
-mirrors <- read_if("mirrors")
-checks <- read_if("checks")
-glue <- read_if("3d-glue")
-pieces_fix <- read_if("pieces")
-lines_fix <- read_if("lines")
+edges <- read_if("edge-numbers")
+if (is.null(edges)) stop("no edge-numbers.csv in ", src)
+corrections <- read_if("number-corrections")
+misreads <- read_if("number-misreads")
+mirrors <- read_if("mirror-mismatches")
+checks <- read_if("trace-faults")
+glue <- read_if("fold3d-glue")
+pieces_fix <- read_if("piece-edits")
+lines_fix <- read_if("number-lines")
 
 edges <- edges |>
   mutate(page = as.integer(substr(piece, 7, 8)),
@@ -121,6 +121,6 @@ if (!is.null(glue)) {
     put("glue-gaps")
 }
 
-render <- file.path(src, paste0(project, "-3d.png"))
+render <- file.path(src, "fold3d.png")
 if (file.exists(render)) file.copy(render, file.path(dest, basename(render)), overwrite = TRUE)
 message("wrote summary statistics for ", project, " to ", dest)

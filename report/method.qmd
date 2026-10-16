@@ -82,15 +82,15 @@ reading, so nothing has to be corrected twice.
 
 | file | holds | matched by |
 |---|---|---|
-| `bowser-corrections.csv` | what a number should say (or that it is not a number) | the nearest mark on that piece, within 2 mm |
-| `bowser-pieces.csv` | folds added or dropped, corners moved | the nearest fold or corner |
-| `bowser-lines.csv` | the line a number marks, drawn by hand | the number's mark |
+| `number-corrections.csv` | what a number should say (or that it is not a number) | the nearest mark on that piece, within 2 mm |
+| `piece-edits.csv` | folds added or dropped, corners moved | the nearest fold or corner |
+| `number-lines.csv` | the line a number marks, drawn by hand | the number's mark |
 
 After a piece changes, its numbers look for their lines again.
 
 ### 5 Joint repair
 
-Each edge number is now checked against its partner. The edge table (`bowser-edges.csv`)
+Each edge number is now checked against its partner. The edge table (`edge-numbers.csv`)
 gives every number one status: *ok* (one plain edge and one tab, lengths within 1 mm),
 *unpaired*, *length mismatch*, *no tab*, *both tabs* or *extra copy*. Two kinds of evidence then
 fix numbers without asking.
@@ -151,7 +151,7 @@ if (have) {
 
 The aim is that the person spends time only where the program is unsure, and that each answer
 improves later reads as well as fixing this one. The review happens on one local page,
-`app/number-check.html`. `make fix` writes its data (`bowser-check.json`, with crops of the scan,
+`app/number-check.html`. `make fix` writes its data (`check-page.json`, with crops of the scan,
 which stays local because the pattern is personal-use only). The page opens the model folder and
 saves straight back into it.
 

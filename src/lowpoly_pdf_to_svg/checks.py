@@ -14,7 +14,7 @@ template. Without one, the same faults still show in the trace itself:
   partners elsewhere, every length there is off.
 
 Each fault is kept with where it is, so an unsolved number can be told which faults touch
-its line: data/<project>/<project>-checks.csv lists them all, and the edges table carries
+its line: data/<project>/trace-faults.csv lists them all, and the edges table carries
 the ones at each number's line in its `checks` column.
 """
 

@@ -3,7 +3,7 @@
 #
 #   generated/sheets/<project>-page-PP.svg   one sheet of the review SVG (pieces only),
 #                                             edge numbers ringed green (ok) or red (needs work)
-#   generated/sheets/<project>-page-PP-<material>.png   the rendered PDF page, from previews/
+#   generated/sheets/page-PP-<material>.png          the rendered PDF page, from previews/
 #   generated/sheets.csv                     one row per sheet, read by sheets.qmd
 #   generated/edges.csv, 3d-glue.csv         the model's own tables, for the full tables in a local build
 #
@@ -25,8 +25,8 @@ if (!nzchar(out)) {
   quit(save = "no")
 }
 svg_path <- file.path(out, paste0(project, ".svg"))
-edges_path <- file.path(out, paste0(project, "-edges.csv"))
-glue_path <- file.path(out, paste0(project, "-3d-glue.csv"))
+edges_path <- file.path(out, "edge-numbers.csv")
+glue_path <- file.path(out, "fold3d-glue.csv")
 
 NS <- c(svg = "http://www.w3.org/2000/svg",
         inkscape = "http://www.inkscape.org/namespaces/inkscape",
@@ -81,7 +81,7 @@ write_sheet <- function(page, x, y, width, height, ...) {
 
 sources <- list.files(file.path(out, "previews"), pattern = "\\.png$", full.names = TRUE)
 source_for <- function(page) {
-  hit <- str_subset(sources, sprintf("-page-%02d-", page))
+  hit <- str_subset(sources, sprintf("/page-%02d-", page))
   if (length(hit) == 0) return(NA_character_)
   dest <- file.path(gen, "sheets", basename(hit[1]))
   file.copy(hit[1], dest)

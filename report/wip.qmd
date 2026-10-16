@@ -29,7 +29,7 @@ check ([3D fold-up](fold3d.qmd)).
 
 - `bowser.yaml` gets a `reference:` block with the finished model's size from its public
   Sketchfab metadata: 1238 triangles and 633 corners.
-- `make -f fold3d.mk` writes `bowser-3d-baseline.csv`, comparing the folded trace with
+- `make -f fold3d.mk` writes `fold3d-baseline.csv`, comparing the folded trace with
   those counts. Corners stay doubled wherever a glue is missing or misread, so the corner
   difference measures how much matching is left.
 - On the current trace: 1375 triangles (+137) and 862 corners (+229).
