@@ -56,11 +56,11 @@ edges |>
   transmute(page, cardstock, matching, needs_work = `needs work`) |>
   put("pages")
 
+# The numbers that still need a look, by page and reason
 edges |>
-  filter(!is.na(length_diff_mm), side != "none", partner_side != "none") |>
-  mutate(diff_mm = floor(num(length_diff_mm))) |>
-  count(diff_mm, verdict) |>
-  put("length-diff")
+  filter(verdict == "needs work") |>
+  count(page, status) |>
+  put("open")
 
 # Where each final reading came from: the readers, the program, or a person
 empty <- tibble(piece = character(), x_mm = character(), y_mm = character())

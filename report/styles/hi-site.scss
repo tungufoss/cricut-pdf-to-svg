@@ -105,6 +105,11 @@ $border-radius:          0;
     letter-spacing: 0.01em;
     color: $hi-white !important;
   }
+
+  // The centred title collides with the menu on laptop widths: show it only on wide screens.
+  @media (max-width: 1499.98px) {
+    .navbar-brand:not(.navbar-brand-logo) { display: none !important; }
+  }
 }
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────

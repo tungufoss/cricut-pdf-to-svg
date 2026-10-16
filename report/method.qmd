@@ -198,9 +198,9 @@ if (!is.null(provenance)) {
                                      "person changed", "readers unsure"))) |>
     ggplot(aes(n, fct_rev(source), fill = outcome)) +
     geom_col() +
-    scale_fill_manual(values = c("pairs (ok)" = "#2f6db5", "still open" = "#e8903a")) +
+    scale_fill_manual(values = c("pairs (ok)" = HI[["blue"]], "still open" = HI[["orange"]])) +
     labs(x = "edge numbers", y = NULL, fill = NULL) +
-    theme_minimal(base_size = 11) +
+    theme_hi(base_size = 11) +
     theme(legend.position = "top")
 }
 ```

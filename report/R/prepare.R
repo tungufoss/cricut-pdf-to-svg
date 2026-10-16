@@ -31,7 +31,7 @@ glue_path <- file.path(out, paste0(project, "-3d-glue.csv"))
 NS <- c(svg = "http://www.w3.org/2000/svg",
         inkscape = "http://www.inkscape.org/namespaces/inkscape",
         sodipodi = "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd")
-RING <- c(matching = "#1a9e8f", `needs work` = "#d61f69")
+RING <- c(matching = "#10099F", `needs work` = "#FFA05F")  # HÍ blue and orange, as in R/site.R
 
 edges <- if (file.exists(edges_path)) read_edges(edges_path) else NULL
 if (!is.null(edges)) invisible(file.copy(edges_path, file.path(gen, "edges.csv")))

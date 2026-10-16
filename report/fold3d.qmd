@@ -45,11 +45,11 @@ if (!is.null(gaps)) {
     ggplot(aes(10^(gap_bin + 0.1), n, fill = status)) +
     geom_col(width = 0.18, position = "stack", orientation = "x") +
     scale_x_log10() +
-    scale_fill_manual(values = c(closes = "#1a9e8f", `proposed, closes` = "#2DD2C0",
-                                 `does not close` = "#d61f69", `let go while building` = "#FC8484",
-                                 `proposed by shape only, not glued` = "#FAC55B")) +
+    scale_fill_manual(values = c(closes = HI[["blue"]], `proposed, closes` = HI[["teal"]],
+                                 `does not close` = HI[["orange"]], `let go while building` = HI[["red"]],
+                                 `proposed by shape only, not glued` = HI[["yellow"]])) +
     labs(x = "gap (mm)", y = "glued edges", fill = NULL) +
-    theme_minimal() +
+    theme_hi() +
     theme(legend.position = "top")
 }
 ```

@@ -32,4 +32,14 @@ stat <- function(key) {
   n <- suppressWarnings(as.numeric(v))
   if (is.na(n)) v else n
 }
-VERDICT_COLOURS <- c(matching = "#1a9e8f", `needs work` = "#d61f69")
+# HÍ palette, as in styles/hi-site.scss (honnun.hi.is)
+HI <- c(blue = "#10099F", teal = "#2DD2C0", yellow = "#FAC55B", orange = "#FFA05F",
+        red = "#FC8484", pink = "#d61f69", green = "#00FFBA", dark = "#0A0668", grey = "#5D6872")
+VERDICT_COLOURS <- c(matching = HI[["blue"]], `needs work` = HI[["orange"]])
+scale_colour_hi <- function(...) scale_colour_manual(values = unname(HI), ...)
+scale_fill_hi <- function(...) scale_fill_manual(values = unname(HI), ...)
+theme_hi <- function(...) {
+  theme_minimal(...) +
+    theme(text = element_text(colour = "#262626"), plot.title = element_text(colour = HI[["blue"]]),
+          strip.text = element_text(colour = HI[["blue"]], face = "bold"), legend.position = "top")
+}

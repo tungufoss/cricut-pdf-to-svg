@@ -8,26 +8,61 @@ title: "Glue pairs"
 source("R/site.R")
 source("R/edges.R")
 library(DT)
-diffs <- stat_table("length-diff")
+status <- stat_table("status")
+open_numbers <- stat_table("open")
 # The full per-edge table is only in a local build (`make preview`), never on the public site.
 edges <- if (file.exists("generated/edges.csv")) read_edges("generated/edges.csv")
 ```
 
-Every edge number is printed twice in the template: once on the edge and once on the tab that is glued to it. The converter measures the edge each number sits on and pairs the two. A pair is *matching* when it found exactly one edge and one tab of the same length (status `ok`); anything else needs a look.
+Every edge number is printed twice in the template: once on the edge and once on the tab that is glued to it. The converter measures the edge each number sits on and pairs the two. A pair *matches* when it found exactly one edge and one tab of the same length (status `ok`).
 
 ```{r}
-#| label: glue-pairs-histogram
-#| fig-cap: "Length difference between the two edges of each numbered pair, in 1 mm bins."
-if (is.null(diffs)) {
+#| label: glue-pairs-summary
+#| output: asis
+if (is.null(NUMBERS)) {
   cat("No summary statistics are committed yet (`make report-data`).\n")
 } else {
-  diffs |>
-    ggplot(aes(diff_mm + 0.5, n, fill = verdict)) +
-    geom_col(width = 1) +
-    scale_fill_manual(values = VERDICT_COLOURS) +
-    labs(x = "length difference between the two edges (mm)", y = "edge numbers", fill = NULL) +
-    theme_minimal() +
-    theme(legend.position = "top")
+  cat(sprintf("%d of %d printed numbers match their partner. The %d still open are shown below, by page and by what went wrong.\n",
+              stat("matching"), stat("numbers"), stat("needs_work")))
+}
+```
+
+```{r}
+#| label: fig-open-numbers
+#| fig-cap: "Edge numbers that still need a look, per PDF page, by reason."
+#| fig-height: 3.4
+if (!is.null(open_numbers) && nrow(open_numbers) > 0) {
+  open_numbers |>
+    mutate(page = factor(sprintf("%02d", page)), status = fct_reorder(status, n, sum, .desc = TRUE)) |>
+    ggplot(aes(page, n, fill = status)) +
+    geom_col() +
+    scale_fill_manual(values = unname(HI[c("orange", "blue", "teal", "yellow", "red", "pink")])) +
+    scale_y_continuous(breaks = scales::breaks_pretty(), expand = expansion(mult = c(0, 0.05))) +
+    labs(x = "page", y = "open edge numbers", fill = NULL) +
+    theme_hi() +
+    theme(panel.grid.major.x = element_blank())
+}
+```
+
+```{r}
+#| label: tbl-open-reasons
+#| tbl-cap: "What each reason means."
+REASONS <- c(
+  `unpaired` = "No other copy of this number was found: most likely misread.",
+  `extra copy: likely misread` = "Read more than twice; the other copies already form a clean pair.",
+  `printed 3 times` = "Read three times with no clean pair among them.",
+  `printed 4 times` = "Read four times with no clean pair among them.",
+  `length mismatch` = "Partner found, but the two marked lines differ in length.",
+  `no tab` = "Neither copy sits on a tab fold.",
+  `both tabs` = "Both copies sit on a tab fold.",
+  `line not found` = "No edge line was found under the number."
+)
+if (!is.null(status)) {
+  status |>
+    filter(verdict == "needs work") |>
+    arrange(desc(n)) |>
+    transmute(Reason = status, Numbers = n, Meaning = unname(REASONS[status])) |>
+    knitr::kable()
 }
 ```
 
@@ -49,7 +84,7 @@ if (!is.null(edges)) {
                    "Piece B", "Side B", "Length B", "Diff", "A read"),
       options = list(pageLength = 25)
     ) |>
-    formatStyle("verdict", color = styleEqual(c("matching", "needs work"), c("#1a9e8f", "#d61f69")),
+    formatStyle("verdict", color = styleEqual(c("matching", "needs work"), unname(VERDICT_COLOURS)),
                 fontWeight = "bold")
 }
 ```

@@ -57,7 +57,7 @@ if (!is.null(status)) {
     scale_fill_manual(values = VERDICT_COLOURS) +
     scale_x_continuous(expand = expansion(mult = c(0, 0.1))) +
     labs(x = "edge numbers", y = NULL, fill = NULL) +
-    theme_minimal() +
+    theme_hi() +
     theme(legend.position = "top", panel.grid.major.y = element_blank())
 }
 ```
