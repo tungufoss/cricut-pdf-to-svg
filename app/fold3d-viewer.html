@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Folded Model Viewer</title>
+<!-- The glued model from fold3d.py beside the traced pattern. Click a face in 3D to find it on the
+     pattern, or a face on the pattern to find it in 3D. Data: <model>-3d.json (fold3d.py) and the
+     review SVG; pass ?json=…&svg=… to load another model. Needs http (make -f fold3d.mk view). -->
+<style>
+  :root {
+    --bg: #f7f6f3; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6a66; --line: #dddbd5;
+    --pick: #1f6feb; --open: #d1242f; --wrong: #e8890c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --panel: #1f1f1d; --ink: #ecebe7; --muted: #a09e98; --line: #34332f;
+      --pick: #58a6ff; --open: #ff6b6b; --wrong: #f2a33a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --panel: #1f1f1d; --ink: #ecebe7; --muted: #a09e98; --line: #34332f;
+    --pick: #58a6ff; --open: #ff6b6b; --wrong: #f2a33a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { display: grid; grid-template-rows: auto 1fr auto; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: baseline; padding: 10px 16px;
+    border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 16px; margin: 0; }
+  header .stats { color: var(--muted); }
+  header label { color: var(--muted); user-select: none; }
+  main { display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } }
+  .pane { position: relative; min-height: 0; min-width: 0; overflow: hidden; border-right: 1px solid var(--line); }
+  #three canvas { display: block; width: 100%; height: 100%; }
+  #pattern { background: #fff; cursor: grab; touch-action: none; }
+  #pattern.dragging { cursor: grabbing; }
+  #pattern svg { width: 100%; height: 100%; display: block; }
+  .hint { position: absolute; left: 10px; bottom: 8px; font-size: 12px; color: var(--muted);
+    background: color-mix(in srgb, var(--panel) 80%, transparent); padding: 2px 6px; border-radius: 4px;
+    pointer-events: none; }
+  #pattern .hint { color: #6b6a66; background: #ffffffcc; }
+  footer { border-top: 1px solid var(--line); background: var(--panel); padding: 10px 16px; min-height: 64px;
+    max-height: 30vh; overflow: auto; }
+  footer h2 { font-size: 14px; margin: 0 0 4px; }
+  footer .note { color: var(--muted); }
+  footer ul { margin: 4px 0 0; padding-left: 18px; columns: 2 260px; }
+  .open { color: var(--open); } .wrong { color: var(--wrong); }
+  #error { color: var(--open); padding: 16px; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<header>
+  <h1 id="title">Folded model</h1>
+  <span class="stats" id="stats"></span>
+  <label><input type="checkbox" id="show-open" checked> <span class="open">open glues</span></label>
+  <label><input type="checkbox" id="show-wrong" checked> <span class="wrong">folds bent the wrong way</span></label>
+</header>
+<main>
+  <div class="pane" id="three"><div class="hint">drag to turn · scroll to zoom · click a face</div></div>
+  <div class="pane" id="pattern"><div class="hint">drag to pan · scroll to zoom · click a face</div></div>
+</main>
+<footer id="info"><span class="note">Click a face in either view.</span></footer>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+const params = new URLSearchParams(location.search);
+const jsonUrl = params.get("json") || "../data/bowser/bowser-3d.json";
+const svgUrl = params.get("svg") || "../data/bowser/bowser.svg";
+const SVGNS = "http://www.w3.org/2000/svg";
+
+class Model {
+  constructor(data) {
+    Object.assign(this, data);
+    this.facesOf = new Map();
+    this.faces.forEach((f, i) => {
+      if (!this.facesOf.has(f.piece)) this.facesOf.set(f.piece, []);
+      this.facesOf.get(f.piece).push(i);
+    });
+  }
+  gluesOf(piece) { return this.glues.filter(g => g.piece === piece || g.tab_piece === piece); }
+  isOpen(g) { return !/^(closes|proposed, closes)$/.test(g.status); }
+}
+
+class FoldedView {
+  constructor(el, model, onPick) {
+    this.model = model; this.onPick = onPick;
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    this.renderer.setPixelRatio(devicePixelRatio);
+    el.prepend(this.renderer.domElement);
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(35, 1, 1, 20000);
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.6));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(1, 2, 3);
+    this.camera.add(sun); this.scene.add(this.camera);
+    this.buildMesh(); this.buildLines();
+    const box = new THREE.Box3().setFromObject(this.mesh), size = box.getSize(new THREE.Vector3()).length();
+    box.getCenter(this.controls.target);
+    this.camera.position.copy(this.controls.target).add(new THREE.Vector3(0, 0, size * 1.4));
+    this.controls.update();
+    this.listen(el);
+    new ResizeObserver(() => this.resize(el)).observe(el);
+    this.renderer.setAnimationLoop(() => this.renderer.render(this.scene, this.camera));
+  }
+  buildMesh() {
+    const { vertices: V, faces, pieces, colours } = this.model;
+    const pos = [], col = []; this.triFace = [];
+    faces.forEach((f, i) => {
+      for (let k = 1; k + 1 < f.v.length; k++) {
+        for (const v of [f.v[0], f.v[k], f.v[k + 1]]) pos.push(...V[v]);
+        this.triFace.push(i);
+      }
+    });
+    this.base = faces.map(f => new THREE.Color(colours[pieces[f.piece].material] || "#b3b3b3"));
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(pos.length), 3));
+    geo.computeVertexNormals();
+    this.mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, flatShading: true }));
+    this.scene.add(this.mesh);
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 1),
+      new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25 }));
+    this.scene.add(edges);
+    this.paint(null, null);
+  }
+  buildLines() {
+    const V = this.model.vertices, seg = (pairs, colour) => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.Float32BufferAttribute(pairs.flatMap(([a, b]) => [...V[a], ...V[b]]), 3));
+      const line = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: colour }));
+      this.scene.add(line); return line;
+    };
+    const css = getComputedStyle(document.documentElement);
+    // an open glue: its two ends (a meets d, b meets c) drawn across the gap
+    this.openLines = seg(this.model.glues.filter(g => this.model.isOpen(g) && !g.status.startsWith("proposed by shape"))
+      .flatMap(g => [[g.v[0], g.v[3]], [g.v[1], g.v[2]]]), css.getPropertyValue("--open").trim());
+    this.wrongLines = seg(this.model.wrong_folds, css.getPropertyValue("--wrong").trim());
+  }
+  paint(piece, face) {
+    const c = this.mesh.geometry.attributes.color, pick = new THREE.Color(0x4f8cff);
+    this.triFace.forEach((f, t) => {
+      let colour = this.base[f].clone();
+      if (f === face) colour = pick.clone();
+      else if (piece && this.model.faces[f].piece === piece) colour.lerp(pick, 0.45);
+      for (let k = 0; k < 3; k++) c.setXYZ(3 * t + k, colour.r, colour.g, colour.b);
+    });
+    c.needsUpdate = true;
+  }
+  listen(el) {
+    let down = null;
+    const canvas = this.renderer.domElement;
+    canvas.addEventListener("pointerdown", e => down = [e.clientX, e.clientY]);
+    canvas.addEventListener("pointerup", e => {
+      if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4) return;
+      const r = canvas.getBoundingClientRect(), ray = new THREE.Raycaster();
+      ray.setFromCamera(new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1), this.camera);
+      const hit = ray.intersectObject(this.mesh)[0];
+      if (hit) this.onPick(this.triFace[hit.faceIndex], "3d");
+    });
+  }
+  focus(face) {
+    const p = this.model.faces[face].v.map(v => new THREE.Vector3(...this.model.vertices[v]));
+    const centre = p.reduce((a, b) => a.add(b), new THREE.Vector3()).divideScalar(p.length);
+    this.camera.position.add(centre.clone().sub(this.controls.target));
+    this.controls.target.copy(centre); this.controls.update();
+  }
+  resize(el) {
+    const { clientWidth: w, clientHeight: h } = el;
+    this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
+  }
+}
+
+class PatternView {
+  constructor(el, model, svgText, onPick) {
+    this.el = el; this.model = model; this.onPick = onPick;
+    const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+    // the page scans and the review marks are not part of the pattern (drop them before they load)
+    doc.querySelectorAll("metadata, image").forEach(n => n.remove());
+    doc.querySelectorAll("g").forEach(g => {
+      const label = g.getAttribute("inkscape:label");
+      if (label === "Source" || label === "Review") g.remove();
+    });
+    this.svg = document.importNode(doc.documentElement, true);
+    this.svg.removeAttribute("width"); this.svg.removeAttribute("height");
+    this.svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    el.prepend(this.svg);
+    this.full = this.svg.getAttribute("viewBox").split(/[\s,]+/).map(Number);
+    this.view = [...this.full];
+    this.overlay = document.createElementNS(SVGNS, "g");
+    this.polys = model.faces.map((f, i) => {
+      const p = document.createElementNS(SVGNS, "polygon");
+      p.setAttribute("points", f.flat.map(xy => xy.join(",")).join(" "));
+      p.setAttribute("fill", "transparent"); p.setAttribute("stroke", "none");
+      p.dataset.face = i; this.overlay.append(p); return p;
+    });
+    this.svg.append(this.overlay);
+    this.listen();
+  }
+  paint(piece, face) {
+    this.polys.forEach((p, i) => {
+      const mine = piece && this.model.faces[i].piece === piece;
+      p.setAttribute("fill", i === face ? "#1f6feb88" : mine ? "#1f6feb33" : "transparent");
+      p.setAttribute("stroke", i === face ? "#1f6feb" : "none");
+      p.setAttribute("stroke-width", "0.6");
+    });
+  }
+  focus(piece) {
+    const xs = [], ys = [];
+    for (const i of this.model.facesOf.get(piece)) for (const [x, y] of this.model.faces[i].flat) { xs.push(x); ys.push(y); }
+    const w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys), pad = 0.4 * Math.max(w, h, 40);
+    this.setView([Math.min(...xs) - pad, Math.min(...ys) - pad, w + 2 * pad, h + 2 * pad]);
+  }
+  setView(v) { this.view = v; this.svg.setAttribute("viewBox", v.join(" ")); }
+  toSvg(e) {
+    const r = this.svg.getBoundingClientRect(), s = Math.max(this.view[2] / r.width, this.view[3] / r.height);
+    const ox = this.view[0] + this.view[2] / 2 - (r.width / 2) * s, oy = this.view[1] + this.view[3] / 2 - (r.height / 2) * s;
+    return [ox + (e.clientX - r.left) * s, oy + (e.clientY - r.top) * s, s];
+  }
+  listen() {
+    let drag = null;
+    this.el.addEventListener("wheel", e => {
+      e.preventDefault();
+      const [x, y] = this.toSvg(e), k = Math.exp(e.deltaY * 0.0015), [vx, vy, vw, vh] = this.view;
+      this.setView([x - (x - vx) * k, y - (y - vy) * k, vw * k, vh * k]);
+    }, { passive: false });
+    this.el.addEventListener("pointerdown", e => {
+      drag = { x: e.clientX, y: e.clientY, view: [...this.view], moved: false, s: this.toSvg(e)[2] };
+      this.el.setPointerCapture(e.pointerId);
+    });
+    this.el.addEventListener("pointermove", e => {
+      if (!drag) return;
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (Math.hypot(dx, dy) > 4) { drag.moved = true; this.el.classList.add("dragging"); }
+      if (drag.moved) this.setView([drag.view[0] - dx * drag.s, drag.view[1] - dy * drag.s, drag.view[2], drag.view[3]]);
+    });
+    this.el.addEventListener("pointerup", e => {
+      this.el.classList.remove("dragging");
+      if (drag && !drag.moved) {
+        this.el.releasePointerCapture(e.pointerId);
+        const hit = document.elementsFromPoint(e.clientX, e.clientY).find(n => n.dataset && n.dataset.face !== undefined);
+        if (hit) this.onPick(Number(hit.dataset.face), "svg");
+      }
+      drag = null;
+    });
+    this.el.addEventListener("dblclick", () => this.setView([...this.full]));
+  }
+}
+
+class Viewer {
+  constructor(model, svgText) {
+    this.model = model;
+    const pick = (face, from) => this.select(face, from);
+    this.folded = new FoldedView(document.getElementById("three"), model, pick);
+    this.pattern = new PatternView(document.getElementById("pattern"), model, svgText, pick);
+    const open = model.glues.filter(g => model.isOpen(g) && !g.status.startsWith("proposed by shape")).length;
+    document.getElementById("title").textContent = `Folded model · ${model.source}`;
+    document.getElementById("stats").textContent =
+      `${model.faces.length} faces · ${model.glues.length - open} of ${model.glues.length} glues close · ${model.wrong_folds.length} folds bent the wrong way`;
+    for (const [id, line] of [["show-open", this.folded.openLines], ["show-wrong", this.folded.wrongLines]])
+      document.getElementById(id).addEventListener("change", e => line.visible = e.target.checked);
+  }
+  select(face, from) {
+    const f = this.model.faces[face];
+    this.folded.paint(f.piece, face); this.pattern.paint(f.piece, face);
+    if (from === "3d") this.pattern.focus(f.piece); else this.folded.focus(face);
+    this.describe(f);
+  }
+  describe(f) {
+    const piece = this.model.pieces[f.piece];
+    const glues = this.model.gluesOf(f.piece).sort((a, b) => this.model.isOpen(b) - this.model.isOpen(a) || b.gap_mm - a.gap_mm);
+    const info = document.getElementById("info");
+    info.innerHTML = "";
+    const h = document.createElement("h2");
+    h.textContent = `${f.piece} · face ${f.id.split("/")[1]} · ${piece.material} cardstock`;
+    info.append(h);
+    if (piece.inspect) {
+      const p = document.createElement("div"); p.className = "note"; p.textContent = `To check: ${piece.inspect}`; info.append(p);
+    }
+    const ul = document.createElement("ul");
+    for (const g of glues) {
+      const li = document.createElement("li"), other = g.piece === f.piece ? g.tab_piece : g.piece;
+      li.textContent = `${g.number} with ${other}: ${g.status}${this.model.isOpen(g) ? ` (${g.gap_mm} mm)` : ""}`;
+      if (this.model.isOpen(g)) li.className = "open";
+      ul.append(li);
+    }
+    info.append(ul);
+  }
+}
+
+try {
+  const [data, svgText] = await Promise.all([
+    fetch(jsonUrl).then(r => { if (!r.ok) throw new Error(`${jsonUrl}: ${r.status}`); return r.json(); }),
+    fetch(svgUrl).then(r => { if (!r.ok) throw new Error(`${svgUrl}: ${r.status}`); return r.text(); }),
+  ]);
+  window.viewer = new Viewer(new Model(data), svgText);
+} catch (err) {
+  document.querySelector("main").innerHTML = `<div id="error">Could not load the model: ${err.message}.
+    Run <code>make -f fold3d.mk view</code> and open the address it prints.</div>`;
+}
+</script>
+</body>
+</html>
