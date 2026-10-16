@@ -55,6 +55,7 @@ website:
       - section: "Guide"
         contents:
           - usage.qmd
+          - method.qmd
       - section: "Results"
         contents:
           - sheets.qmd
