@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+     xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+     width="3.9370in" height="1.9685in" viewBox="0 0 100.000 50.000">
+<title>sample</title>
+<sodipodi:namedview inkscape:document-units="mm">
+<inkscape:page id="page-01" inkscape:label="Page 01 · Red cardstock" x="0.000" y="0.000" width="40.000" height="50.000"/>
+<inkscape:page id="page-02" inkscape:label="Page 02 · Black cardstock" x="60.000" y="0.000" width="40.000" height="50.000"/>
+</sodipodi:namedview>
+<g id="source" inkscape:groupmode="layer" inkscape:label="Source" sodipodi:insensitive="true" opacity="0.35">
+</g>
+<g id="pieces" inkscape:groupmode="layer" inkscape:label="Pieces">
+<g id="material-red" inkscape:groupmode="layer" inkscape:label="Red cardstock">
+<g id="piece-01-01" inkscape:label="piece-01-01 ⚠ check numbers" data-material="red">
+<g id="piece-01-01-cut" inkscape:label="Cut" data-operation="cut" style="fill:none;stroke:#000000;stroke-width:0.25">
+<path d="M 5.000,5.000 35.000,5.000 35.000,40.000 5.000,40.000 Z"/>
+<path d="M 15.000,15.000 25.000,15.000 25.000,25.000 15.000,25.000 Z"/>
+</g>
+<g id="piece-01-01-score" inkscape:label="Score" data-operation="score">
+<g id="piece-01-01-mountain" inkscape:label="Mountain folds" data-fold="mountain" style="fill:none;stroke:#1f5fbf;stroke-width:0.25;stroke-dasharray:2.5,0.8,0.4,0.8">
+<path d="M 5.000,30.000 35.000,30.000"/>
+</g>
+<g id="piece-01-01-valley" inkscape:label="Valley folds" data-fold="valley" style="fill:none;stroke:#2e8b57;stroke-width:0.25;stroke-dasharray:1.5,1">
+<path d="M 30.000,30.000 30.000,40.000" data-review="unsnapped"/>
+</g>
+</g>
+<g id="piece-01-01-draw" inkscape:label="Draw" data-operation="draw" style="fill:#8e24aa;stroke:none;font-family:Arial,sans-serif;font-weight:bold;text-anchor:middle">
+<text x="20.000" y="38.000" font-size="2.00" dominant-baseline="central" transform="rotate(0.0 20.000 38.000)">558</text>
+<text x="33.000" y="20.000" font-size="2.00" dominant-baseline="central" transform="rotate(90.0 33.000 20.000)" fill="#e65100" data-review="ocr">12</text>
+</g>
+</g>
+</g>
+<g id="material-black" inkscape:groupmode="layer" inkscape:label="Black cardstock">
+<g id="piece-02-01" inkscape:label="piece-02-01" data-material="black">
+<g id="piece-02-01-cut" inkscape:label="Cut" data-operation="cut" style="fill:none;stroke:#000000;stroke-width:0.25">
+<path d="M 65.000,5.000 95.000,5.000 95.000,20.000 65.000,20.000 Z"/>
+</g>
+<g id="piece-02-01-score" inkscape:label="Score" data-operation="score">
+<g id="piece-02-01-mountain" inkscape:label="Mountain folds" data-fold="mountain" style="fill:none;stroke:#1f5fbf;stroke-width:0.25;stroke-dasharray:2.5,0.8,0.4,0.8">
+</g>
+<g id="piece-02-01-valley" inkscape:label="Valley folds" data-fold="valley" style="fill:none;stroke:#2e8b57;stroke-width:0.25;stroke-dasharray:1.5,1">
+<path d="M 65.000,15.000 95.000,15.000"/>
+</g>
+</g>
+<g id="piece-02-01-draw" inkscape:label="Draw" data-operation="draw" style="fill:#8e24aa;stroke:none;font-family:Arial,sans-serif;font-weight:bold;text-anchor:middle">
+<text x="80.000" y="7.000" font-size="2.00" dominant-baseline="central" transform="rotate(180.0 80.000 7.000)">558</text>
+</g>
+</g>
+</g>
+</g>
+<g id="review" inkscape:groupmode="layer" inkscape:label="Review" style="display:none">
+</g>
+</svg>

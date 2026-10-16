@@ -1,0 +1,4 @@
+number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corrected,partner_piece,partner_side,partner_length_mm,length_diff_mm,status,line_mm,checks
+558,piece-01-01,edge,30.0,20.0,38.0,yes,100,,,piece-02-01,tab,30.0,0.0,ok,5.0 40.0 35.0 40.0,
+558,piece-02-01,tab,30.0,20.0,7.0,yes,100,,,piece-01-01,edge,30.0,0.0,ok,65.0 5.0 95.0 5.0,
+12,piece-01-01,edge,35.0,33.0,20.0,no,60,,,,,,,unpaired,35.0 5.0 35.0 40.0,
