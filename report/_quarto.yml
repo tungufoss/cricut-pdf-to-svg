@@ -35,6 +35,8 @@ website:
         href: install.qmd
       - text: Guide
         href: usage.qmd
+      - text: Method
+        href: method.qmd
       - text: Results
         href: sheets.qmd
       - text: Reference
@@ -55,6 +57,8 @@ website:
       - section: "Guide"
         contents:
           - usage.qmd
+      - section: "Method"
+        contents:
           - method.qmd
       - section: "Results"
         contents:

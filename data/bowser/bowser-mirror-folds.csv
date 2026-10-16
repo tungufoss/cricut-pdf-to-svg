@@ -1,15 +1,6 @@
-piece,twin,kind,ax_mm,ay_mm,bx_mm,by_mm
-piece-04-07,piece-05-07,mountain,166.82,187.2,158.43,193.44
-piece-07-07,piece-07-01,valley,68.15,134.61,52.45,194.21
-piece-07-01,piece-07-07,valley,44.86,9.88,25.86,68.04
-piece-17-01,piece-16-02,mountain,80.5,85.64,61.52,48.42
-piece-17-01,piece-16-02,valley,60.07,20.86,52.15,30.09
-piece-16-02,piece-17-01,mountain,156.53,32.11,128.57,87.8
-piece-17-03,piece-16-03,mountain,14.76,159.7,8.0,173.46
-piece-18-03,piece-19-04,valley,55.19,15.82,33.38,30.12
-piece-18-05,piece-19-05,mountain,107.91,214.47,101.9,230.36
-piece-17-09,piece-16-10,valley,27.2,248.64,10.92,248.48
-piece-16-10,piece-17-09,valley,199.27,203.55,193.4,229.31
-piece-16-10,piece-17-09,valley,200.57,250.03,197.72,273.18
-piece-10-04,piece-10-02,valley,130.54,33.05,124.26,1.13
-piece-10-02,piece-10-04,mountain,189.3,107.13,189.67,166.15
+piece,twin,issue,kind,ax_mm,ay_mm,bx_mm,by_mm
+piece-07-07,piece-07-01,style differs,mountain,7.16,227.07,13.69,215.99
+piece-17-01,piece-16-02,missing,mountain,80.5,85.64,79.86,83.17
+piece-18-03,piece-19-04,missing,mountain,55.19,15.82,56.85,28.36
+piece-24-09,piece-24-03,style differs,valley,111.46,122.41,111.75,99.16
+piece-17-09,piece-16-10,style differs,valley,27.2,248.64,10.92,248.48

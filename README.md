@@ -4,11 +4,12 @@ Turns low poly papercraft PDF templates into one Inkscape SVG, ready for review 
 
 ```sh
 make install   # Python deps; also needs Poppler (pdftoppm) and Tesseract
-make           # data/bowser/bowser.pdf -> data/bowser/bowser.svg
+make           # data/example/example.pdf -> data/example/example.svg (a synthetic template)
+make CONFIG=/path/to/data/<model>/<model>.yaml   # your own template
 make report    # results site in report/_site (needs Quarto and R with tidyverse, xml2, DT)
 ```
 
-The source PDF stays local in `data/` and is not committed.
+Your own source PDFs stay local and are not committed; only the synthetic example is.
 
 Everything else, from the pipeline stages and reviewing in Inkscape to sheet-by-sheet results and the glue-pair check, is on the project site: <https://tungufoss.github.io/lowpoly-pdf-to-svg/> (built from `report/`).
 

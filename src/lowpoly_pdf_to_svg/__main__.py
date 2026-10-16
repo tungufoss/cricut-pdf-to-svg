@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 import datetime
 import pickle
 import shutil
@@ -12,7 +13,7 @@ from pathlib import Path
 
 from .config import Project
 from .checks import TraceChecks
-from .corrections import Correction, Corrections, LineFixes, PieceFixes
+from .corrections import FOLD_MM, Correction, Corrections, LineFixes, PieceFixes
 from .detect import PageDetector
 from .edges import EdgeTable
 from .ocr import EdgeNumberReader, read_paper
@@ -23,7 +24,7 @@ from .symmetry import Symmetry
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Trace papercraft PDF pages into Cricut-oriented SVGs.")
-    parser.add_argument("--config", type=Path, default=Path("data/bowser/bowser.yaml"), help="project YAML manifest")
+    parser.add_argument("--config", type=Path, default=Path("data/example/example.yaml"), help="project YAML manifest")
     parser.add_argument("--output", type=Path, help="output directory (default: the YAML's folder)")
     parser.add_argument("--dpi", type=int, default=180, help="PDF render resolution (default: 180)")
     parser.add_argument("--page", type=int, action="append", help="convert only this 1-based page; repeatable")
@@ -93,16 +94,29 @@ def main() -> int:
         applied, missed = corrections.apply([(layout, page.mm_per_px) for page, layout, _ in results])
         print(f"applied {applied} hand corrections" + (f", {len(missed)} matched no number: "
               + ", ".join(f"{c.piece} {c.read}->{c.number}" for c in missed) if missed else ""))
-    # Folds added or dropped and corners moved on the piece review; the numbers on those pieces look for their line again.
+    # Folds added or dropped and corners moved on the piece review, then every piece tidied (near points
+    # merged, overlapping lines split); numbers on changed pieces look for their line again.
     piece_fixes = PieceFixes.load(output / f"{project.name}-pieces.csv")
-    if piece_fixes.rows:
-        changed, missed = piece_fixes.apply([(layout, page.mm_per_px) for page, layout, _ in results])
-        for page, layout, _ in results:
-            for piece in layout.pieces:
-                if piece.id in changed:
-                    for label in piece.labels:
-                        detector._mark_edge(label, piece, 1 / page.mm_per_px)
-        print(f"changed {len(changed)} pieces by hand (folds, corners)" + (f", {len(missed)} rows matched no fold or corner" if missed else ""))
+    page_of = {piece.id: page for page, layout, _ in results for piece in layout.pieces}
+    changed, missed = piece_fixes.apply([(layout, page.mm_per_px) for page, layout, _ in results],
+                                        lambda piece, a, b: detector.fold_kind(page_of[piece], a, b))
+    # Corners the folded 3D model says are slightly off (written by the 3D thread); a corner Helga
+    # moved by hand keeps her position.
+    nudges = PieceFixes.load(output / f"{project.name}-3d-moves.csv")
+    if nudges.rows:
+        hand = [(r.piece, p) for r in piece_fixes.rows if r.action == "move" for p in (r.a, r.b)]
+        nudges.rows = [r for r in nudges.rows
+                       if not any(piece == r.piece and math.dist(p, r.a) <= FOLD_MM for piece, p in hand)]
+        nudged, unmatched = nudges.apply([(layout, page.mm_per_px) for page, layout, _ in results])
+        changed |= nudged
+        print(f"moved {len(nudges.rows) - len(unmatched)} corners on {len(nudged)} pieces from the 3D fold"
+              + (f", {len(unmatched)} matched no corner" if unmatched else ""))
+    for page, layout, _ in results:
+        for piece in layout.pieces:
+            if piece.id in changed:
+                for label in piece.labels:
+                    detector._mark_edge(label, piece, 1 / page.mm_per_px)
+    print(f"changed {len(changed)} pieces by hand or from the 3D fold (folds, corners)" + (f", {len(missed)} rows matched no fold or corner" if missed else ""))
     lines = LineFixes.load(output / f"{project.name}-lines.csv")
     if lines.rows:
         applied, missed = lines.apply([(layout, page.mm_per_px) for page, layout, _ in results])
@@ -157,13 +171,20 @@ def main() -> int:
     mirrors = output / f"{project.name}-mirrors.csv"
     off = symmetry.write(mirrors, records)
     print(f"Wrote {mirrors}: {off} lines differ in length from their mirror line")
-    gaps = symmetry.fold_gaps()
+    # a fold Helga removed by hand is not suggested again from the twin
+    dropped = [(r.piece, r.a, r.b) for r in piece_fixes.rows if r.action == "drop"]
+    undone = lambda g: any(piece == g["piece"] and min(
+        math.dist(a, (g["ax_mm"], g["ay_mm"])) + math.dist(b, (g["bx_mm"], g["by_mm"])),
+        math.dist(b, (g["ax_mm"], g["ay_mm"])) + math.dist(a, (g["bx_mm"], g["by_mm"]))) <= 4.0
+        for piece, a, b in dropped)
+    gaps = [g for g in symmetry.fold_gaps() if not (g["issue"] == "missing" and undone(g))]
     with (output / f"{project.name}-mirror-folds.csv").open("w", newline="", encoding="utf-8") as handle:
-        table_out = csv.DictWriter(handle, ["piece", "twin", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm"])
+        table_out = csv.DictWriter(handle, ["piece", "twin", "issue", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm"])
         table_out.writeheader()
         table_out.writerows(gaps)
-    print(f"Wrote {output / (project.name + '-mirror-folds.csv')}: {len(gaps)} folds whose mirror twin has them "
-          f"on {len({g['piece'] for g in gaps})} pieces")
+    missing = [g for g in gaps if g["issue"] == "missing"]
+    print(f"Wrote {output / (project.name + '-mirror-folds.csv')}: {len(missing)} folds whose mirror twin has them "
+          f"on {len({g['piece'] for g in missing})} pieces, {len(gaps) - len(missing)} mirror folds in another style")
     print(f"Wrote {output / (project.name + '-misreads.csv')}: {len(misreads)} likely misreads left to check")
     table.write_report(output / "README.md", project.name, datetime.date.today().isoformat(), applied=len(sure),
                        symmetry=(symmetry, off))
