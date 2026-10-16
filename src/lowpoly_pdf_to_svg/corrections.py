@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import collections
 import csv
+import math
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -134,7 +135,9 @@ class LineFixes:
 
 
 PIECE_COLUMNS = ["piece", "action", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm", "note"]
-FOLD_MM = 1.0          # a dropped fold is the traced fold whose two ends lie this close to the row's
+MERGE_MM = 0.8         # corners and fold ends closer than this are one point
+ON_LINE_MM = 0.5       # a point this close to a fold, away from its ends, splits it there
+FOLD_MM = 1.5          # a dropped fold is the traced fold whose two ends lie this close to the row's
 
 
 @dataclass
@@ -208,4 +211,49 @@ class PieceFixes:
                     continue
                 piece.folds = keep
             changed.add(piece.id)
+        for piece_id, (piece, mm) in pieces.items():
+            before = (len(piece.outline), len(piece.folds))
+            self.tidy(piece, mm)
+            if (len(piece.outline), len(piece.folds)) != before:
+                changed.add(piece_id)
         return changed, missed
+
+    @staticmethod
+    def tidy(piece, mm: float) -> None:
+        """Clean a piece after hand edits: corners and fold ends that (nearly) coincide become one
+        point, a fold with another point on it is split there, and folds that then repeat each
+        other or run along the cut are dropped, so no two lines overlap."""
+        merge, on_line = MERGE_MM / mm, ON_LINE_MM / mm
+        close = lambda p, q: math.dist(p, q) <= merge
+        outline = []
+        for p in piece.outline:
+            if not outline or not close(p, outline[-1]):
+                outline.append(tuple(p))
+        while len(outline) > 3 and close(outline[0], outline[-1]):
+            outline.pop()
+        piece.outline = outline
+        points = list(outline)
+        snap = lambda p: next((q for q in points if close(p, q)), None) or (points.append(tuple(p)) or tuple(p))
+        folds = [(snap(f.a), snap(f.b), f) for f in piece.folds]
+        parts = []
+        for a, b, fold in folds:
+            if a == b:
+                continue
+            length = math.dist(a, b)
+            u = ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
+            cuts = sorted({t for p in points
+                           for t in [(p[0] - a[0]) * u[0] + (p[1] - a[1]) * u[1]]
+                           if merge < t < length - merge and abs((p[0] - a[0]) * u[1] - (p[1] - a[1]) * u[0]) <= on_line})
+            stops = [a] + [next(p for p in points if abs((p[0] - a[0]) * u[0] + (p[1] - a[1]) * u[1] - t) < 1e-6
+                                and abs((p[0] - a[0]) * u[1] - (p[1] - a[1]) * u[0]) <= on_line) for t in cuts] + [b]
+            parts += [(p, q, fold.kind) for p, q in zip(stops, stops[1:])]
+        kept, seen = [], set()
+        n = len(outline)
+        sides = {frozenset((outline[i], outline[(i + 1) % n])) for i in range(n)}
+        for p, q, kind in parts:
+            key = frozenset((p, q))
+            if key in seen or key in sides:
+                continue
+            seen.add(key)
+            kept.append(Fold(p, q, kind))
+        piece.folds = kept
