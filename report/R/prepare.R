@@ -16,7 +16,7 @@ out <- Sys.getenv("REPORT_OUT", "../data/bowser")
 project <- Sys.getenv("REPORT_PROJECT", basename(out))
 gen <- "generated"
 svg_path <- file.path(out, paste0(project, ".svg"))
-edges_path <- file.path(out, paste0(project, "-edges.csv"))
+edges_path <- file.path(out, "edge-numbers.csv")
 summary_md <- file.path(out, "README.md")
 
 unlink(gen, recursive = TRUE)
@@ -75,7 +75,7 @@ write_sheet <- function(page, x, y, width, height, ...) {
 
 sources <- list.files(file.path(out, "previews"), pattern = "\\.png$", full.names = TRUE)
 source_for <- function(page) {
-  hit <- str_subset(sources, sprintf("-page-%02d-", page))
+  hit <- str_subset(sources, sprintf("page-%02d-", page))
   if (length(hit) == 0) return(NA_character_)
   dest <- file.path(gen, "sheets", basename(hit[1]))
   file.copy(hit[1], dest)

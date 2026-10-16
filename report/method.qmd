@@ -17,18 +17,18 @@ suppressPackageStartupMessages({
 })
 data_dir <- "../data/bowser"
 read_if <- function(name, ...) {
-  path <- file.path(data_dir, paste0("bowser-", name, ".csv"))
+  path <- file.path(data_dir, paste0(name, ".csv"))
   if (file.exists(path)) read_csv(path, na = c("", "NA"), show_col_types = FALSE, ...)
 }
 as_text <- cols(.default = col_character())
-edges <- read_if("edges", col_types = as_text) |> mutate(across(c(length_mm, ocr_conf), as.numeric))
-misreads <- read_if("misreads", col_types = as_text)
-corrections <- read_if("corrections", col_types = as_text)
-mirrors <- read_if("mirrors", col_types = as_text)
-checks <- read_if("checks", col_types = as_text)
-glue <- read_if("3d-glue", col_types = as_text)
-pieces_fix <- read_if("pieces", col_types = as_text)
-lines_fix <- read_if("lines", col_types = as_text)
+edges <- read_if("edge-numbers", col_types = as_text) |> mutate(across(c(length_mm, ocr_conf), as.numeric))
+misreads <- read_if("number-misreads", col_types = as_text)
+corrections <- read_if("number-corrections", col_types = as_text)
+mirrors <- read_if("mirror-mismatches", col_types = as_text)
+checks <- read_if("trace-faults", col_types = as_text)
+glue <- read_if("fold3d-glue", col_types = as_text)
+pieces_fix <- read_if("piece-edits", col_types = as_text)
+lines_fix <- read_if("number-lines", col_types = as_text)
 have <- !is.null(edges)
 ```
 
@@ -101,15 +101,15 @@ reading, so nothing has to be corrected twice.
 
 | file | holds | matched by |
 |---|---|---|
-| `bowser-corrections.csv` | what a number should say (or that it is not a number) | the nearest mark on that piece, within 2 mm |
-| `bowser-pieces.csv` | folds added or dropped, corners moved | the nearest fold or corner |
-| `bowser-lines.csv` | the line a number marks, drawn by hand | the number's mark |
+| `number-corrections.csv` | what a number should say (or that it is not a number) | the nearest mark on that piece, within 2 mm |
+| `piece-edits.csv` | folds added or dropped, corners moved | the nearest fold or corner |
+| `number-lines.csv` | the line a number marks, drawn by hand | the number's mark |
 
 After a piece changes, its numbers look for their lines again.
 
 ### 5 Joint repair
 
-Each edge number is now checked against its partner. The edge table (`bowser-edges.csv`)
+Each edge number is now checked against its partner. The edge table (`edge-numbers.csv`)
 gives every number one status: *ok* (one plain edge and one tab, lengths within 1 mm),
 *unpaired*, *length mismatch*, *no tab*, *both tabs* or *extra copy*. Two kinds of evidence then
 fix numbers without asking.
@@ -173,7 +173,7 @@ if (have) {
 
 The aim is that the person spends time only where the program is unsure, and that each answer
 improves later reads as well as fixing this one. The review happens on one local page,
-`app/number-check.html`. `make fix` writes its data (`bowser-check.json`, with crops of the scan,
+`app/number-check.html`. `make fix` writes its data (`check-page.json`, with crops of the scan,
 which stays local because the pattern is personal-use only). The page opens the model folder and
 saves straight back into it.
 

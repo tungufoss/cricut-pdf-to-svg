@@ -1,6 +1,6 @@
 """Stage 2b': edge numbers fixed by hand.
 
-data/<project>/<project>-corrections.csv lists, per number, the piece, where the
+data/<project>/number-corrections.csv lists, per number, the piece, where the
 number sits on its page (mm) and what it should say. The fix page (`make fix`)
 writes this file; every build applies it after OCR, so a number corrected once
 stays corrected. A row is matched to the label of that piece nearest its position.
@@ -105,7 +105,7 @@ class LineFix:
 
 
 class LineFixes:
-    """data/<project>/<project>-lines.csv: hand-drawn lines that replace what tracing found for a number."""
+    """data/<project>/number-lines.csv: hand-drawn lines that replace what tracing found for a number."""
 
     def __init__(self, rows: list[LineFix]):
         self.rows = rows
@@ -164,7 +164,7 @@ class PieceFix:
 
 
 class PieceFixes:
-    """data/<project>/<project>-pieces.csv: folds added or dropped and corners moved by hand, piece by piece."""
+    """data/<project>/piece-edits.csv: folds added or dropped and corners moved by hand, piece by piece."""
 
     def __init__(self, rows: list[PieceFix]):
         self.rows = rows
