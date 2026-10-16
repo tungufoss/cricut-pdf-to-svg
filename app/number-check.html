@@ -79,9 +79,10 @@ const csvField = v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""
 function start(data, corrections, drawn = [], reviewed = []) {
   D = data; saved = corrections; store = "fix-" + D.project; answers = {}; lines = {}; pieceFixes = {}; order = null;
   for (const r of reviewed) {
-    const f = pieceFixes[r.piece] ??= {ok: false, add: [], drop: [], move: [], note: "", log: []};
+    const f = pieceFixes[r.piece] ??= {ok: false, add: [], drop: [], move: [], note: "", log: [], numbers: []};
     if (r.action === "ok") f.ok = true;
     else if (r.action === "note") f.note = r.note;
+    else if (r.action === "number") f.numbers.push({x: +r.ax_mm, y: +r.ay_mm, number: r.kind});
     else if (r.action === "move") f.move.push({a: [+r.ax_mm, +r.ay_mm], b: [+r.bx_mm, +r.by_mm]});
     else (r.action === "add" ? f.add : f.drop).push({kind: r.kind, a: [+r.ax_mm, +r.ay_mm], b: [+r.bx_mm, +r.by_mm]});
   }
@@ -290,7 +291,7 @@ function card(c) {
 // Piece review: one whole piece at a time, those needing the most work first (shuffled among
 // equals). Click two points to add a fold the trace missed; in remove mode click a fold to drop
 // it; click a number to correct it. OK saves into the folder and moves to the next piece.
-const fixOf = id => { const f = pieceFixes[id] ??= {ok: false, add: [], drop: []}; f.move ??= []; f.note ??= ""; f.log ??= []; return f; };
+const fixOf = id => { const f = pieceFixes[id] ??= {ok: false, add: [], drop: []}; f.move ??= []; f.note ??= ""; f.log ??= []; f.numbers ??= []; return f; };
 const movedIn = (f, c) => { const m = (f.move || []).find(m => Math.hypot(m.a[0] - c[0], m.a[1] - c[1]) < 0.3); return m ? m.b : c; };
 const segDist = (q, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy || 1;
   const t = Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / l));
@@ -317,6 +318,8 @@ function reviewPiece(list) {
     return Math.min(Math.hypot(a[0] - g[0], a[1] - g[1]) + Math.hypot(b[0] - g[2], b[1] - g[3]),
                     Math.hypot(a[0] - g[2], a[1] - g[3]) + Math.hypot(b[0] - g[0], b[1] - g[1])) < 0.5; };
   const isDropped = i => f.drop.some(d => same(d, folds[i]));
+  // Folds the mirror twin has here and this piece lacks, not yet added.
+  const pending = (q.suggest || []).filter(g => !f.add.some(h => same({a: h.a, b: h.b}, [...g.a, ...g.b])));
   const el = document.createElement("div");
   el.className = "card review";
   el.innerHTML = `<div class="scan"><img src="${q.image}" alt="scan of ${q.piece}">
@@ -325,15 +328,22 @@ function reviewPiece(list) {
       ${t.folds.map((g, i) => `<line class="${isDropped(i) ? "dropped" : "fold"}" x1="${folds[i][0]}" y1="${folds[i][1]}" x2="${folds[i][2]}" y2="${folds[i][3]}" stroke-dasharray="${r * 3} ${r * 1.5}" style="stroke-width:${r * 1.1}"/>`).join("")}
       ${f.add.map(g => `<line class="added" x1="${g.a[0]}" y1="${g.a[1]}" x2="${g.b[0]}" y2="${g.b[1]}" stroke-dasharray="${g.kind === "mountain" ? `${r * 4} ${r * 1.5} ${r} ${r * 1.5}` : `${r * 3} ${r * 1.5}`}" style="stroke-width:${r * 1.6}"/>`).join("")}
       ${outline.map((c, i) => `<circle class="corner" data-i="${i}" cx="${c[0]}" cy="${c[1]}" r="${r * (mode === "move" ? 2.6 : 1.6)}" style="stroke-width:${r * 0.6}${f.move.some(m => m.b === c) ? ";fill:#c000ff" : ""}"/>`).join("")}
+      ${pending.map((g, i) => `<line class="suggest" data-s="${i}" x1="${g.a[0]}" y1="${g.a[1]}" x2="${g.b[0]}" y2="${g.b[1]}" stroke="#ff7800" stroke-opacity=".8" stroke-dasharray="${r * 2} ${r * 2}" style="stroke-width:${r * 2.2}"/>`).join("")}
+      ${q.labels.map(l => { const gone = answers[`${q.piece}@${l.x},${l.y}`] === "x";
+        return `<g class="label" data-k="${l.x},${l.y}"><circle cx="${l.x}" cy="${l.y}" r="${r * 6}" fill="${gone ? "#e00000" : "#5060d0"}" fill-opacity=".12" stroke="${gone ? "#e00000" : "#5060d0"}" style="stroke-width:${r * 0.7}"/>
+          ${gone ? `<text x="${l.x}" y="${+l.y + r * 3}" text-anchor="middle" font-size="${r * 9}" fill="#e00000">✕</text>` : ""}</g>`; }).join("")}
+      ${f.numbers.map((n, i) => `<g class="newnum" data-n="${i}"><circle cx="${n.x}" cy="${n.y}" r="${r * 6}" fill="#c000ff" fill-opacity=".15" stroke="#c000ff" style="stroke-width:${r * 0.7}"/>
+          <text class="num" x="${n.x}" y="${n.y + r * 3}" text-anchor="middle" font-size="${r * 8}" fill="#c000ff" style="stroke-width:${r * 1.5}">${n.number}</text></g>`).join("")}
       <g class="clicks"></g>
     </svg></div>
     <div class="side"><div><span class="read">${q.piece}</span> <span class="meta">${t.outline.length} corners, ${t.folds.length} traced folds${f.ok ? " · reviewed" : ""}</span></div>
       <div class="meta">${q.why.length ? q.why.map(w => `<div class="hint">${w}</div>`).join("") : "Nothing flagged; check the corners and folds look complete."}</div>
-      <div class="tools"><button data-m="add">Add fold</button><select><option value="valley">valley (dashed)</option><option value="mountain">mountain (dash-dot)</option></select><button data-m="drop">Remove fold</button><button data-m="move">Move corner</button></div>
+      <div class="tools"><button data-m="add">Add fold</button><select><option value="valley">valley (dashed)</option><option value="mountain">mountain (dash-dot)</option></select><button data-m="drop">Remove fold</button><button data-m="move">Move corner</button><button data-m="number">Numbers</button></div>
+      ${pending.length ? `<div class="tools"><button data-a="twin">Add the twin's ${pending.length} fold${pending.length > 1 ? "s" : ""}</button></div>` : ""}
       <div class="meta how"></div>
       <label class="meta">Note for edits the page cannot make<textarea rows="3" style="width:100%;font:inherit">${f.note.replace(/</g, "&lt;")}</textarea></label>
       <div class="tools"><button data-a="undo">Undo</button><button data-a="back">← Back</button><button data-a="skip">Skip</button><button class="next" data-a="ok">OK → next</button></div>
-      <div class="meta">Green dashes are traced folds, purple ones you added, red ones you removed; purple corners you moved. Enter = OK.</div></div>`;
+      <div class="meta">Green dashes are traced folds, purple ones you added, red ones you removed, orange ones the mirror twin has (click one to add it); purple corners you moved. Enter = OK.</div></div>`;
   list.appendChild(el);
   const svg = el.querySelector("svg"), clicks = el.querySelector(".clicks"), how = el.querySelector(".how");
   const kind = el.querySelector("select");
@@ -341,7 +351,8 @@ function reviewPiece(list) {
   el.querySelector("textarea").addEventListener("input", e => { f.note = e.target.value; remember(); });
   const HOW = {add: "Click the two ends of the missing fold; ends snap to blue corners (Shift places freely).",
     drop: "Click a fold to remove it, or a purple one to take it back.",
-    move: "Drag a blue corner to where the printed cut really turns; its folds follow."};
+    move: "Drag a blue corner to where the printed cut really turns; its folds follow.",
+    number: "Click a circled number to remove it (not a number), or an empty spot to add a number the reader missed."};
   const setMode = (m, redraw) => { mode = m; if (redraw) { changed(); return; }
     el.querySelectorAll("[data-m]").forEach(b => b.classList.toggle("on", b.dataset.m === m)); how.textContent = HOW[m]; };
   setMode(mode);
@@ -382,6 +393,24 @@ function reviewPiece(list) {
   svg.addEventListener("click", e => {
     if (mode === "move") return;
     const p = toMM(e);
+    if (mode === "number") {
+      const label = e.target.closest(".label"), added = e.target.closest(".newnum");
+      if (added) { f.numbers.splice(+added.dataset.n, 1); changed(); return; }
+      if (label) {
+        const k = `${q.piece}@${label.dataset.k}`;
+        if (answers[k] === "x") delete answers[k]; else { answers[k] = "x"; touched.add(k); }
+        changed(); return;
+      }
+      const v = prompt("Which number is printed here? (your best guess)");
+      if (v && v.trim()) { f.numbers.push({x: +p[0].toFixed(2), y: +p[1].toFixed(2), number: v.trim()}); f.log.push("numbers"); changed(); }
+      return;
+    }
+    const reach0 = SNAP_PX * mmPerPx() * 1.5;
+    const near = points.some(c => Math.hypot(c[0] - p[0], c[1] - p[1]) <= reach0);
+    const hint = pending.findIndex(g => segDist(p, g.a, g.b) <= reach0);
+    if (mode === "add" && !picked.length && !near && hint >= 0) {
+      const g = pending[hint]; f.add.push({kind: g.kind, a: g.a, b: g.b}); f.log.push("add"); changed(); return;
+    }
     if (mode === "drop") {
       const reach = SNAP_PX * mmPerPx() * 1.5;
       const added = f.add.findIndex(g => segDist(p, g.a, g.b) <= reach);
@@ -402,6 +431,8 @@ function reviewPiece(list) {
     if (picked.length) { picked = []; clicks.innerHTML = ""; setMode(mode); return; }
     const last = f.log.pop();
     if (last) f[last].pop(); changed(); });
+  el.querySelector("[data-a=twin]")?.addEventListener("click", () => {
+    for (const g of pending) { f.add.push({kind: g.kind, a: g.a, b: g.b}); f.log.push("add"); } changed(); });
   el.querySelector("[data-a=back]").addEventListener("click", () => go(-1));
   el.querySelector("[data-a=skip]").addEventListener("click", () => go(1));
   el.querySelector("[data-a=ok]").addEventListener("click", () => { f.ok = true; remember(); save(true); go(1); });
@@ -434,6 +465,7 @@ async function save(quiet) {
   const reviewed = ["piece,action,kind,ax_mm,ay_mm,bx_mm,by_mm,note"];
   for (const [piece, f] of Object.entries(pieceFixes)) {
     for (const m of f.move || []) reviewed.push([piece, "move", "", ...m.a, ...m.b, ""].join(","));
+    for (const n of f.numbers || []) reviewed.push([piece, "number", n.number, n.x, n.y, "", "", ""].join(","));
     if (f.note) reviewed.push([piece, "note", "", "", "", "", "", csvField(f.note)].join(","));
     for (const l of f.add) reviewed.push([piece, "add", l.kind, ...l.a, ...l.b, ""].join(","));
     for (const l of f.drop) reviewed.push([piece, "drop", "", ...movedIn(f, l.a), ...movedIn(f, l.b), ""].join(","));

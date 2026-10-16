@@ -1456,7 +1456,7 @@ number,piece,side,length_mm,x_mm,y_mm,ocr_trusted,ocr_conf,ocr_alternatives,corr
 740,piece-24-14,edge,24.6,141.0,185.4,yes,95,749 760 140 769 76,,piece-18-01,tab,24.6,0.0,ok,153.3 183.0 128.9 185.5,
 741,piece-12-04,edge,16.7,51.9,48.6,no,69,744 141 761 144 161,,piece-12-05,tab,16.7,0.0,ok,55.8 56.4 51.0 40.3,
 741,piece-12-05,tab,16.7,26.3,166.8,yes,66,744 141 743 791 143,,piece-12-04,edge,16.7,0.0,ok,25.7 158.3 29.9 174.5,
-742,piece-12-04,edge,26.1,50.2,90.0,yes,96,142 749 762 149 309,,piece-12-05,tab,27.3,1.2,length mismatch,46.3 103.2 56.4 79.2,
+742,piece-12-04,edge,26.1,50.2,90.0,yes,96,142 749 762 149 309,,piece-12-05,tab,27.3,1.2,length mismatch,46.3 103.2 56.4 79.2,fold meets the cut between corners at this line's end: 1.0 mm from the nearest corner
 742,piece-12-05,tab,27.3,25.6,122.6,yes,96,142 743 762 143 659,,piece-12-04,edge,26.1,1.2,length mismatch,24.8 136.6 29.7 109.7,
 743,piece-12-03,edge,26.1,157.9,7.4,yes,81,143 748 148 713 113,,piece-12-05,tab,26.0,0.0,ok,170.7 11.7 146.8 1.1,
 743,piece-12-05,tab,26.0,26.9,96.6,yes,95,143 748 783 148 183,,piece-12-03,edge,26.1,0.0,ok,27.5 83.8 29.7 109.7,

@@ -13,7 +13,9 @@ import csv
 from dataclasses import dataclass
 from pathlib import Path
 
-from .model import Fold, FoldKind, PageLayout
+import numpy as np
+
+from .model import Fold, FoldKind, Label, PageLayout
 
 MATCH_MM = 2.0
 NOT_A_NUMBER = "x"     # the number check page's answer for marks that are no number (a fan of fold ends)
@@ -140,6 +142,7 @@ class PieceFix:
     """One answer from the piece review: `ok` (the piece was looked at), `add` (a fold the
     trace missed, with its kind), `drop` (a traced fold that is no fold) or `move` (an outline
     corner dragged from a to b, taking the folds that end there along), points in page mm.
+    A `number` row adds a number the reader missed at a (its text in `kind`).
     A `note` row carries free text for edits the page cannot make; the build leaves it alone."""
     piece: str
     action: str
@@ -162,7 +165,7 @@ class PieceFixes:
         with path.open(encoding="utf-8", newline="") as handle:
             return cls([PieceFix(r["piece"], r["action"], r.get("kind", ""),
                                  (number(r["ax_mm"]), number(r["ay_mm"])), (number(r["bx_mm"]), number(r["by_mm"])))
-                        for r in csv.DictReader(handle) if r.get("action") in ("ok", "add", "drop", "move")])
+                        for r in csv.DictReader(handle) if r.get("action") in ("ok", "add", "drop", "move", "number")])
 
     def apply(self, layouts: list[tuple[PageLayout, float]]) -> tuple[set[str], list[PieceFix]]:
         """Move corners, add and drop folds; returns (ids of pieces changed, rows that matched nothing)."""
@@ -185,7 +188,14 @@ class PieceFixes:
                 piece.outline[corners[0]] = b
                 for fold in piece.folds:
                     fold.a, fold.b = (b if near(fold.a, a) else fold.a), (b if near(fold.b, a) else fold.b)
+            elif row.action == "number":
+                height = 2.0 / mm   # printed digits are about 2 mm tall
+                box = (round(a[0] - height), round(a[1] - height / 2), round(2 * height), round(height))
+                piece.labels.append(Label(box, a, 0.0, height, np.zeros((1, 1), np.uint8), text=row.kind,
+                                          confident=True, corrected=True, elongation=1.0))
             elif row.action == "add":
+                if (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 <= (FOLD_MM / mm) ** 2:
+                    continue   # both ends on one point: a slip, not a fold
                 piece.folds.append(Fold(a, b, FoldKind(row.kind or "valley")))
             else:
                 keep = [f for f in piece.folds

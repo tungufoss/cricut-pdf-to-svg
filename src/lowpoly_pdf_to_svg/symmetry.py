@@ -8,6 +8,8 @@ variation has the same body with its glue tabs on other edges. That pairs every 
 mirror line, which gives two checks:
 
 * a line and its mirror line should be the same length; when not, one was traced off;
+* folds mirror too: a fold on one twin with nothing at its mirror place on the other is
+  likely a fold the trace missed there (fold_gaps);
 * glue pairs mirror too. If line a on piece A glues to piece C, then a's mirror line on
   A's twin glues to C's twin, at the mirror of C's line. So the number on that line
   is predicted from the clean pair on the other side.
@@ -28,6 +30,9 @@ NEAR_MM = 3.0         # a line this close to its mirror line is still the same l
 MIN_SHARE = 0.7       # share of lines that must agree for two pieces to count as twins
 EXACT_MM = 1.0        # outlines this close (RMS, tabs included) make an exact mirror
 SAMPLES = 96          # outline points compared for exact mirrors
+FIT_MM = 1.5          # twins whose matched lines map onto each other this closely (RMS) can compare folds
+FOLD_MM = 2.0         # a mirrored fold whose ends land this close to a twin's fold is the same fold
+ON_CUT_MM = 1.0       # a mirrored fold this close to the twin's cut is a glue tab moved elsewhere
 
 
 @dataclass
@@ -41,7 +46,7 @@ class Twin:
 
 class Symmetry:
     def __init__(self, layouts: list[tuple[PageLayout, float]]):
-        self.mm, self.material, self.outline = {}, {}, {}
+        self.mm, self.material, self.outline, self.folds = {}, {}, {}, {}
         self.lines: dict[str, list[Label]] = {}
         for layout, mm in layouts:
             for piece in layout.pieces:
@@ -51,6 +56,7 @@ class Symmetry:
                 self.lines[piece.id], self.mm[piece.id] = marked, mm
                 self.material[piece.id] = piece.material
                 self.outline[piece.id] = outline * mm
+                self.folds[piece.id] = [(np.array(f.a) * mm, np.array(f.b) * mm, f.kind.value) for f in piece.folds]
         self.twins = self._pair()
         self.twin_of = {t.a: t.b for t in self.twins} | {t.b: t.a for t in self.twins}
         self.mirror_line = {id(x): (t.b, y) for t in self.twins for x, y in t.lines}
@@ -148,6 +154,37 @@ class Symmetry:
                           "sure": "yes" if sure else "no"})
         return found
 
+    def fold_gaps(self) -> list[dict]:
+        """Folds of one twin with no fold at their mirror place on the other: per gap, the piece
+        missing it, the twin that has it, its kind, and its ends on the missing piece (mm).
+        The twins are laid on each other by the midpoints of their matched numbered lines."""
+        gaps = []
+        for t in self.twins:
+            pairs = [(np.mean(x.edge, axis=0) * self.mm[t.a], np.mean(y.edge, axis=0) * self.mm[t.b]) for x, y in t.lines]
+            if len(pairs) < 3:
+                continue
+            fit = _similar(np.array([p for p, _ in pairs]), np.array([q for _, q in pairs]))
+            if fit is None:
+                continue
+            forward, back = fit
+            for source, target, move in ((t.a, t.b, forward), (t.b, t.a, back)):
+                corners = self.outline[target]
+                for a, b, kind in self.folds[source]:
+                    ma, mb = move(a), move(b)
+                    # Ends land on the twin's corners or fold ends; a mirrored fold off the piece is no use.
+                    ends = np.vstack([corners] + [np.array([p, q]) for p, q, _ in self.folds[target]])
+                    ma = min(ends, key=lambda c: np.linalg.norm(c - ma)) if np.min(np.linalg.norm(ends - ma, axis=1)) <= FOLD_MM else ma
+                    mb = min(ends, key=lambda c: np.linalg.norm(c - mb)) if np.min(np.linalg.norm(ends - mb, axis=1)) <= FOLD_MM else mb
+                    if any(min(np.linalg.norm(p - ma) + np.linalg.norm(q - mb), np.linalg.norm(p - mb) + np.linalg.norm(q - ma))
+                           <= 2 * FOLD_MM for p, q, _ in self.folds[target]):
+                        continue
+                    if _to_outline(corners, (ma + mb) / 2) <= ON_CUT_MM or np.linalg.norm(mb - ma) < 2.0:
+                        continue
+                    gaps.append({"piece": target, "twin": source, "kind": kind,
+                                 "ax_mm": round(float(ma[0]), 2), "ay_mm": round(float(ma[1]), 2),
+                                 "bx_mm": round(float(mb[0]), 2), "by_mm": round(float(mb[1]), 2)})
+        return gaps
+
     def write(self, path: Path, records: list[dict]) -> int:
         """Every numbered line beside its mirror line; returns how many disagree in length."""
         by_label = {id(r["_row"].label): r for r in records}
@@ -167,6 +204,26 @@ class Symmetry:
                                      rx["length_mm"], ry["number"], ry["side"],
                                      ry["length_mm"], f"{diff:.1f}", "traced line differs" if diff > LENGTH_MM else "ok"])
         return off
+
+
+def _similar(a: np.ndarray, b: np.ndarray):
+    """Rotation, reflection, scale and shift that best lay points a onto b; returns the maps
+    a->b and b->a, or None when the points do not fit within FIT_MM (RMS)."""
+    ca, cb = a.mean(0), b.mean(0)
+    u, sv, vt = np.linalg.svd((b - cb).T @ (a - ca))
+    rotation = u @ vt
+    scale = sv.sum() / max(((a - ca) ** 2).sum(), 1e-9)
+    if np.sqrt((((a - ca) @ rotation.T * scale + cb - b) ** 2).sum(1).mean()) > FIT_MM:
+        return None
+    return (lambda p: (p - ca) @ rotation.T * scale + cb), (lambda q: (q - cb) @ rotation / scale + ca)
+
+
+def _to_outline(outline: np.ndarray, point: np.ndarray) -> float:
+    """Distance from point to the closed polygon's edges."""
+    a, b = outline, np.roll(outline, -1, axis=0)
+    d = b - a
+    t = np.clip(((point - a) * d).sum(1) / np.maximum((d * d).sum(1), 1e-9), 0, 1)
+    return float(np.min(np.linalg.norm(a + t[:, None] * d - point, axis=1)))
 
 
 def _sequence(a: np.ndarray, b: np.ndarray) -> tuple[float, list[tuple[int, int]]]:

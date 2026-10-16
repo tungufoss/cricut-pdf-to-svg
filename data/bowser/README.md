@@ -22,7 +22,7 @@ Conversion status (2026-10-16), written by `make`. Edit the YAML, not this file.
 |---|---|
 | pages | 21 converted |
 | pieces | 178 cut outlines, corners joined by straight edges |
-| folds | 1496, 13 stretched far to reach the cut |
+| folds | 1509, 13 stretched far to reach the cut |
 | numbers | 1575 read, 190 uncertain (orange in the SVG) |
 | pieces to check | 116 marked ⚠ in Inkscape |
 | paper colour | footers disagree with the YAML: pages 14–23 say beige (YAML: yellow); page 24 says white (YAML: black) |

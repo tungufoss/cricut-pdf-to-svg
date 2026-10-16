@@ -120,6 +120,13 @@ class CheckData:
         if path.is_file():
             for r in csv.DictReader(path.open(encoding="utf-8")):
                 faults.setdefault(r["piece"], []).append(f"{r['check']}: {r['detail']}")
+        suggest: dict[str, list[dict]] = {}
+        path = self.folder / f"{self.project}-mirror-folds.csv"
+        if path.is_file():
+            for r in csv.DictReader(path.open(encoding="utf-8")):
+                suggest.setdefault(r["piece"], []).append(
+                    {"kind": r["kind"], "twin": r["twin"], "a": [float(r["ax_mm"]), float(r["ay_mm"])],
+                     "b": [float(r["bx_mm"]), float(r["by_mm"])]})
         numbers: dict[str, list[dict]] = {}
         for r in self.edges:
             numbers.setdefault(r["piece"], []).append(
@@ -135,13 +142,17 @@ class CheckData:
             why = faults.get(piece, [])[:]
             if ink_mm > LOOSE_MM:
                 why.append(f"about {ink_mm:.0f} mm of line ink inside the piece is not traced (orange): a missed fold?")
+            twins = suggest.get(piece, [])
+            if twins:
+                why.append(f"its mirror twin {twins[0]['twin']} has {len(twins)} fold(s) missing here (orange lines)")
             if lost:
                 why.append(f"{len(lost)} number(s) found no fold to sit on: a fold may be missing")
-            score = 2 * len(faults.get(piece, [])) + int(ink_mm // LOOSE_MM) + 2 * len(lost)
+            score = 2 * len(faults.get(piece, [])) + int(ink_mm // LOOSE_MM) + 2 * len(lost) + 3 * len(twins)
             xs, ys = [q[0] for q in trace["outline"]], [q[1] for q in trace["outline"]]
             side = max(max(xs) - min(xs), max(ys) - min(ys)) + 2 * PIECE_MARGIN_MM
             image, box = self._patch(piece, (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, side, PIECE_PX, loose)
-            found.append({"piece": piece, "score": score, "why": why, "labels": labels, "image": image, "box": box})
+            found.append({"piece": piece, "score": score, "why": why, "labels": labels, "image": image, "box": box,
+                          "suggest": twins})
         return found
 
     def _loose(self, piece: str, trace: dict, labels: list[dict]) -> np.ndarray:
