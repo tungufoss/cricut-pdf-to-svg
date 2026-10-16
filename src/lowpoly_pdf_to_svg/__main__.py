@@ -11,7 +11,7 @@ from pathlib import Path
 
 from .config import Project
 from .checks import TraceChecks
-from .corrections import Correction, Corrections, LineFixes
+from .corrections import Correction, Corrections, LineFixes, PieceFixes
 from .detect import PageDetector
 from .edges import EdgeTable
 from .ocr import EdgeNumberReader, read_paper
@@ -92,6 +92,16 @@ def main() -> int:
         applied, missed = corrections.apply([(layout, page.mm_per_px) for page, layout, _ in results])
         print(f"applied {applied} hand corrections" + (f", {len(missed)} matched no number: "
               + ", ".join(f"{c.piece} {c.read}->{c.number}" for c in missed) if missed else ""))
+    # Folds added or dropped on the piece review; the numbers on those pieces look for their line again.
+    piece_fixes = PieceFixes.load(output / f"{project.name}-pieces.csv")
+    if piece_fixes.rows:
+        changed, missed = piece_fixes.apply([(layout, page.mm_per_px) for page, layout, _ in results])
+        for page, layout, _ in results:
+            for piece in layout.pieces:
+                if piece.id in changed:
+                    for label in piece.labels:
+                        detector._mark_edge(label, piece, 1 / page.mm_per_px)
+        print(f"changed the folds of {len(changed)} pieces by hand" + (f", {len(missed)} rows matched no fold" if missed else ""))
     lines = LineFixes.load(output / f"{project.name}-lines.csv")
     if lines.rows:
         applied, missed = lines.apply([(layout, page.mm_per_px) for page, layout, _ in results])

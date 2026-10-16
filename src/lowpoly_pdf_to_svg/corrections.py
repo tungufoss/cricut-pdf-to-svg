@@ -13,7 +13,7 @@ import csv
 from dataclasses import dataclass
 from pathlib import Path
 
-from .model import PageLayout
+from .model import Fold, FoldKind, PageLayout
 
 MATCH_MM = 2.0
 NOT_A_NUMBER = "x"     # the number check page's answer for marks that are no number (a fan of fold ends)
@@ -129,3 +129,60 @@ class LineFixes:
             label.tab = row.kind == "fold"
             applied += 1
         return applied, missed
+
+
+PIECE_COLUMNS = ["piece", "action", "kind", "ax_mm", "ay_mm", "bx_mm", "by_mm"]
+FOLD_MM = 1.0          # a dropped fold is the traced fold whose two ends lie this close to the row's
+
+
+@dataclass
+class PieceFix:
+    """One answer from the piece review: `ok` (the piece was looked at), `add` (a fold the
+    trace missed, with its kind) or `drop` (a traced fold that is no fold), ends in page mm."""
+    piece: str
+    action: str
+    kind: str = ""
+    a: tuple[float, float] = (0.0, 0.0)
+    b: tuple[float, float] = (0.0, 0.0)
+
+
+class PieceFixes:
+    """data/<project>/<project>-pieces.csv: folds added or dropped by hand, piece by piece."""
+
+    def __init__(self, rows: list[PieceFix]):
+        self.rows = rows
+
+    @classmethod
+    def load(cls, path: Path) -> "PieceFixes":
+        if not path.is_file():
+            return cls([])
+        number = lambda v: float(v) if v else 0.0
+        with path.open(encoding="utf-8", newline="") as handle:
+            return cls([PieceFix(r["piece"], r["action"], r.get("kind", ""),
+                                 (number(r["ax_mm"]), number(r["ay_mm"])), (number(r["bx_mm"]), number(r["by_mm"])))
+                        for r in csv.DictReader(handle) if r.get("action") in ("ok", "add", "drop")])
+
+    def apply(self, layouts: list[tuple[PageLayout, float]]) -> tuple[set[str], list[PieceFix]]:
+        """Add and drop folds; returns (ids of pieces whose folds changed, rows that matched nothing)."""
+        pieces = {piece.id: (piece, mm) for layout, mm in layouts for piece in layout.pieces}
+        changed, missed = set(), []
+        for row in self.rows:
+            if row.action == "ok":
+                continue
+            piece, mm = pieces.get(row.piece, (None, 0.0))
+            if piece is None:
+                missed.append(row)
+                continue
+            a, b = (row.a[0] / mm, row.a[1] / mm), (row.b[0] / mm, row.b[1] / mm)
+            if row.action == "add":
+                piece.folds.append(Fold(a, b, FoldKind(row.kind or "valley")))
+            else:
+                near = lambda p, q: (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 <= (FOLD_MM / mm) ** 2
+                keep = [f for f in piece.folds
+                        if not ((near(f.a, a) and near(f.b, b)) or (near(f.a, b) and near(f.b, a)))]
+                if len(keep) == len(piece.folds):
+                    missed.append(row)
+                    continue
+                piece.folds = keep
+            changed.add(piece.id)
+        return changed, missed

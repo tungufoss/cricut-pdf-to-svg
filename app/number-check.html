@@ -34,11 +34,19 @@ select{font:inherit;padding:3px;border:1px solid var(--line);border-radius:6px}
 .row{display:flex;gap:6px;align-items:center}
 input{font:inherit;width:70px;padding:4px 6px;border:1px solid var(--line);border-radius:6px}
 input.set{border-color:var(--ok);background:#eef8f0}
+.review{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.review .scan{width:min(680px,92vw);height:min(680px,92vw)}
+.side{display:grid;gap:8px;max-width:340px}
+.tools{display:flex;gap:6px;flex-wrap:wrap}
+.dropped{stroke:#e00000;stroke-width:.35}
+.added{stroke:#c000ff}
+.num{font-weight:700;paint-order:stroke;stroke:#fff}
+button.next{background:var(--ok);color:#fff;border-color:var(--ok);font-weight:600}
 </style></head><body>
 <header><h1 id="title">Number check</h1>
 <button id="open">Open data folder</button><select id="model" hidden></select><button id="change" class="meta">Other folder…</button><label class="meta">or load <input type="file" id="file" accept=".json" style="width:auto"></label>
 <span id="count"></span>
-<button data-f="todo" class="on">To do</button><button data-f="doubt">Doubtful fixes</button><button data-f="suggested">Suggested</button>
+<button data-f="pieces">Piece review</button><button data-f="todo" class="on">To do</button><button data-f="doubt">Doubtful fixes</button><button data-f="suggested">Suggested</button>
 <button data-f="open">Open</button><button data-f="auto">Fixed for you</button><button data-f="all">All</button>
 <button class="save" id="save">Save corrections</button></header>
 <main id="list"><p>Run <code>make fix</code>, then open this repository's <code>data</code> folder and pick a model
@@ -47,7 +55,7 @@ so next time Open only asks to allow it again. Save writes
 <code>&lt;project&gt;-corrections.csv</code> into the same folder, and the next build applies it.
 Without folder access (Firefox), load the JSON file instead and Save downloads the CSV.</p></main>
 <script>
-let D = null, folder = null, store = "", answers = {}, saved = [], lines = {};
+let D = null, folder = null, store = "", answers = {}, saved = [], lines = {}, pieceFixes = {}, order = null, at = 0;
 const key = p => `${p.piece}@${p.x},${p.y}`;
 let filter = "todo";
 
@@ -56,13 +64,19 @@ function parseCsv(text) {
   const cols = head.split(",");
   return rows.filter(Boolean).map(r => Object.fromEntries(r.split(",").map((v, i) => [cols[i], v])));
 }
-function start(data, corrections, drawn = []) {
-  D = data; saved = corrections; store = "fix-" + D.project; answers = {}; lines = {};
+function start(data, corrections, drawn = [], reviewed = []) {
+  D = data; saved = corrections; store = "fix-" + D.project; answers = {}; lines = {}; pieceFixes = {}; order = null;
+  for (const r of reviewed) {
+    const f = pieceFixes[r.piece] ??= {ok: false, add: [], drop: []};
+    if (r.action === "ok") f.ok = true;
+    else (r.action === "add" ? f.add : f.drop).push({kind: r.kind, a: [+r.ax_mm, +r.ay_mm], b: [+r.bx_mm, +r.by_mm]});
+  }
   for (const s of saved) answers[`${s.piece}@${s.x_mm},${s.y_mm}`] = s.number;
   for (const l of drawn) lines[`${l.piece}@${l.x_mm},${l.y_mm}`] =
     {kind: l.kind, a: [+l.ax_mm, +l.ay_mm], b: [+l.bx_mm, +l.by_mm], piece: l.piece, x: l.x_mm, y: l.y_mm, read: l.number};
   try { Object.assign(answers, JSON.parse(localStorage.getItem(store) || "{}")); } catch (e) {}
   try { Object.assign(lines, JSON.parse(localStorage.getItem(store + "-lines") || "{}")); } catch (e) {}
+  try { Object.assign(pieceFixes, JSON.parse(localStorage.getItem(store + "-pieces") || "{}")); } catch (e) {}
   document.getElementById("title").textContent = "Number check: " + D.project;
   document.title = document.getElementById("title").textContent;
   render();
@@ -82,8 +96,10 @@ async function loadModel(dir) {
   let drawn = [];
   try { corrections = parseCsv(await (await (await dir.getFileHandle(check.project + "-corrections.csv")).getFile()).text()); } catch (e) {}
   try { drawn = parseCsv(await (await (await dir.getFileHandle(check.project + "-lines.csv")).getFile()).text()); } catch (e) {}
+  let reviewed = [];
+  try { reviewed = parseCsv(await (await (await dir.getFileHandle(check.project + "-pieces.csv")).getFile()).text()); } catch (e) {}
   folder = dir;
-  start(check, corrections, drawn);
+  start(check, corrections, drawn, reviewed);
 }
 async function openData(root) {
   models = {};
@@ -112,7 +128,8 @@ document.getElementById("file").addEventListener("change", async e => {
   if (f) { folder = null; start(JSON.parse(await f.text()), []); }
 });
 const remember = () => { try { localStorage.setItem(store, JSON.stringify(answers));
-  localStorage.setItem(store + "-lines", JSON.stringify(lines)); } catch (e) {} };
+  localStorage.setItem(store + "-lines", JSON.stringify(lines));
+  localStorage.setItem(store + "-pieces", JSON.stringify(pieceFixes)); } catch (e) {} };
 const SNAP_PX = 7;     // a dragged or clicked end snaps to a traced point this close on screen; Shift turns it off
 const DRAG = "Drag the purple ends of the line onto the right corners; they snap to nearby blue points (hold Shift to place freely).";
 const CLICK = "Click the two ends of this number's line on the scan; clicks snap to nearby blue points (hold Shift to place freely).";
@@ -189,6 +206,7 @@ const done = c => c.kind === "auto" || (c.kind === "doubt" ? c.panels.some(p => 
 function render() {
   const list = document.getElementById("list");
   list.innerHTML = "";
+  if (filter === "pieces") { reviewPiece(list); return; }
   const shown = D.cards.filter(c => filter === "all" || (filter === "todo" ? !done(c) : c.kind === filter));
   document.getElementById("count").textContent =
     `${D.cards.filter(done).length} of ${D.cards.length} checked, ${shown.length} shown`;
@@ -255,6 +273,99 @@ function card(c) {
   }
   return el;
 }
+// Piece review: one whole piece at a time, those needing the most work first (shuffled among
+// equals). Click two points to add a fold the trace missed; in remove mode click a fold to drop
+// it; click a number to correct it. OK saves into the folder and moves to the next piece.
+const fixOf = id => pieceFixes[id] ??= {ok: false, add: [], drop: []};
+const segDist = (q, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy || 1;
+  const t = Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / l));
+  return Math.hypot(q[0] - a[0] - t * dx, q[1] - a[1] - t * dy); };
+let mode = "add", foldKind = "valley";
+function pieceOrder() {
+  const list = [...(D.pieces || [])].map(p => ({p, r: Math.random()}));
+  list.sort((u, v) => (fixOf(u.p.piece).ok - fixOf(v.p.piece).ok) || (v.p.score - u.p.score) || (u.r - v.r));
+  return list.map(u => u.p);
+}
+function reviewPiece(list) {
+  if (!D.pieces) { list.innerHTML = "<p>This check file has no pieces; run <code>make fix</code> again.</p>"; return; }
+  order ??= pieceOrder();
+  at = Math.max(0, Math.min(at, order.length - 1));
+  const q = order[at], f = fixOf(q.piece), t = D.traces[q.piece] || {outline: [], folds: []};
+  const reviewed = D.pieces.filter(p => fixOf(p.piece).ok).length;
+  document.getElementById("count").textContent = `piece ${at + 1} of ${order.length} · ${reviewed} reviewed`;
+  const [left, top, side] = q.box, r = side / 220;
+  const isDropped = g => f.drop.some(d => Math.hypot(d.a[0] - g[0], d.a[1] - g[1]) + Math.hypot(d.b[0] - g[2], d.b[1] - g[3]) < 0.5);
+  const el = document.createElement("div");
+  el.className = "card review";
+  el.innerHTML = `<div class="scan"><img src="${q.image}" alt="scan of ${q.piece}">
+    <svg viewBox="${left} ${top} ${side} ${side}">
+      <polygon class="trace" points="${t.outline.map(c => c.join(",")).join(" ")}" style="stroke-width:${r * 0.8}"/>
+      ${t.folds.map(g => `<line class="${isDropped(g) ? "dropped" : "fold"}" x1="${g[0]}" y1="${g[1]}" x2="${g[2]}" y2="${g[3]}" stroke-dasharray="${r * 3} ${r * 1.5}" style="stroke-width:${r * 1.1}"/>`).join("")}
+      ${f.add.map(g => `<line class="added" x1="${g.a[0]}" y1="${g.a[1]}" x2="${g.b[0]}" y2="${g.b[1]}" stroke-dasharray="${g.kind === "mountain" ? `${r * 4} ${r * 1.5} ${r} ${r * 1.5}` : `${r * 3} ${r * 1.5}`}" style="stroke-width:${r * 1.6}"/>`).join("")}
+      ${t.outline.map(c => `<circle class="corner" cx="${c[0]}" cy="${c[1]}" r="${r * 1.6}" style="stroke-width:${r * 0.6}"/>`).join("")}
+      ${q.labels.map(l => { const v = answers[`${q.piece}@${l.x},${l.y}`]; const ok = l.status === "ok";
+        return `<g class="label" data-k="${l.x},${l.y}" style="cursor:pointer"><circle cx="${l.x}" cy="${l.y}" r="${r * 7}" fill="${ok ? "#1b8a3a" : "#e00000"}" fill-opacity=".18" stroke="${ok ? "#1b8a3a" : "#e00000"}" style="stroke-width:${r * 0.8}"/>
+          ${v !== undefined && v !== "" ? `<text class="num" x="${l.x}" y="${+l.y - r * 8}" text-anchor="middle" font-size="${r * 9}" fill="#c000ff" style="stroke-width:${r * 2}">${v === "x" ? "✕" : v}</text>` : ""}</g>`; }).join("")}
+      <g class="clicks"></g>
+    </svg></div>
+    <div class="side"><div><span class="read">${q.piece}</span> <span class="meta">${q.labels.length} numbers, ${t.folds.length} traced folds${f.ok ? " · reviewed" : ""}</span></div>
+      <div class="meta">${q.why.length ? q.why.map(w => `<div class="hint">${w}</div>`).join("") : "Nothing flagged; check the folds look complete."}</div>
+      <div class="tools"><button data-m="add">Add fold</button><select><option value="valley">valley (dashed)</option><option value="mountain">mountain (dash-dot)</option></select><button data-m="drop">Remove fold</button></div>
+      <div class="meta how"></div>
+      <div class="tools"><button data-a="undo">Undo</button><button data-a="back">← Back</button><button data-a="skip">Skip</button><button class="next" data-a="ok">OK → next</button></div>
+      <div class="meta">Green dashes are traced folds, purple ones you added, red ones you removed. Numbers: green circle paired, red not; click one to correct it. Enter = OK.</div></div>`;
+  list.appendChild(el);
+  const svg = el.querySelector("svg"), clicks = el.querySelector(".clicks"), how = el.querySelector(".how");
+  const kind = el.querySelector("select");
+  kind.value = foldKind; kind.addEventListener("change", () => { foldKind = kind.value; });
+  const setMode = m => { mode = m; el.querySelectorAll("[data-m]").forEach(b => b.classList.toggle("on", b.dataset.m === m));
+    how.textContent = m === "add" ? "Click the two ends of the missing fold; ends snap to blue corners (Shift places freely)." : "Click a fold to remove it, or a purple one to take it back."; };
+  setMode(mode);
+  el.querySelectorAll("[data-m]").forEach(b => b.addEventListener("click", () => setMode(b.dataset.m)));
+  const points = [...t.outline, ...t.folds.flatMap(g => [[g[0], g[1]], [g[2], g[3]]]), ...f.add.flatMap(g => [g.a, g.b])];
+  const toMM = e => { const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse()); return [p.x, p.y]; };
+  const mmPerPx = () => side / svg.getBoundingClientRect().width;
+  const snap = (p, e) => { let best = e.shiftKey ? 0 : SNAP_PX * mmPerPx(), hit = p;
+    for (const c of points) { const d = Math.hypot(c[0] - p[0], c[1] - p[1]); if (d < best) { best = d; hit = c; } }
+    return hit.map(v => +(+v).toFixed(2)); };
+  let picked = [];
+  const changed = () => { remember(); list.innerHTML = ""; reviewPiece(list); };
+  svg.addEventListener("click", e => {
+    const p = toMM(e);
+    const label = e.target.closest(".label");
+    if (label) {
+      const l = q.labels.find(x => `${x.x},${x.y}` === label.dataset.k), k = `${q.piece}@${l.x},${l.y}`;
+      const v = prompt(`Number read as ${l.read} (${l.status}). What does it say? (x = not a number, empty = as read)`, answers[k] ?? l.read);
+      if (v !== null) { answers[k] = v.trim() === l.read ? l.read : v.trim(); touched.add(k); changed(); }
+      return;
+    }
+    if (mode === "drop") {
+      const reach = SNAP_PX * mmPerPx() * 1.5;
+      const added = f.add.findIndex(g => segDist(p, g.a, g.b) <= reach);
+      if (added >= 0) { f.add.splice(added, 1); changed(); return; }
+      const g = t.folds.map(g => ({g, d: segDist(p, [g[0], g[1]], [g[2], g[3]])})).sort((u, v) => u.d - v.d)[0];
+      if (!g || g.d > reach) return;
+      const i = f.drop.findIndex(d => Math.hypot(d.a[0] - g.g[0], d.a[1] - g.g[1]) + Math.hypot(d.b[0] - g.g[2], d.b[1] - g.g[3]) < 0.5);
+      if (i >= 0) f.drop.splice(i, 1); else f.drop.push({a: [g.g[0], g.g[1]], b: [g.g[2], g.g[3]]});
+      changed(); return;
+    }
+    picked.push(snap(p, e));
+    if (picked.length === 2) { f.add.push({kind: foldKind, a: picked[0], b: picked[1]}); changed(); return; }
+    clicks.innerHTML = `<circle cx="${picked[0][0]}" cy="${picked[0][1]}" r="${r * 2.5}" fill="#c000ff"/>`;
+    how.textContent = "Now click the other end of the fold.";
+  });
+  const go = step => { at += step; list.innerHTML = ""; reviewPiece(list); window.scrollTo(0, 0); };
+  el.querySelector("[data-a=undo]").addEventListener("click", () => {
+    if (picked.length) { picked = []; clicks.innerHTML = ""; setMode(mode); return; }
+    if (f.add.length) f.add.pop(); else f.drop.pop(); changed(); });
+  el.querySelector("[data-a=back]").addEventListener("click", () => go(-1));
+  el.querySelector("[data-a=skip]").addEventListener("click", () => go(1));
+  el.querySelector("[data-a=ok]").addEventListener("click", () => { f.ok = true; remember(); save(true); go(1); });
+}
+document.addEventListener("keydown", e => {
+  if (filter === "pieces" && e.key === "Enter" && !["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName)) {
+    const ok = document.querySelector("[data-a=ok]"); if (ok) { e.preventDefault(); ok.click(); } }
+});
 function count() {
   document.getElementById("count").textContent = `${D.cards.filter(done).length} of ${D.cards.length} checked`;
 }
@@ -263,10 +374,11 @@ document.querySelectorAll("header [data-f]").forEach(b => b.addEventListener("cl
   document.querySelectorAll("header [data-f]").forEach(x => x.classList.toggle("on", x === b));
   render();
 }));
-document.getElementById("save").addEventListener("click", async () => {
+async function save(quiet) {
   if (!D) return;
   const reads = {};
   for (const c of D.cards) for (const p of c.panels) reads[key(p)] = p;
+  for (const q of D.pieces || []) for (const l of q.labels) reads[`${q.piece}@${l.x},${l.y}`] ??= {piece: q.piece, x: l.x, y: l.y, read: l.read};
   for (const s of saved) reads[`${s.piece}@${s.x_mm},${s.y_mm}`] ??= {piece: s.piece, x: s.x_mm, y: s.y_mm, read: s.read};
   const rows = ["piece,x_mm,y_mm,read,number"];
   for (const [k, v] of Object.entries(answers)) {
@@ -275,12 +387,19 @@ document.getElementById("save").addEventListener("click", async () => {
   }
   const drawn = ["piece,x_mm,y_mm,number,kind,ax_mm,ay_mm,bx_mm,by_mm"];
   for (const l of Object.values(lines)) drawn.push([l.piece, l.x, l.y, l.read, l.kind, ...l.a, ...l.b].join(","));
-  const files = [[D.project + "-corrections.csv", rows], [D.project + "-lines.csv", drawn]];
+  const reviewed = ["piece,action,kind,ax_mm,ay_mm,bx_mm,by_mm"];
+  for (const [piece, f] of Object.entries(pieceFixes)) {
+    for (const l of f.add) reviewed.push([piece, "add", l.kind, ...l.a, ...l.b].join(","));
+    for (const l of f.drop) reviewed.push([piece, "drop", "", ...l.a, ...l.b].join(","));
+    if (f.ok) reviewed.push([piece, "ok", "", "", "", "", ""].join(","));
+  }
+  const files = [[D.project + "-corrections.csv", rows], [D.project + "-lines.csv", drawn], [D.project + "-pieces.csv", reviewed]];
   const download = (name, text) => {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([text], {type: "text/csv"}));
     a.download = name; document.body.appendChild(a); a.click(); a.remove();
   };
+  if (quiet && !folder) return;
   let where = folder ? `the ${folder.name} folder` : "your Downloads folder";
   for (const [name, list] of files) {
     const text = list.join("\n") + "\n";
@@ -292,12 +411,15 @@ document.getElementById("save").addEventListener("click", async () => {
       await w.write(text); await w.close();
     } catch (e) {
       // Writing into the folder can be refused (file:// pages, permissions); download instead.
+      if (quiet) { document.getElementById("count").textContent = `Could not save into ${folder.name}: ${e.message}. Press Save.`; return; }
       if (folder) where = `your Downloads folder (writing to ${folder.name} failed: ${e.message}); move the files into the model folder`;
       download(name, text);
     }
   }
-  const note = `Saved ${rows.length - 1} numbers and ${drawn.length - 1} lines to ${where}.`;
+  const note = `Saved ${rows.length - 1} numbers, ${drawn.length - 1} lines and ${Object.values(pieceFixes).filter(f => f.ok).length} reviewed pieces to ${where}.`;
+  if (quiet) return;
   document.getElementById("count").textContent += " " + note;
   alert(note);
-});
+}
+document.getElementById("save").addEventListener("click", () => save(false));
 </script></body></html>

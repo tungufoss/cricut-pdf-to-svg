@@ -23,7 +23,7 @@ piece-04-03,piece-05-01,variation,407,edge,36.8,49,edge,36.7,0.1,ok
 piece-04-03,piece-05-01,variation,405,tab,29.4,47,tab,29.2,0.2,ok
 piece-04-03,piece-05-01,variation,409,edge,54.0,51,edge,53.5,0.5,ok
 piece-04-03,piece-05-01,variation,456,tab,37.6,10,edge,37.6,0.0,ok
-piece-04-03,piece-05-01,variation,150,edge,23.9,46,tab,24.4,0.5,ok
+piece-04-03,piece-05-01,variation,150,edge,23.9,48,tab,24.4,0.5,ok
 piece-04-03,piece-05-01,variation,415,edge,50.8,57,edge,50.9,0.0,ok
 piece-04-03,piece-05-01,variation,410,edge,42.7,53,edge,42.7,0.1,ok
 piece-04-03,piece-05-01,variation,404,tab,35.3,46,tab,35.2,0.1,ok
@@ -55,7 +55,7 @@ piece-04-06,piece-05-06,variation,578,tab,38.1,244,edge,38.4,0.2,ok
 piece-04-06,piece-05-06,variation,579,tab,27.5,217,edge,27.4,0.1,ok
 piece-04-06,piece-05-06,variation,256,edge,44.7,19,edge,44.7,0.0,ok
 piece-04-06,piece-05-06,variation,577,tab,47.9,224,tab,47.9,0.0,ok
-piece-04-06,piece-05-06,variation,846,edge,50.2,223,tab,50.3,0.1,ok
+piece-04-06,piece-05-06,variation,848,edge,50.2,223,tab,50.3,0.1,ok
 piece-04-06,piece-05-06,variation,574,tab,26.7,218,edge,26.5,0.3,ok
 piece-04-07,piece-05-07,variation,784,edge,23.4,792,edge,24.3,0.9,ok
 piece-04-07,piece-05-07,variation,781,edge,32.2,64,tab,32.3,0.0,ok
@@ -65,7 +65,7 @@ piece-04-07,piece-05-07,variation,423,tab,30.9,40,edge,30.8,0.1,ok
 piece-04-07,piece-05-07,variation,395,edge,25.4,65,tab,25.5,0.1,ok
 piece-04-07,piece-05-07,variation,421,tab,40.4,38,edge,40.4,0.0,ok
 piece-04-07,piece-05-07,variation,393,edge,31.9,63,tab,31.9,0.0,ok
-piece-04-07,piece-05-07,variation,420,edge,11.8,778,edge,11.3,0.5,ok
+piece-04-07,piece-05-07,variation,420,edge,11.3,778,edge,11.3,0.0,ok
 piece-04-08,piece-05-08,variation,572,tab,50.2,219,tab,50.1,0.0,ok
 piece-04-08,piece-05-08,variation,573,tab,58.9,220,tab,58.9,0.0,ok
 piece-04-08,piece-05-08,variation,257,edge,44.1,20,edge,44.1,0.0,ok
@@ -100,7 +100,7 @@ piece-07-02,piece-07-10,variation,624,edge,40.7,269,edge,40.7,0.0,ok
 piece-07-02,piece-07-10,variation,613,tab,37.7,265,tab,37.7,0.0,ok
 piece-07-02,piece-07-10,variation,619,edge,61.2,274,edge,61.1,0.1,ok
 piece-07-03,piece-07-06,variation,622,edge,52.1,297,tab,52.0,0.1,ok
-piece-07-03,piece-07-06,variation,555,tab,71.3,264,edge,70.8,0.4,ok
+piece-07-03,piece-07-06,variation,556,tab,71.3,264,edge,70.8,0.4,ok
 piece-07-03,piece-07-06,variation,614,edge,47.5,295,tab,47.7,0.2,ok
 piece-07-03,piece-07-06,variation,653,tab,46.0,268,edge,46.4,0.4,ok
 piece-07-03,piece-07-06,variation,652,tab,51.9,296,tab,52.0,0.0,ok
@@ -124,16 +124,16 @@ piece-07-05,piece-07-08,variation,622,tab,52.0,297,edge,51.9,0.2,ok
 piece-08-01,piece-08-04,variation,647,edge,75.5,339,tab,75.6,0.1,ok
 piece-08-01,piece-08-04,variation,691,tab,14.6,691,edge,14.3,0.2,ok
 piece-08-01,piece-08-04,variation,337,edge,17.1,337,tab,17.2,0.0,ok
-piece-08-01,piece-08-04,variation,588,tab,23.6,689,edge,23.4,0.2,ok
+piece-08-01,piece-08-04,variation,588,tab,23.6,698,edge,23.4,0.2,ok
 piece-08-01,piece-08-04,variation,335,edge,35.3,335,tab,35.6,0.3,ok
 piece-08-01,piece-08-04,variation,688,tab,58.1,304,edge,58.2,0.1,ok
 piece-08-01,piece-08-04,variation,663,edge,27.3,336,tab,27.2,0.1,ok
 piece-08-01,piece-08-04,variation,690,tab,28.1,306,edge,28.1,0.0,ok
 piece-08-01,piece-08-04,variation,664,edge,21.4,307,edge,21.4,0.0,ok
 piece-08-01,piece-08-04,variation,682,edge,17.4,338,tab,17.3,0.1,ok
-piece-08-01,piece-08-04,variation,692,tab,26.3,328,edge,26.3,0.0,ok
-piece-08-02,piece-08-05,variation,880,edge,14.8,314,tab,14.9,0.0,ok
-piece-08-02,piece-08-05,variation,668,tab,46.8,326,edge,46.6,0.2,ok
+piece-08-01,piece-08-04,variation,369,tab,26.3,328,edge,26.3,0.0,ok
+piece-08-02,piece-08-05,variation,866,edge,14.8,314,tab,14.9,0.0,ok
+piece-08-02,piece-08-05,variation,668,tab,46.8,325,edge,46.6,0.2,ok
 piece-08-02,piece-08-05,variation,678,edge,25.6,312,tab,25.7,0.1,ok
 piece-08-02,piece-08-05,variation,662,edge,29.7,305,tab,29.7,0.0,ok
 piece-08-02,piece-08-05,variation,665,tab,48.1,303,edge,48.1,0.0,ok
@@ -149,11 +149,11 @@ piece-08-03,piece-08-06,variation,661,tab,57.6,661,edge,57.3,0.3,ok
 piece-08-03,piece-08-06,variation,665,edge,48.0,303,tab,48.2,0.2,ok
 piece-08-03,piece-08-06,variation,662,tab,29.6,305,tab,29.7,0.0,ok
 piece-08-03,piece-08-06,variation,684,edge,33.5,330,edge,33.4,0.1,ok
-piece-09-01,piece-10-05,variation,693,tab,55.2,329,tab,55.3,0.0,ok
-piece-09-01,piece-10-05,variation,657,edge,42.3,689,edge,42.3,0.1,ok
-piece-09-01,piece-10-05,variation,885,tab,54.1,331,tab,54.1,0.0,ok
+piece-09-01,piece-10-05,variation,683,tab,55.2,329,tab,55.3,0.0,ok
+piece-09-01,piece-10-05,variation,657,edge,42.3,885,edge,42.3,0.1,ok
+piece-09-01,piece-10-05,variation,685,tab,54.1,331,tab,54.1,0.0,ok
 piece-09-01,piece-10-05,variation,649,edge,56.0,762,edge,56.0,0.1,ok
-piece-09-01,piece-10-05,variation,692,edge,26.3,328,tab,26.3,0.0,ok
+piece-09-01,piece-10-05,variation,693,edge,26.3,328,tab,26.3,0.0,ok
 piece-09-01,piece-10-05,variation,682,tab,17.4,338,edge,17.4,0.0,ok
 piece-09-01,piece-10-05,variation,684,tab,33.5,330,tab,33.5,0.1,ok
 piece-09-01,piece-10-05,variation,679,edge,45.7,324,edge,45.5,0.2,ok
@@ -164,8 +164,8 @@ piece-09-02,piece-09-05,variation,656,edge,51.5,296,edge,51.7,0.2,ok
 piece-09-02,piece-09-05,variation,675,tab,55.2,321,tab,55.2,0.0,ok
 piece-09-02,piece-09-05,variation,680,edge,44.3,326,edge,44.3,0.0,ok
 piece-09-02,piece-09-05,variation,674,tab,45.8,320,tab,46.3,0.5,ok
-piece-09-02,piece-09-05,variation,652,edge,51.8,286,edge,51.3,0.5,ok
-piece-09-03,piece-09-04,exact,656,tab,51.8,562,tab,51.8,0.1,ok
+piece-09-02,piece-09-05,variation,652,edge,51.8,295,edge,51.3,0.5,ok
+piece-09-03,piece-09-04,exact,656,tab,51.8,286,tab,51.8,0.1,ok
 piece-09-03,piece-09-04,exact,676,edge,40.7,322,edge,40.7,0.0,ok
 piece-09-03,piece-09-04,exact,658,tab,42.8,300,tab,43.0,0.2,ok
 piece-09-03,piece-09-04,exact,677,edge,48.5,323,edge,48.4,0.1,ok
@@ -176,8 +176,8 @@ piece-09-03,piece-09-04,exact,887,tab,42.2,259,tab,42.1,0.0,ok
 piece-09-03,piece-09-04,exact,883,edge,55.3,329,edge,55.3,0.0,ok
 piece-09-06,piece-09-07,variation,679,tab,45.6,324,tab,45.8,0.2,ok
 piece-09-06,piece-09-07,variation,678,tab,25.3,312,edge,25.8,0.5,ok
-piece-09-06,piece-09-07,variation,999,edge,46.8,325,tab,46.7,0.0,ok
-piece-09-06,piece-09-07,variation,880,tab,14.9,314,edge,14.8,0.2,ok
+piece-09-06,piece-09-07,variation,668,edge,46.8,325,tab,46.7,0.0,ok
+piece-09-06,piece-09-07,variation,866,tab,14.9,314,edge,14.8,0.2,ok
 piece-09-06,piece-09-07,variation,651,edge,40.6,327,tab,40.8,0.2,ok
 piece-09-06,piece-09-07,variation,674,edge,45.6,320,edge,45.7,0.1,ok
 piece-09-06,piece-09-07,variation,680,tab,44.2,326,tab,44.2,0.0,ok
@@ -202,13 +202,13 @@ piece-11-01,piece-12-01,variation,25,tab,37.1,25,edge,37.0,0.1,ok
 piece-11-01,piece-12-01,variation,24,tab,36.3,309,tab,36.3,0.1,ok
 piece-11-01,piece-12-01,variation,33,edge,34.3,389,edge,34.3,0.0,ok
 piece-11-01,piece-12-01,variation,17,edge,42.2,308,tab,42.2,0.0,ok
-piece-11-01,piece-12-01,variation,000,edge,50.4,148,edge,50.6,0.1,ok
+piece-11-01,piece-12-01,variation,8,edge,50.4,148,edge,50.6,0.1,ok
 piece-11-01,piece-12-01,variation,26,tab,60.0,310,tab,59.9,0.1,ok
 piece-11-02,piece-12-03,variation,773,edge,26.1,743,edge,26.1,0.0,ok
 piece-11-02,piece-12-03,variation,11,tab,15.6,151,tab,15.6,0.0,ok
 piece-11-02,piece-12-03,variation,775,edge,30.6,746,edge,30.6,0.0,ok
 piece-11-02,piece-12-03,variation,26,edge,60.0,310,edge,59.9,0.1,ok
-piece-11-02,piece-12-03,variation,00,tab,50.5,148,tab,50.6,0.1,ok
+piece-11-02,piece-12-03,variation,8,tab,50.5,148,tab,50.6,0.1,ok
 piece-11-02,piece-12-03,variation,50,edge,43.3,408,edge,43.3,0.0,ok
 piece-11-02,piece-12-03,variation,9,tab,42.1,149,tab,42.1,0.1,ok
 piece-11-02,piece-12-03,variation,10,tab,37.8,406,edge,37.9,0.2,ok
@@ -226,6 +226,16 @@ piece-11-04,piece-12-05,variation,745,edge,9.2,745,tab,9.2,0.0,ok
 piece-11-04,piece-12-05,variation,772,tab,22.5,772,edge,22.5,0.0,ok
 piece-11-04,piece-12-05,variation,744,edge,27.6,744,tab,27.6,0.0,ok
 piece-11-04,piece-12-05,variation,774,tab,44.1,774,edge,44.1,0.0,ok
+piece-11-05,piece-12-04,variation,776,tab,16.7,741,edge,16.7,0.0,ok
+piece-11-05,piece-12-04,variation,770,edge,9.4,4,tab,9.5,0.1,ok
+piece-11-05,piece-12-04,variation,779,tab,12.9,7,tab,12.6,0.3,ok
+piece-11-05,piece-12-04,variation,771,edge,26.9,742,edge,26.1,0.8,ok
+piece-11-05,piece-12-04,variation,58,edge,17.8,6,tab,17.8,0.0,ok
+piece-11-05,piece-12-04,variation,778,tab,11.4,420,edge,11.3,0.1,ok
+piece-11-05,piece-12-04,variation,793,edge,16.8,5,tab,16.8,0.0,ok
+piece-11-05,piece-12-04,variation,791,edge,15.8,616,tab,15.2,0.6,ok
+piece-11-05,piece-12-04,variation,777,tab,12.0,693,edge,12.4,0.4,ok
+piece-11-05,piece-12-04,variation,754,edge,10.1,3,tab,10.2,0.1,ok
 piece-11-08,piece-12-08,variation,17,tab,42.2,308,edge,42.2,0.0,ok
 piece-11-08,piece-12-08,variation,16,tab,43.5,617,edge,43.2,0.3,ok
 piece-11-08,piece-12-08,variation,301,edge,61.4,695,edge,61.8,0.4,ok
@@ -234,7 +244,7 @@ piece-11-08,piece-12-08,variation,19,tab,44.6,256,tab,44.6,0.0,ok
 piece-11-08,piece-12-08,variation,23,edge,18.4,263,edge,18.4,0.0,ok
 piece-11-08,piece-12-08,variation,18,tab,41.5,255,tab,41.5,0.0,ok
 piece-11-10,piece-12-10,variation,21,edge,33.2,259,edge,33.3,0.0,ok
-piece-11-10,piece-12-10,variation,223,edge,50.4,846,tab,50.4,0.0,ok
+piece-11-10,piece-12-10,variation,223,edge,50.4,848,tab,50.4,0.0,ok
 piece-11-10,piece-12-10,variation,219,edge,50.2,572,edge,50.2,0.0,ok
 piece-11-10,piece-12-10,variation,760,tab,38.8,646,tab,38.8,0.0,ok
 piece-11-10,piece-12-10,variation,764,edge,60.2,694,edge,60.3,0.1,ok
@@ -244,7 +254,7 @@ piece-11-10,piece-12-10,variation,758,tab,40.0,558,edge,39.9,0.0,ok
 piece-11-11,piece-12-11,variation,762,tab,56.1,649,tab,56.0,0.0,ok
 piece-11-11,piece-12-11,variation,339,edge,75.7,647,tab,75.7,0.0,ok
 piece-11-11,piece-12-11,variation,761,tab,50.8,696,edge,50.7,0.1,ok
-piece-11-11,piece-12-11,variation,767,edge,51.7,548,tab,51.7,0.0,ok
+piece-11-11,piece-12-11,variation,767,edge,51.7,648,tab,51.7,0.0,ok
 piece-11-11,piece-12-11,variation,760,edge,38.8,646,edge,38.8,0.0,ok
 piece-11-11,piece-12-11,variation,220,edge,58.9,573,edge,58.9,0.0,ok
 piece-13-01,piece-13-04,variation,332,tab,38.3,332,edge,38.3,0.0,ok
@@ -281,11 +291,18 @@ piece-14-02,piece-15-03,exact,289,edge,24.1,638,edge,24.1,0.0,ok
 piece-14-03,piece-15-01,variation,289,tab,24.1,638,tab,24.0,0.1,ok
 piece-14-03,piece-15-01,variation,292,edge,25.6,642,edge,25.6,0.0,ok
 piece-14-03,piece-15-01,variation,287,tab,22.7,637,tab,23.1,0.4,ok
-piece-14-03,piece-15-01,variation,210,edge,32.6,636,tab,32.2,0.4,ok
+piece-14-03,piece-15-01,variation,280,edge,32.6,636,tab,32.2,0.4,ok
 piece-14-03,piece-15-01,variation,288,tab,24.3,288,edge,24.3,0.0,ok
 piece-14-03,piece-15-01,variation,640,edge,18.7,640,tab,18.6,0.1,ok
-piece-14-03,piece-15-01,variation,290,tab,30.8,260,edge,30.9,0.0,ok
+piece-14-03,piece-15-01,variation,290,tab,30.8,290,edge,30.9,0.0,ok
 piece-14-03,piece-15-01,variation,768,edge,26.4,639,tab,26.5,0.1,ok
+piece-14-04,piece-15-04,variation,141,tab,42.4,515,edge,42.3,0.1,ok
+piece-14-04,piece-15-04,variation,158,edge,44.5,506,tab,45.2,0.7,ok
+piece-14-04,piece-15-04,variation,143,tab,38.8,517,edge,38.0,0.8,ok
+piece-14-04,piece-15-04,variation,200,edge,23.7,507,tab,23.7,0.0,ok
+piece-14-04,piece-15-04,variation,137,edge,33.8,502,edge,33.9,0.1,ok
+piece-14-04,piece-15-04,variation,142,tab,45.4,505,tab,45.2,0.3,ok
+piece-14-04,piece-15-04,variation,140,tab,31.1,504,tab,31.4,0.2,ok
 piece-14-05,piece-15-05,variation,142,edge,45.1,505,edge,45.3,0.2,ok
 piece-14-05,piece-15-05,variation,137,tab,33.9,502,tab,33.8,0.1,ok
 piece-14-05,piece-15-05,variation,138,tab,27.9,563,edge,28.0,0.1,ok
@@ -297,15 +314,15 @@ piece-14-06,piece-15-08,variation,167,edge,30.3,532,tab,30.2,0.1,ok
 piece-14-06,piece-15-08,variation,176,tab,36.6,524,edge,36.6,0.0,ok
 piece-14-06,piece-15-08,variation,169,edge,32.1,534,tab,32.6,0.5,ok
 piece-14-06,piece-15-08,variation,181,tab,41.8,527,edge,41.2,0.6,ok
-piece-14-06,piece-15-08,variation,171,edge,51.7,939,tab,52.0,0.3,ok
+piece-14-06,piece-15-08,variation,171,edge,51.7,536,tab,52.0,0.3,ok
 piece-14-06,piece-15-08,variation,178,tab,20.9,715,edge,20.8,0.1,ok
 piece-14-06,piece-15-08,variation,179,tab,19.4,633,edge,19.4,0.1,ok
 piece-14-06,piece-15-08,variation,180,tab,36.3,535,tab,36.3,0.1,ok
-piece-14-06,piece-15-08,variation,369,edge,44.8,717,edge,44.8,0.0,ok
+piece-14-06,piece-15-08,variation,692,edge,44.8,717,edge,44.8,0.0,ok
 piece-14-06,piece-15-08,variation,177,tab,52.4,533,tab,52.4,0.0,ok
 piece-14-06,piece-15-08,variation,374,edge,40.6,721,edge,40.6,0.0,ok
 piece-14-06,piece-15-08,variation,173,tab,33.8,530,tab,33.8,0.0,ok
-piece-14-07,piece-15-06,variation,201,edge,18.4,582,edge,18.5,0.1,ok
+piece-14-07,piece-15-06,variation,201,edge,18.4,562,edge,18.5,0.1,ok
 piece-14-07,piece-15-06,variation,212,tab,30.1,567,tab,29.9,0.1,ok
 piece-14-07,piece-15-06,variation,199,edge,18.8,580,edge,18.8,0.0,ok
 piece-14-07,piece-15-06,variation,209,tab,14.6,565,tab,14.6,0.0,ok
@@ -315,7 +332,7 @@ piece-14-07,piece-15-06,variation,208,tab,17.9,208,edge,17.6,0.3,ok
 piece-14-07,piece-15-06,variation,568,edge,23.0,568,tab,23.0,0.0,ok
 piece-14-07,piece-15-06,variation,211,tab,21.6,211,edge,21.6,0.0,ok
 piece-14-07,piece-15-06,variation,566,edge,24.5,566,tab,24.6,0.0,ok
-piece-14-07,piece-15-06,variation,210,tab,32.5,636,edge,32.6,0.1,ok
+piece-14-07,piece-15-06,variation,260,tab,32.5,636,edge,32.6,0.1,ok
 piece-14-09,piece-15-09,variation,172,edge,31.9,514,tab,31.9,0.1,ok
 piece-14-09,piece-15-09,variation,155,tab,32.8,528,edge,32.9,0.1,ok
 piece-14-09,piece-15-09,variation,170,edge,34.4,518,tab,34.0,0.3,ok
@@ -324,7 +341,7 @@ piece-14-09,piece-15-09,variation,168,edge,33.2,516,tab,33.2,0.0,ok
 piece-14-09,piece-15-09,variation,157,tab,23.5,559,edge,23.6,0.1,ok
 piece-14-09,piece-15-09,variation,143,edge,38.8,517,tab,38.7,0.1,ok
 piece-14-09,piece-15-09,variation,158,tab,44.6,506,edge,44.7,0.1,ok
-piece-14-09,piece-15-09,variation,141,edge,42.2,616,tab,42.1,0.1,ok
+piece-14-09,piece-15-09,variation,141,edge,42.2,515,tab,42.1,0.1,ok
 piece-14-09,piece-15-09,variation,154,tab,30.1,711,edge,30.1,0.0,ok
 piece-14-10,piece-15-10,variation,168,tab,33.2,516,edge,32.9,0.3,ok
 piece-14-10,piece-15-10,variation,156,edge,30.8,525,tab,30.9,0.1,ok
@@ -354,7 +371,7 @@ piece-16-02,piece-17-01,variation,285,edge,28.6,725,tab,28.8,0.2,ok
 piece-16-03,piece-17-03,variation,173,edge,33.8,530,edge,33.8,0.0,ok
 piece-16-03,piece-17-03,variation,374,tab,40.8,721,tab,40.8,0.1,ok
 piece-16-03,piece-17-03,variation,177,edge,52.5,533,edge,52.3,0.2,ok
-piece-16-03,piece-17-03,variation,869,tab,44.6,717,tab,44.7,0.1,ok
+piece-16-03,piece-17-03,variation,692,tab,44.6,717,tab,44.7,0.1,ok
 piece-16-03,piece-17-03,variation,180,edge,36.4,535,edge,36.3,0.0,ok
 piece-16-03,piece-17-03,variation,371,tab,13.0,719,tab,12.9,0.1,ok
 piece-16-03,piece-17-03,variation,380,edge,12.1,726,edge,12.2,0.1,ok
@@ -394,7 +411,7 @@ piece-16-05,piece-17-05,variation,164,tab,28.2,523,tab,28.1,0.1,ok
 piece-16-05,piece-17-05,variation,166,tab,26.7,470,edge,26.7,0.1,ok
 piece-16-06,piece-17-06,variation,736,tab,42.0,944,tab,42.1,0.1,ok
 piece-16-06,piece-17-06,variation,737,tab,40.2,724,edge,40.0,0.2,ok
-piece-16-06,piece-17-06,variation,341,edge,58.4,628,edge,59.2,0.9,ok
+piece-16-06,piece-17-06,variation,341,edge,58.3,628,edge,59.2,0.9,ok
 piece-16-06,piece-17-06,variation,735,tab,19.7,735,edge,19.0,0.6,ok
 piece-16-08,piece-17-08,variation,196,tab,31.1,999,tab,31.4,0.2,ok
 piece-16-08,piece-17-08,variation,162,edge,35.3,521,edge,35.0,0.3,ok
@@ -439,7 +456,7 @@ piece-18-03,piece-19-04,variation,738,edge,32.8,456,tab,33.1,0.3,ok
 piece-18-03,piece-19-04,variation,66,tab,9.6,398,edge,9.6,0.1,ok
 piece-18-03,piece-19-04,variation,100,tab,24.0,457,tab,23.9,0.1,ok
 piece-18-03,piece-19-04,variation,353,edge,15.5,459,tab,15.5,0.0,ok
-piece-18-03,piece-19-04,variation,95,tab,23.5,791,edge,23.3,0.2,ok
+piece-18-03,piece-19-04,variation,95,tab,23.5,701,edge,23.3,0.2,ok
 piece-18-03,piece-19-04,variation,96,tab,9.2,400,edge,9.4,0.2,ok
 piece-18-03,piece-19-04,variation,90,edge,10.8,454,edge,10.8,0.0,ok
 piece-18-03,piece-19-04,variation,102,tab,17.0,460,tab,17.5,0.6,ok
@@ -467,7 +484,7 @@ piece-18-05,piece-19-05,variation,114,edge,33.6,473,edge,33.4,0.2,ok
 piece-18-06,piece-19-07,variation,67,edge,30.9,424,edge,31.0,0.0,ok
 piece-18-06,piece-19-07,variation,93,tab,39.0,452,tab,39.0,0.0,ok
 piece-18-06,piece-19-07,variation,76,edge,38.2,433,edge,38.2,0.0,ok
-piece-18-06,piece-19-07,variation,136,edge,17.7,496,edge,17.6,0.0,ok
+piece-18-06,piece-19-07,variation,136,edge,17.8,496,edge,17.6,0.2,ok
 piece-18-06,piece-19-07,variation,102,edge,17.1,460,edge,17.3,0.3,ok
 piece-18-06,piece-19-07,variation,90,edge,11.0,454,edge,10.6,0.3,ok
 piece-18-06,piece-19-07,variation,91,tab,36.3,450,tab,36.3,0.0,ok
@@ -483,7 +500,7 @@ piece-18-07,piece-19-06,variation,110,tab,18.4,468,tab,18.4,0.0,ok
 piece-18-07,piece-19-06,variation,111,tab,39.5,706,edge,39.3,0.2,ok
 piece-18-07,piece-19-06,variation,363,edge,19.6,469,tab,19.6,0.0,ok
 piece-18-07,piece-19-06,variation,166,edge,27.4,470,tab,26.9,0.5,ok
-piece-18-07,piece-19-06,variation,195,edge,50.9,556,edge,51.3,0.4,ok
+piece-18-07,piece-19-06,variation,195,edge,50.9,555,edge,51.3,0.4,ok
 piece-18-07,piece-19-06,variation,189,edge,42.7,472,tab,42.5,0.3,ok
 piece-18-07,piece-19-06,variation,113,tab,36.4,540,edge,36.8,0.4,ok
 piece-18-08,piece-19-08,variation,491,edge,35.8,491,tab,35.7,0.1,ok
@@ -574,8 +591,8 @@ piece-20-08,piece-21-08,variation,73,edge,35.1,431,edge,35.1,0.0,ok
 piece-20-08,piece-21-08,variation,68,tab,38.9,426,tab,38.8,0.1,ok
 piece-20-08,piece-21-08,variation,71,edge,34.1,428,edge,34.2,0.1,ok
 piece-22-01,piece-23-01,variation,609,tab,37.6,233,edge,37.6,0.0,ok
-piece-22-01,piece-23-01,variation,588,edge,36.8,997,edge,36.8,0.0,ok
-piece-22-01,piece-23-01,variation,580,edge,46.0,250,tab,46.0,0.1,ok
+piece-22-01,piece-23-01,variation,588,edge,36.8,235,edge,36.8,0.0,ok
+piece-22-01,piece-23-01,variation,680,edge,46.0,250,tab,46.0,0.1,ok
 piece-22-01,piece-23-01,variation,611,tab,32.4,225,edge,32.4,0.0,ok
 piece-22-01,piece-23-01,variation,582,edge,42.2,254,tab,42.0,0.2,ok
 piece-22-01,piece-23-01,variation,612,tab,48.1,221,edge,48.2,0.1,ok
@@ -637,6 +654,13 @@ piece-24-01,piece-24-02,variation,382,edge,22.4,627,tab,22.7,0.3,ok
 piece-24-01,piece-24-02,variation,277,tab,24.0,629,tab,24.1,0.0,ok
 piece-24-01,piece-24-02,variation,278,tab,37.7,628,tab,37.6,0.1,ok
 piece-24-01,piece-24-02,variation,278,edge,37.4,628,edge,37.5,0.0,ok
+piece-24-03,piece-24-09,variation,788,edge,27.6,782,edge,27.5,0.1,ok
+piece-24-03,piece-24-09,variation,749,tab,29.8,501,tab,29.8,0.0,ok
+piece-24-03,piece-24-09,variation,747,tab,23.3,498,tab,23.4,0.1,ok
+piece-24-03,piece-24-09,variation,748,tab,18.9,497,tab,18.4,0.5,ok
+piece-24-03,piece-24-09,variation,13,edge,30.9,499,tab,30.9,0.0,ok
+piece-24-03,piece-24-09,variation,750,tab,43.6,500,tab,43.1,0.4,ok
+piece-24-03,piece-24-09,variation,789,edge,18.1,786,edge,18.1,0.1,ok
 piece-24-04,piece-24-07,variation,794,edge,15.4,785,edge,15.4,0.0,ok
 piece-24-04,piece-24-07,variation,64,edge,32.3,781,tab,32.8,0.5,ok
 piece-24-04,piece-24-07,variation,787,tab,29.2,422,edge,28.3,0.8,ok
@@ -649,9 +673,9 @@ piece-24-05,piece-24-06,variation,384,edge,18.9,631,tab,18.6,0.3,ok
 piece-24-05,piece-24-06,variation,370,edge,14.9,718,edge,15.3,0.3,ok
 piece-24-05,piece-24-06,variation,282,tab,20.0,727,edge,20.7,0.7,ok
 piece-24-05,piece-24-06,variation,283,tab,18.3,733,edge,18.0,0.3,ok
-piece-24-05,piece-24-06,variation,281,edge,32.6,632,tab,32.7,0.1,ok
+piece-24-05,piece-24-06,variation,261,edge,32.6,632,tab,32.7,0.1,ok
 piece-24-05,piece-24-06,variation,281,tab,32.6,632,edge,32.5,0.1,ok
-piece-24-08,piece-24-10,variation,288,tab,13.3,634,tab,13.7,0.4,ok
+piece-24-08,piece-24-10,variation,268,tab,13.3,634,tab,13.7,0.4,ok
 piece-24-08,piece-24-10,variation,285,tab,28.8,725,edge,28.8,0.0,ok
 piece-24-08,piece-24-10,variation,371,edge,13.0,719,edge,13.0,0.0,ok
 piece-24-08,piece-24-10,variation,284,edge,31.6,635,tab,31.6,0.0,ok
@@ -664,6 +688,17 @@ piece-24-13,piece-24-14,variation,450,edge,36.3,91,edge,36.3,0.0,ok
 piece-24-13,piece-24-14,variation,447,tab,25.9,104,edge,25.9,0.0,ok
 piece-24-13,piece-24-14,variation,448,tab,49.1,88,edge,48.9,0.2,ok
 piece-24-13,piece-24-14,variation,448,edge,49.0,88,tab,49.1,0.1,ok
+piece-06-03,piece-06-04,variation,30,edge,52.1,357,edge,52.0,0.1,ok
+piece-06-03,piece-06-04,variation,35,tab,42.1,391,tab,42.1,0.1,ok
+piece-06-03,piece-06-04,variation,27,edge,47.1,356,edge,47.2,0.0,ok
+piece-06-03,piece-06-04,variation,31,tab,54.2,387,tab,54.7,0.5,ok
+piece-06-03,piece-06-04,variation,386,edge,42.5,369,tab,43.2,0.7,ok
+piece-06-03,piece-06-04,variation,316,edge,37.3,670,edge,38.3,1.0,traced line differs
+piece-06-03,piece-06-04,variation,32,tab,46.3,388,tab,46.3,0.0,ok
+piece-06-03,piece-06-04,variation,319,edge,40.0,673,edge,40.0,0.1,ok
+piece-06-03,piece-06-04,variation,34,tab,34.6,947,tab,34.6,0.0,ok
+piece-06-03,piece-06-04,variation,36,tab,40.5,392,tab,40.2,0.3,ok
+piece-06-03,piece-06-04,variation,33,tab,34.2,389,tab,34.4,0.2,ok
 piece-06-05,piece-06-06,variation,670,tab,38.3,316,tab,38.3,0.0,ok
 piece-06-05,piece-06-06,variation,388,edge,46.4,32,edge,46.5,0.1,ok
 piece-06-05,piece-06-06,variation,673,tab,40.0,319,tab,39.8,0.2,ok
@@ -673,16 +708,6 @@ piece-06-05,piece-06-06,variation,671,tab,30.5,317,tab,30.3,0.2,ok
 piece-06-05,piece-06-06,variation,618,edge,12.9,272,edge,12.9,0.1,ok
 piece-06-05,piece-06-06,variation,315,edge,15.5,315,tab,15.4,0.1,ok
 piece-06-05,piece-06-06,variation,669,tab,30.7,669,edge,30.8,0.1,ok
-piece-11-05,piece-12-04,variation,776,tab,16.7,741,edge,16.7,0.0,ok
-piece-11-05,piece-12-04,variation,770,edge,9.4,4,tab,9.5,0.1,ok
-piece-11-05,piece-12-04,variation,779,tab,12.9,7,tab,12.6,0.3,ok
-piece-11-05,piece-12-04,variation,771,edge,26.9,742,edge,26.1,0.8,ok
-piece-11-05,piece-12-04,variation,58,edge,17.8,6,tab,17.8,0.0,ok
-piece-11-05,piece-12-04,variation,778,tab,11.4,420,edge,11.3,0.1,ok
-piece-11-05,piece-12-04,variation,793,edge,16.8,5,tab,16.8,0.0,ok
-piece-11-05,piece-12-04,variation,791,edge,13.6,014,tab,15.2,1.6,traced line differs
-piece-11-05,piece-12-04,variation,777,tab,12.0,693,edge,12.4,0.4,ok
-piece-11-05,piece-12-04,variation,754,edge,10.1,3,tab,10.2,0.1,ok
 piece-14-08,piece-15-07,variation,138,edge,28.0,563,tab,28.0,0.0,ok
 piece-14-08,piece-15-07,variation,200,tab,23.7,507,edge,23.8,0.1,ok
 piece-14-08,piece-15-07,variation,157,edge,23.4,559,tab,23.2,0.1,ok
@@ -702,7 +727,7 @@ piece-11-03,piece-12-02,variation,56,edge,36.1,205,tab,36.7,0.5,ok
 piece-11-03,piece-12-02,variation,12,tab,42.3,258,edge,42.8,0.5,ok
 piece-11-03,piece-12-02,variation,15,tab,52.0,207,tab,51.5,0.5,ok
 piece-11-03,piece-12-02,variation,14,tab,9.6,547,edge,9.6,0.0,ok
-piece-16-10,piece-17-09,variation,48,edge,26.3,723,edge,27.7,1.5,traced line differs
+piece-16-10,piece-17-09,variation,378,edge,26.3,723,edge,27.7,1.5,traced line differs
 piece-16-10,piece-17-09,variation,382,tab,22.2,627,edge,22.2,0.0,ok
 piece-16-10,piece-17-09,variation,280,edge,20.7,731,tab,21.2,0.6,ok
 piece-16-10,piece-17-09,variation,383,edge,22.5,716,edge,22.3,0.2,ok
@@ -719,7 +744,7 @@ piece-11-06,piece-12-06,variation,790,edge,24.2,594,tab,24.1,0.1,ok
 piece-11-06,piece-12-06,variation,755,tab,8.9,645,edge,8.9,0.0,ok
 piece-11-06,piece-12-06,variation,751,edge,23.8,595,tab,23.8,0.0,ok
 piece-11-06,piece-12-06,variation,757,tab,17.1,546,edge,17.1,0.0,ok
-piece-24-11,piece-24-12,variation,85,edge,23.3,701,tab,23.3,0.1,ok
+piece-24-11,piece-24-12,variation,95,edge,23.3,701,tab,23.3,0.1,ok
 piece-24-11,piece-24-12,variation,353,tab,15.4,459,edge,15.3,0.0,ok
 piece-24-11,piece-24-12,variation,100,edge,24.1,457,edge,24.3,0.3,ok
 piece-24-11,piece-24-12,variation,739,edge,23.1,702,tab,22.9,0.2,ok
@@ -739,7 +764,7 @@ piece-10-02,piece-10-04,variation,340,tab,69.5,707,edge,69.6,0.1,ok
 piece-10-02,piece-10-04,variation,697,edge,34.8,697,tab,35.0,0.2,ok
 piece-10-02,piece-10-04,variation,342,tab,80.1,728,edge,80.0,0.1,ok
 piece-10-02,piece-10-04,variation,343,tab,37.9,709,edge,37.9,0.0,ok
-piece-11-07,piece-12-07,variation,760,edge,43.3,500,edge,43.2,0.1,ok
+piece-11-07,piece-12-07,variation,750,edge,43.3,500,edge,43.2,0.1,ok
 piece-11-07,piece-12-07,variation,752,tab,14.8,206,edge,14.8,0.1,ok
 piece-11-07,piece-12-07,variation,753,tab,29.0,648,tab,29.1,0.1,ok
 piece-11-07,piece-12-07,variation,757,edge,17.1,548,edge,17.0,0.1,ok
@@ -752,32 +777,9 @@ piece-11-09,piece-12-09,variation,23,tab,18.5,263,tab,18.3,0.2,ok
 piece-11-09,piece-12-09,variation,224,edge,46.9,577,edge,48.1,1.2,traced line differs
 piece-11-09,piece-12-09,variation,21,tab,33.8,259,tab,33.2,0.7,ok
 piece-11-09,piece-12-09,variation,159,edge,48.4,260,tab,48.3,0.1,ok
-piece-14-04,piece-15-04,variation,141,tab,42.4,616,edge,42.3,0.1,ok
-piece-14-04,piece-15-04,variation,158,edge,44.5,506,tab,45.2,0.7,ok
-piece-14-04,piece-15-04,variation,143,tab,38.8,517,edge,38.0,0.8,ok
-piece-14-04,piece-15-04,variation,200,edge,23.7,507,tab,23.7,0.0,ok
-piece-14-04,piece-15-04,variation,142,tab,45.4,505,tab,45.2,0.3,ok
-piece-14-04,piece-15-04,variation,140,tab,31.1,504,tab,31.4,0.2,ok
-piece-24-03,piece-24-09,variation,788,edge,27.6,782,edge,27.5,0.1,ok
-piece-24-03,piece-24-09,variation,749,tab,29.8,501,tab,29.8,0.0,ok
-piece-24-03,piece-24-09,variation,747,tab,23.3,498,tab,23.4,0.1,ok
-piece-24-03,piece-24-09,variation,748,tab,18.9,497,tab,18.4,0.5,ok
-piece-24-03,piece-24-09,variation,13,edge,30.9,499,tab,30.9,0.0,ok
-piece-24-03,piece-24-09,variation,755,tab,42.0,500,tab,43.1,1.1,traced line differs
-piece-24-03,piece-24-09,variation,789,edge,18.1,750,edge,18.1,0.1,ok
 piece-16-07,piece-17-07,variation,372,edge,46.6,720,edge,48.4,1.8,traced line differs
 piece-16-07,piece-17-07,variation,375,tab,33.4,722,tab,33.5,0.1,ok
 piece-16-07,piece-17-07,variation,277,edge,24.1,629,edge,23.9,0.1,ok
 piece-16-07,piece-17-07,variation,376,tab,26.2,730,edge,26.2,0.0,ok
 piece-16-07,piece-17-07,variation,736,edge,41.3,944,edge,42.0,0.7,ok
 piece-16-07,piece-17-07,variation,377,tab,23.3,377,edge,22.9,0.5,ok
-piece-06-03,piece-06-04,variation,30,edge,52.1,357,edge,52.0,0.1,ok
-piece-06-03,piece-06-04,variation,35,tab,42.1,391,tab,42.1,0.1,ok
-piece-06-03,piece-06-04,variation,27,edge,47.1,356,edge,47.2,0.0,ok
-piece-06-03,piece-06-04,variation,31,tab,54.2,387,tab,54.7,0.5,ok
-piece-06-03,piece-06-04,variation,386,edge,42.5,386,tab,43.2,0.7,ok
-piece-06-03,piece-06-04,variation,316,edge,37.3,670,edge,38.3,1.0,traced line differs
-piece-06-03,piece-06-04,variation,32,tab,46.3,388,tab,46.3,0.0,ok
-piece-06-03,piece-06-04,variation,319,edge,40.0,673,edge,40.0,0.1,ok
-piece-06-03,piece-06-04,variation,36,tab,40.5,392,tab,40.2,0.3,ok
-piece-06-03,piece-06-04,variation,33,tab,34.2,389,tab,34.4,0.2,ok

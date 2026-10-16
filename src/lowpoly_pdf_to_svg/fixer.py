@@ -20,6 +20,8 @@ import pickle
 import sys
 from pathlib import Path
 
+import cv2
+import numpy as np
 from PIL import Image
 
 CROP_MM = 36.0        # smallest patch; grows to hold the whole line the number marks
@@ -27,6 +29,9 @@ MARGIN_MM = 10.0      # room past the line's ends, where the true corner may lie
 MAX_MM = 120.0
 FOLDED_MM = 0.6       # a 3D-model pair matches a card when its line length agrees this closely
 SIZE_PX = 360         # patches are scaled to this so long lines do not bloat the JSON
+PIECE_PX = 720        # whole-piece patches for the piece review
+PIECE_MARGIN_MM = 6.0
+LOOSE_MM = 4.0        # untraced line ink inside a piece beyond this much may be a missed fold
 
 
 class CheckData:
@@ -107,6 +112,62 @@ class CheckData:
             cards.append({"kind": "open", "suggested": "", "why": r["status"], "panels": panels})
         return cards
 
+    def pieces(self) -> list[dict]:
+        """One entry per traced piece for the piece review: the scan of the whole piece, its numbers
+        with their status, and how much work it likely needs (unpaired numbers count most)."""
+        faults: dict[str, list[str]] = {}
+        path = self.folder / f"{self.project}-checks.csv"
+        if path.is_file():
+            for r in csv.DictReader(path.open(encoding="utf-8")):
+                faults.setdefault(r["piece"], []).append(f"{r['check']}: {r['detail']}")
+        numbers: dict[str, list[dict]] = {}
+        for r in self.edges:
+            numbers.setdefault(r["piece"], []).append(
+                {"x": r["x_mm"], "y": r["y_mm"], "read": r["number"], "status": r["status"],
+                 "line": [float(v) for v in r.get("line_mm", "").split()]})
+        found = []
+        for piece, trace in self.traces.items():
+            labels = numbers.get(piece, [])
+            open_ = [l for l in labels if l["status"] != "ok"]
+            loose = self._loose(piece, trace, labels)
+            score = 3 * len(open_) + len(faults.get(piece, [])) + int(loose.sum() * self.mm_per_px / 2 // LOOSE_MM)
+            why = [f"{l['read']}: {l['status']}" for l in open_] + faults.get(piece, [])
+            ink_mm = loose.sum() * self.mm_per_px / 2   # ink pixels over a line about 2 px wide
+            if ink_mm > LOOSE_MM:
+                why.append(f"about {ink_mm:.0f} mm of line ink inside the piece is not traced (orange): a missed fold?")
+            xs, ys = [q[0] for q in trace["outline"]], [q[1] for q in trace["outline"]]
+            side = max(max(xs) - min(xs), max(ys) - min(ys)) + 2 * PIECE_MARGIN_MM
+            image, box = self._patch(piece, (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, side, PIECE_PX, loose)
+            found.append({"piece": piece, "score": score, "why": why, "labels": labels, "image": image, "box": box})
+        return found
+
+    def _loose(self, piece: str, trace: dict, labels: list[dict]) -> np.ndarray:
+        """Page mask of line ink inside the piece that no traced fold, cut or number explains."""
+        gray = np.asarray(self._page(piece))
+        px = lambda pts: np.round(np.asarray(pts, float) / self.mm_per_px).astype(np.int32)
+        reach = round(1.0 / self.mm_per_px)
+        inside = np.zeros(gray.shape, np.uint8)
+        cv2.fillPoly(inside, [px(trace["outline"])], 1)
+        cv2.polylines(inside, [px(trace["outline"])], True, 0, 2 * reach + 1)
+        known = np.zeros(gray.shape, np.uint8)
+        for f in trace["folds"]:
+            cv2.line(known, *[tuple(int(v) for v in q) for q in px([f[:2], f[2:]])], 1, 2 * reach + 1)
+        for l in labels:
+            cv2.circle(known, tuple(int(v) for v in px([float(l["x"]), float(l["y"])])), round(3.5 / self.mm_per_px), 1, -1)
+        loose = (gray < 215) & (inside > 0) & (known == 0)
+        # Specks (scan noise, a stray dot) are no line.
+        count, parts, stats, _ = cv2.connectedComponentsWithStats(loose.astype(np.uint8), connectivity=8)
+        keep = np.zeros(count, bool)
+        keep[1:] = np.maximum(stats[1:, cv2.CC_STAT_WIDTH], stats[1:, cv2.CC_STAT_HEIGHT]) >= 0.8 / self.mm_per_px
+        return keep[parts]
+
+    def _page(self, piece: str) -> Image.Image:
+        page = piece.split("-")[1]
+        if page not in self.pages:
+            found = sorted((self.folder / "previews").glob(f"{self.project}-page-{page}-*.png"))
+            self.pages[page] = Image.open(found[0]).convert("L") if found else Image.new("L", (10, 10), 255)
+        return self.pages[page]
+
     def _panel(self, piece: str, x: str, y: str, number: str, side: str, length: str) -> dict:
         line = self.lines.get((piece, x, y), [])
         image, box = self._crop(piece, float(x), float(y), line)
@@ -116,17 +177,23 @@ class CheckData:
     def _crop(self, piece: str, x_mm: float, y_mm: float, line: list[float]) -> tuple[str, list[float]]:
         """Plain scan patch around the number, wide enough to show the whole line it marks,
         and its box on the page [left, top, side] in mm; the page draws the trace on top."""
-        page = piece.split("-")[1]
-        if page not in self.pages:
-            found = sorted((self.folder / "previews").glob(f"{self.project}-page-{page}-*.png"))
-            self.pages[page] = Image.open(found[0]).convert("L") if found else Image.new("L", (10, 10), 255)
         xs, ys = [x_mm] + line[0::2], [y_mm] + line[1::2]
-        cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
         side = min(MAX_MM, max(CROP_MM, max(xs) - min(xs) + 2 * MARGIN_MM, max(ys) - min(ys) + 2 * MARGIN_MM))
+        return self._patch(piece, (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, side, SIZE_PX)
+
+    def _patch(self, piece: str, cx: float, cy: float, side: float, size: int,
+               mark: np.ndarray | None = None) -> tuple[str, list[float]]:
+        """Scan patch [left, top, side] mm, scaled to size px; ink under `mark` is tinted orange."""
+        image = self._page(piece)
+        if mark is not None and mark.any():
+            rgb = np.asarray(image.convert("RGB")).copy()
+            rgb[cv2.dilate(mark.astype(np.uint8), np.ones((3, 3), np.uint8)) > 0] = (255, 120, 0)
+            image = Image.fromarray(rgb)
         left, top = cx - side / 2, cy - side / 2
         px = lambda mm: round(mm / self.mm_per_px)
-        crop = self.pages[page].crop((px(left), px(top), px(left) + px(side), px(top) + px(side)))
-        crop = crop.resize((SIZE_PX, SIZE_PX), Image.LANCZOS)
+        crop = Image.new(image.mode, (px(side), px(side)), "white")   # white past the page edge
+        crop.paste(image, (-px(left), -px(top)))
+        crop = crop.resize((size, size), Image.LANCZOS)
         buffer = io.BytesIO()
         crop.save(buffer, "JPEG", quality=80)
         box = [round(px(left) * self.mm_per_px, 3), round(px(top) * self.mm_per_px, 3), round(px(side) * self.mm_per_px, 3)]
@@ -134,9 +201,8 @@ class CheckData:
 
     def write(self, path: Path) -> int:
         cards = self.cards()
-        used = {p["piece"] for c in cards for p in c["panels"]}
-        traces = {k: v for k, v in self.traces.items() if k in used}
-        path.write_text(json.dumps({"project": self.project, "cards": cards, "traces": traces}), encoding="utf-8")
+        path.write_text(json.dumps({"project": self.project, "cards": cards, "traces": self.traces,
+                                    "pieces": self.pieces()}), encoding="utf-8")
         return len(cards)
 
 
