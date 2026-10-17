@@ -239,6 +239,9 @@ def main() -> int:
     parser.add_argument("--dpi", type=int, default=180, help="resolution the previews were rendered at")
     args = parser.parse_args()
     folder, project = args.config.parent, args.config.stem
+    for name, pattern in (("previews", "*.png"), ("cache", "*.pickle")):
+        if not any((folder / name).glob(pattern)):
+            parser.error(f"{folder / name} is empty or missing: run make first (it is not committed)")
     try:
         count = CheckData(folder, project, args.dpi).write(folder / f"check-page.json")
     except OSError as error:
